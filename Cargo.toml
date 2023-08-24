@@ -1,0 +1,21 @@
+[package]
+name = "icy_engine_egui"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+icy_engine = { git ="https://github.com/mkrueger/icy_engine" }
+egui = "0.22.0"
+egui_glow = "0.22.0"
+eframe = { version = "0.22.0", default-features = false, features = [
+    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
+    "default_fonts", # Embed the default egui fonts.
+    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "persistence",   # Enable restoring app state when restarting the app.
+] }
+
+glow = "0.12.2"
+web-time = "0.2.0"
+log = "0.4"
