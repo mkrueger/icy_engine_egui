@@ -5,6 +5,7 @@ use egui::epaint::ahash::HashMap;
 use egui::Vec2;
 use glow::HasContext as _;
 use icy_engine::Buffer;
+use icy_engine::Shape;
 use web_time::Instant;
 
 use crate::prepare_shader;
@@ -546,7 +547,7 @@ impl TerminalRenderer {
                             selection.anchor.y.floor() - sbl,
                         );
                     }
-                    if selection.block_selection {
+                    if matches!(selection.shape, Shape::Rectangle) {
                         gl.uniform_1_f32(
                             gl.get_uniform_location(self.terminal_shader, "u_selection_attr")
                                 .as_ref(),

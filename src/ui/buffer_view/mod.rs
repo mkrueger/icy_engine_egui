@@ -2,7 +2,9 @@ use std::cmp::{max, min};
 
 use egui::Vec2;
 use glow::HasContext;
-use icy_engine::{Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position, Selection};
+use icy_engine::{
+    Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position, Selection, Shape,
+};
 
 pub mod glerror;
 
@@ -119,7 +121,7 @@ impl BufferView {
         };
 
         let mut res = String::new();
-        if selection.block_selection {
+        if matches!(selection.shape, Shape::Rectangle) {
             let start = Position::new(
                 min(selection.anchor_pos.x, selection.lead_pos.x),
                 min(selection.anchor_pos.y, selection.lead_pos.y),
