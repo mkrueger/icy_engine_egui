@@ -10,6 +10,7 @@ pub struct SmoothScroll {
     drag_start: bool,
     id: Id,
     lock_focus: bool,
+    stick_to_bottom: bool,
 }
 
 impl Default for SmoothScroll {
@@ -26,11 +27,17 @@ impl SmoothScroll {
             last_char_height: 0.0,
             drag_start: false,
             lock_focus: true,
+            stick_to_bottom: true,
         }
     }
 
     pub fn with_lock_focus(mut self, lock_focus: bool) -> Self {
         self.lock_focus = lock_focus;
+        self
+    }
+
+    pub(crate) fn with_stick_to_bottom(mut self, stick_to_bottom: bool) -> Self {
+        self.stick_to_bottom = stick_to_bottom;
         self
     }
 
@@ -62,13 +69,13 @@ impl SmoothScroll {
         &mut self,
         ui: &mut Ui,
         calc_contents: impl FnOnce(Rect) -> TerminalCalc,
-        add_contents: impl FnOnce(&mut Ui, Rect, &mut TerminalCalc),
+        add_contents: impl FnOnce(&mut Ui, &mut TerminalCalc),
     ) -> (Response, TerminalCalc) {
         self.load_data(ui);
         let size = ui.available_size();
 
         let (_, rect) = ui.allocate_space(Vec2::new(size.x, size.y));
-        let response = ui.interact(rect, self.id, Sense::click_and_drag());
+        let mut response = ui.interact(rect, self.id, Sense::click_and_drag());
 
         if self.lock_focus {
             self.lock_focus = false;
@@ -79,8 +86,9 @@ impl SmoothScroll {
         }
 
         let mut calc = calc_contents(rect);
+        calc.char_scroll_positon = self.char_scroll_positon;
 
-        if (calc.char_size.y - self.last_char_height).abs() > 0.1 {
+        if self.stick_to_bottom && (calc.char_height - self.last_char_height).abs() > 0.1 {
             self.char_scroll_positon =
                 calc.font_height * (calc.char_height - calc.buffer_char_height).max(0.0);
         }
@@ -95,12 +103,13 @@ impl SmoothScroll {
         let x = rect.right() - scrollbar_width;
         let mut scrollbar_rect: Rect = rect;
         scrollbar_rect.set_left(x);
+        calc.scrollbar_rect = scrollbar_rect;
 
         calc.char_scroll_positon = self.char_scroll_positon;
-        add_contents(ui, rect, &mut calc);
+        add_contents(ui, &mut calc);
 
         if calc.char_height > calc.buffer_char_height {
-            self.show_scrollbar(ui, &response, &calc);
+            response = self.show_scrollbar(ui, response, &calc);
         }
 
         self.persist_data(ui);
@@ -108,9 +117,8 @@ impl SmoothScroll {
         (response, calc)
     }
 
-    fn show_scrollbar(&mut self, ui: &Ui, response: &Response, calc: &TerminalCalc) {
+    fn show_scrollbar(&mut self, ui: &Ui, response: Response, calc: &TerminalCalc) -> Response {
         let scrollbar_width = ui.style().spacing.scroll_bar_width;
-
         let x = calc.rect.right() - scrollbar_width;
         let mut bg_rect: Rect = calc.rect;
         bg_rect.set_left(x);
@@ -190,5 +198,6 @@ impl SmoothScroll {
             4.,
             Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x5F + (127.0 * how_on) as u8),
         );
+        response
     }
 }

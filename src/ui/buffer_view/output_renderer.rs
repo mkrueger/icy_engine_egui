@@ -210,7 +210,6 @@ impl OutputRenderer {
             buffer_rect.right() / terminal_rect.width(),
             buffer_rect.bottom() / terminal_rect.height(),
         );
-
         gl.bind_vertex_array(Some(self.vertex_array));
         gl.draw_arrays(glow::TRIANGLES, 0, 6);
     }
