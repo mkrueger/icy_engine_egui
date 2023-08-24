@@ -247,6 +247,12 @@ impl BufferView {
         self.buf.clear_screen(&mut self.caret);
         self.redraw_view();
     }
+
+    pub fn set_buffer(&mut self, buf: Buffer) {
+        self.buf = buf;
+        self.redraw_font();
+        self.redraw_palette();
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
