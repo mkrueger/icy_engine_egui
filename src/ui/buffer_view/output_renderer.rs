@@ -117,14 +117,20 @@ impl OutputRenderer {
         );
         gl.bind_texture(glow::TEXTURE_2D, Some(output_texture));
 
+        let eff = match monitor_settings.background_effect {
+            crate::BackgroundEffect::None => {
+                if monitor_settings.use_filter {
+                    1.0
+                } else {
+                    0.0
+                }
+            }
+            crate::BackgroundEffect::Checkers => 2.0,
+        };
         gl.uniform_1_f32(
             gl.get_uniform_location(self.output_shader, "u_effect")
                 .as_ref(),
-            if monitor_settings.use_filter {
-                10.0
-            } else {
-                0.0
-            },
+            eff,
         );
 
         gl.uniform_1_f32(

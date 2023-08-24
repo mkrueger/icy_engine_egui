@@ -5,7 +5,6 @@ pub use buffer_view::*;
 
 pub mod smooth_scroll;
 use egui::{Pos2, Rect, Response, Vec2};
-use icy_engine::Position;
 pub use smooth_scroll::*;
 
 pub mod keymaps;
@@ -30,12 +29,15 @@ pub struct TerminalCalc {
     pub buffer_rect: egui::Rect,
     pub scrollbar_rect: egui::Rect,
     pub char_scroll_positon: f32,
+    pub forced_height: i32,
 }
 
 impl TerminalCalc {
     /// Returns the char position of the cursor in the buffer
     pub fn calc_click_pos(&self, click_pos: Pos2) -> Vec2 {
-        (click_pos - self.buffer_rect.min - self.terminal_rect.left_top().to_vec2())
+        (click_pos.to_vec2()
+            - self.buffer_rect.left_top().to_vec2()
+            - Vec2::new(0.0, self.terminal_rect.top()))
             / self.char_size
             + Vec2::new(0.0, self.first_line)
     }
@@ -48,14 +50,17 @@ pub fn show_terminal_area(
     filter: i32,
     settings: MonitorSettings,
     stick_to_bottom: bool,
+    scale: Option<Vec2>,
 ) -> (Response, TerminalCalc) {
-    let buf_h = buffer_view.lock().buf.get_buffer_height() as f32;
+    let mut buf_h = buffer_view.lock().buf.get_buffer_height() as f32;
     let real_height = buffer_view.lock().buf.get_real_buffer_height() as f32;
     let buf_w = buffer_view.lock().buf.get_buffer_width() as f32;
 
     let font_dimensions = buffer_view.lock().buf.get_font_dimensions();
+    let buffer_view2: Arc<egui::mutex::Mutex<BufferView>> = buffer_view.clone();
+    let max = buffer_view2.lock().buf.terminal_state.height;
 
-    SmoothScroll::new()
+    let r = SmoothScroll::new()
         .with_lock_focus(focus_lock)
         .with_stick_to_bottom(stick_to_bottom)
         .show(
@@ -70,6 +75,16 @@ pub fn show_terminal_area(
                     scale_y = scale_x;
                 } else {
                     scale_x = scale_y;
+                }
+                let mut forced_height = -1;
+
+                if let Some(scale) = scale {
+                    scale_x = scale.x;
+                    scale_y = scale.y;
+
+                    buf_h = (size.y / (font_dimensions.height as f32 * scale_y)).ceil();
+                    forced_height = (buf_h as i32).min(real_height as i32);
+                    buffer_view2.lock().redraw_view();
                 }
 
                 let char_size = Vec2::new(
@@ -87,6 +102,7 @@ pub fn show_terminal_area(
                     ),
                     Vec2::new(rect_w, rect_h),
                 );
+
                 // Set the scrolling height.
                 TerminalCalc {
                     char_height: real_height,
@@ -102,6 +118,7 @@ pub fn show_terminal_area(
                     buffer_rect,
                     scrollbar_rect: Rect::NOTHING,
                     char_scroll_positon: 0.,
+                    forced_height,
                 }
             },
             |ui, calc| {
@@ -119,10 +136,14 @@ pub fn show_terminal_area(
 
                 let buffer_rect = calc.buffer_rect;
                 let terminal_rect = calc.terminal_rect;
+                let fh = calc.forced_height;
                 let callback = egui::PaintCallback {
                     rect: terminal_rect,
                     callback: std::sync::Arc::new(egui_glow::CallbackFn::new(
                         move |info, painter| {
+                            if fh > 0 {
+                                buffer_view.lock().buf.terminal_state.height = fh;
+                            }
                             buffer_view.lock().render_contents(
                                 painter.gl(),
                                 &info,
@@ -136,5 +157,8 @@ pub fn show_terminal_area(
                 };
                 ui.painter().add(callback);
             },
-        )
+        );
+
+    buffer_view2.lock().buf.terminal_state.height = max;
+    r
 }

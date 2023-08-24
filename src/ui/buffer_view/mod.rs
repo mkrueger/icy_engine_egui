@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use egui::Vec2;
+use egui::{Response, Vec2};
 use glow::HasContext;
 use icy_engine::{
     Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position, Selection, Shape,
@@ -8,7 +8,7 @@ use icy_engine::{
 
 pub mod glerror;
 
-use crate::{check_gl_error, MonitorSettings};
+use crate::{check_gl_error, MonitorSettings, TerminalCalc};
 
 mod output_renderer;
 mod sixel_renderer;
@@ -69,6 +69,8 @@ pub struct BufferView {
     terminal_renderer: terminal_renderer::TerminalRenderer,
     sixel_renderer: sixel_renderer::SixelRenderer,
     output_renderer: output_renderer::OutputRenderer,
+
+    drag_start: Option<Vec2>,
 }
 
 impl BufferView {
@@ -96,6 +98,7 @@ impl BufferView {
             terminal_renderer,
             sixel_renderer,
             output_renderer,
+            drag_start: None,
         }
     }
 
@@ -256,6 +259,21 @@ impl BufferView {
         self.buf = buf;
         self.redraw_font();
         self.redraw_palette();
+    }
+
+    pub fn handle_dragging(&mut self, response: Response, calc: TerminalCalc) {
+        if response.drag_started() {
+            if let Some(mouse_pos) = response.interact_pointer_pos() {
+                if calc.buffer_rect.contains(mouse_pos) {
+                    self.drag_start = Some(calc.calc_click_pos(mouse_pos));
+                }
+            }
+        }
+
+        if response.drag_released() {
+            self.drag_start = None;
+        }
+        //if response.dragged() {}
     }
 }
 

@@ -15,6 +15,14 @@ pub struct MonitorSettings {
     pub blur: f32,
     pub curvature: f32,
     pub scanlines: f32,
+
+    pub background_effect: BackgroundEffect,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BackgroundEffect {
+    None,
+    Checkers,
 }
 
 unsafe impl Send for MonitorSettings {}
@@ -33,6 +41,7 @@ impl Default for MonitorSettings {
             blur: 30.,
             curvature: 10.,
             scanlines: 10.,
+            background_effect: BackgroundEffect::None,
         }
     }
 }

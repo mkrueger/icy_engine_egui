@@ -92,6 +92,17 @@ void scanlines2(vec2 coord)
     color = postEffects(col, st);
 }
 
+void draw_background() {
+	float checker_size = 8.0;
+    vec2 p = floor(gl_FragCoord.xy / checker_size);
+    float PatternMask = mod(p.x + mod(p.y, 2.0), 2.0);
+	if (PatternMask < 1.0) {
+		color = vec3(0.4, 0.4, 0.4);
+	} else {
+		color = vec3(0.6, 0.6, 0.6);
+	}
+}
+
 void main() {
 	vec2 uv   = gl_FragCoord.xy / u_resolution;
 	vec2 from = u_buffer_rect.xy;
@@ -100,7 +111,7 @@ void main() {
 	if (from.x <= uv.x && uv.x < to.x && 
 		from.y <= uv.y && uv.y < to.y) {
 		vec2 coord = (uv - from) / (to - from);
-		if (u_effect > 0.0) { 
+		if (u_effect > 0.9 && u_effect < 1.1) { 
 			scanlines2(coord);
 		} else { 
 			color = texture(u_render_texture, coord).xyz;
@@ -111,6 +122,10 @@ void main() {
 			color *= u_monchrome_mask;
 		}
 	} else {
-		color = vec3(0.25, 0.27, 0.29);
+		if (u_effect > 1.9 && u_effect < 2.1) { 
+			draw_background();
+		} else {
+			color = vec3(0.25, 0.27, 0.29);
+		}
 	}
 }
