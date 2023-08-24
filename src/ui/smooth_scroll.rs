@@ -1,17 +1,12 @@
 use egui::{Color32, Id, Pos2, Rect, Response, Sense, Ui, Vec2};
 
+use crate::TerminalCalc;
+
 pub struct SmoothScroll {
     /// Current scroll position in terminal pixels (not screen pixels)
     char_scroll_positon: f32,
-    /// The height of the buffer in chars
-    char_height: f32,
-    /// The height of the visible area in chars
-    buffer_height: f32,
     /// used to determine if the buffer should auto scroll to the bottom.
     last_char_height: f32,
-    /// Height of a single terminal pixel in screen pixels
-    scale: f32,
-    font_height: f32,
     drag_start: bool,
     id: Id,
     lock_focus: bool,
@@ -29,10 +24,6 @@ impl SmoothScroll {
             id: Id::new("smooth_scroll"),
             char_scroll_positon: 0.0,
             last_char_height: 0.0,
-            char_height: 0.0,
-            scale: 0.0,
-            buffer_height: 0.0,
-            font_height: 0.0,
             drag_start: false,
             lock_focus: true,
         }
@@ -49,10 +40,7 @@ impl SmoothScroll {
                 self.id,
                 (
                     self.char_scroll_positon,
-                    self.char_height,
-                    self.buffer_height,
                     self.last_char_height,
-                    self.scale,
                     self.drag_start,
                 ),
             );
@@ -60,25 +48,22 @@ impl SmoothScroll {
     }
 
     fn load_data(&mut self, ui: &Ui) {
-        if let Some(scroll) = ui.ctx().memory_mut(|mem| {
-            mem.data
-                .get_persisted::<(f32, f32, f32, f32, f32, bool)>(self.id)
-        }) {
+        if let Some(scroll) = ui
+            .ctx()
+            .memory_mut(|mem| mem.data.get_persisted::<(f32, f32, bool)>(self.id))
+        {
             self.char_scroll_positon = scroll.0;
-            self.char_height = scroll.1;
-            self.buffer_height = scroll.2;
-            self.last_char_height = scroll.3;
-            self.scale = scroll.4;
-            self.drag_start = scroll.5;
+            self.last_char_height = scroll.1;
+            self.drag_start = scroll.2;
         }
     }
 
     pub fn show(
         &mut self,
         ui: &mut Ui,
-        calc_contents: impl FnOnce(Rect) -> (f32, f32, f32, f32),
-        add_contents: impl FnOnce(&mut Ui, Rect, Response, f32, Rect) -> Response,
-    ) -> Response {
+        calc_contents: impl FnOnce(Rect) -> TerminalCalc,
+        add_contents: impl FnOnce(&mut Ui, Rect, &mut TerminalCalc),
+    ) -> (Response, TerminalCalc) {
         self.load_data(ui);
         let size = ui.available_size();
 
@@ -93,21 +78,17 @@ impl SmoothScroll {
             });
         }
 
-        let (char_height, buffer_char_height, scale, font_height) = calc_contents(rect);
+        let mut calc = calc_contents(rect);
 
-        self.char_height = char_height;
-        self.buffer_height = buffer_char_height;
-        self.scale = scale;
-        self.font_height = font_height;
-
-        if (char_height - self.last_char_height).abs() > 0.1 {
-            self.char_scroll_positon = font_height * (char_height - buffer_char_height).max(0.0);
+        if (calc.char_size.y - self.last_char_height).abs() > 0.1 {
+            self.char_scroll_positon =
+                calc.font_height * (calc.char_height - calc.buffer_char_height).max(0.0);
         }
-        self.last_char_height = char_height;
+        self.last_char_height = calc.char_height;
 
         self.char_scroll_positon = self.char_scroll_positon.clamp(
             0.0,
-            font_height * (self.char_height - self.buffer_height).max(0.0),
+            calc.font_height * (calc.char_height - calc.buffer_char_height).max(0.0),
         );
 
         let scrollbar_width = ui.style().spacing.scroll_bar_width;
@@ -115,28 +96,29 @@ impl SmoothScroll {
         let mut scrollbar_rect: Rect = rect;
         scrollbar_rect.set_left(x);
 
-        let response = add_contents(ui, rect, response, self.char_scroll_positon, scrollbar_rect);
+        calc.char_scroll_positon = self.char_scroll_positon;
+        add_contents(ui, rect, &mut calc);
 
-        if char_height > buffer_char_height {
-            self.show_scrollbar(ui, &response, rect);
+        if calc.char_height > calc.buffer_char_height {
+            self.show_scrollbar(ui, &response, &calc);
         }
 
         self.persist_data(ui);
 
-        response
+        (response, calc)
     }
 
-    fn show_scrollbar(&mut self, ui: &Ui, response: &Response, rect: Rect) {
+    fn show_scrollbar(&mut self, ui: &Ui, response: &Response, calc: &TerminalCalc) {
         let scrollbar_width = ui.style().spacing.scroll_bar_width;
 
-        let x = rect.right() - scrollbar_width;
-        let mut bg_rect: Rect = rect;
+        let x = calc.rect.right() - scrollbar_width;
+        let mut bg_rect: Rect = calc.rect;
         bg_rect.set_left(x);
-        let bar_top = rect.top()
-            + rect.height() * self.char_scroll_positon
-                / (self.font_height * self.char_height.max(1.0));
+        let bar_top = calc.rect.top()
+            + calc.rect.height() * self.char_scroll_positon
+                / (calc.font_height * calc.char_height.max(1.0));
 
-        let bar_height = (self.buffer_height / self.char_height.max(1.0)) * rect.height();
+        let bar_height = (calc.buffer_char_height / calc.char_height.max(1.0)) * calc.rect.height();
 
         let bar_offset = -bar_height / 2.0;
 
@@ -152,7 +134,7 @@ impl SmoothScroll {
                 if mouse_pos.x > x {
                     let my = mouse_pos.y + bar_offset;
                     self.char_scroll_positon =
-                        self.char_height * self.font_height * (my - bg_rect.top())
+                        calc.char_height * calc.font_height * (my - bg_rect.top())
                             / bg_rect.height();
                 }
             }
@@ -165,7 +147,7 @@ impl SmoothScroll {
                 dragged = true;
                 let my = mouse_pos.y + bar_offset;
                 self.char_scroll_positon =
-                    self.char_height * self.font_height * (my - bg_rect.top()) / bg_rect.height();
+                    calc.char_height * calc.font_height * (my - bg_rect.top()) / bg_rect.height();
             }
         }
         let mut hovered = false;
@@ -192,8 +174,8 @@ impl SmoothScroll {
         // draw bg
         ui.painter().rect_filled(
             Rect::from_min_size(
-                Pos2::new(rect.right() - x_size, bg_rect.top()),
-                Vec2::new(x_size, rect.height()),
+                Pos2::new(calc.rect.right() - x_size, bg_rect.top()),
+                Vec2::new(x_size, calc.rect.height()),
             ),
             0.,
             Color32::from_rgba_unmultiplied(0x3F, 0x3F, 0x3F, 32),
@@ -202,7 +184,7 @@ impl SmoothScroll {
         // draw bar
         ui.painter().rect_filled(
             Rect::from_min_size(
-                Pos2::new(rect.right() - x_size, bar_top),
+                Pos2::new(calc.rect.right() - x_size, bar_top),
                 Vec2::new(x_size, bar_height),
             ),
             4.,
