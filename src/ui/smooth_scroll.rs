@@ -119,14 +119,15 @@ impl SmoothScroll {
 
     fn show_scrollbar(&mut self, ui: &Ui, response: Response, calc: &TerminalCalc) -> Response {
         let scrollbar_width = ui.style().spacing.scroll_bar_width;
-        let x = calc.rect.right() - scrollbar_width;
-        let mut bg_rect: Rect = calc.rect;
+        let x = calc.terminal_rect.right() - scrollbar_width;
+        let mut bg_rect: Rect = calc.terminal_rect;
         bg_rect.set_left(x);
-        let bar_top = calc.rect.top()
-            + calc.rect.height() * self.char_scroll_positon
+        let bar_top = calc.terminal_rect.top()
+            + calc.terminal_rect.height() * self.char_scroll_positon
                 / (calc.font_height * calc.char_height.max(1.0));
 
-        let bar_height = (calc.buffer_char_height / calc.char_height.max(1.0)) * calc.rect.height();
+        let bar_height =
+            (calc.buffer_char_height / calc.char_height.max(1.0)) * calc.terminal_rect.height();
 
         let bar_offset = -bar_height / 2.0;
 
@@ -182,8 +183,8 @@ impl SmoothScroll {
         // draw bg
         ui.painter().rect_filled(
             Rect::from_min_size(
-                Pos2::new(calc.rect.right() - x_size, bg_rect.top()),
-                Vec2::new(x_size, calc.rect.height()),
+                Pos2::new(calc.terminal_rect.right() - x_size, bg_rect.top()),
+                Vec2::new(x_size, calc.terminal_rect.height()),
             ),
             0.,
             Color32::from_rgba_unmultiplied(0x3F, 0x3F, 0x3F, 32),
@@ -192,7 +193,7 @@ impl SmoothScroll {
         // draw bar
         ui.painter().rect_filled(
             Rect::from_min_size(
-                Pos2::new(calc.rect.right() - x_size, bar_top),
+                Pos2::new(calc.terminal_rect.right() - x_size, bar_top),
                 Vec2::new(x_size, bar_height),
             ),
             4.,

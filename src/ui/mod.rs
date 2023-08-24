@@ -25,7 +25,7 @@ pub struct TerminalCalc {
     pub char_size: Vec2,
     pub font_height: f32,
     pub first_line: f32,
-    pub rect: egui::Rect,
+    pub terminal_rect: egui::Rect,
     pub buffer_rect: egui::Rect,
     pub scrollbar_rect: egui::Rect,
     pub char_scroll_positon: f32,
@@ -73,7 +73,7 @@ pub fn show_terminal_area(
                 let buffer_rect = Rect::from_min_size(
                     Pos2::new(
                         rect.left() + (rect.width() - rect_w) / 2.,
-                        rect.top() + (rect.height() - rect_h) / 2.,
+                        /*rect.top() +*/ (rect.height() - rect_h) / 2.,
                     ),
                     Vec2::new(rect_w, rect_h),
                 );
@@ -88,7 +88,7 @@ pub fn show_terminal_area(
                     ),
                     font_height: font_dimensions.height as f32,
                     first_line: 0.,
-                    rect,
+                    terminal_rect: rect,
                     buffer_rect,
                     scrollbar_rect: Rect::NOTHING,
                     char_scroll_positon: 0.,
@@ -108,7 +108,7 @@ pub fn show_terminal_area(
                 }
 
                 let buffer_rect = calc.buffer_rect;
-                let terminal_rect = calc.rect;
+                let terminal_rect = calc.terminal_rect;
                 let callback = egui::PaintCallback {
                     rect: terminal_rect,
                     callback: std::sync::Arc::new(egui_glow::CallbackFn::new(
