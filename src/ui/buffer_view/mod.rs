@@ -2,11 +2,9 @@ use std::cmp::{max, min};
 
 use egui::Vec2;
 use glow::HasContext;
-use icy_engine::{Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position};
+use icy_engine::{Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position, Selection};
 
 pub mod glerror;
-pub mod selection;
-pub use selection::*;
 
 use crate::{check_gl_error, MonitorSettings};
 
@@ -77,6 +75,10 @@ impl BufferView {
         buf.layers[0].is_transparent = false;
         buf.is_terminal_buffer = true;
 
+        BufferView::from_buffer(gl, buf, filter)
+    }
+
+    pub fn from_buffer(gl: &glow::Context, buf: Buffer, filter: i32) -> Self {
         let terminal_renderer = terminal_renderer::TerminalRenderer::new(gl);
         let sixel_renderer = sixel_renderer::SixelRenderer::new(gl, &buf, filter);
         let output_renderer = output_renderer::OutputRenderer::new(gl, &buf, filter);
