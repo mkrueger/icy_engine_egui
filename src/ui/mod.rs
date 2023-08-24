@@ -5,6 +5,7 @@ pub use buffer_view::*;
 
 pub mod smooth_scroll;
 use egui::{Pos2, Rect, Response, Vec2};
+use icy_engine::Position;
 pub use smooth_scroll::*;
 
 pub mod keymaps;
@@ -29,6 +30,15 @@ pub struct TerminalCalc {
     pub buffer_rect: egui::Rect,
     pub scrollbar_rect: egui::Rect,
     pub char_scroll_positon: f32,
+}
+
+impl TerminalCalc {
+    /// Returns the char position of the cursor in the buffer
+    pub fn calc_click_pos(&self, click_pos: Pos2) -> Vec2 {
+        (click_pos - self.buffer_rect.min - self.terminal_rect.left_top().to_vec2())
+            / self.char_size
+            + Vec2::new(0.0, self.first_line)
+    }
 }
 
 pub fn show_terminal_area(
