@@ -128,7 +128,7 @@ impl BufferView {
             );
             for y in start.y..=end.y {
                 for x in start.x..end.x {
-                    let ch = self.buf.get_char(Position::new(x, y)).unwrap();
+                    let ch = self.buf.get_char(Position::new(x, y));
                     res.push(buffer_parser.convert_to_unicode(ch.ch));
                 }
                 res.push('\n');
@@ -141,24 +141,24 @@ impl BufferView {
             };
             if start.y == end.y {
                 for x in start.x..=end.x {
-                    let ch = self.buf.get_char(Position::new(x, start.y)).unwrap();
+                    let ch = self.buf.get_char(Position::new(x, start.y));
                     res.push(buffer_parser.convert_to_unicode(ch.ch));
                 }
             } else {
                 for x in start.x..self.buf.get_line_length(start.y) {
-                    let ch = self.buf.get_char(Position::new(x, start.y)).unwrap();
+                    let ch = self.buf.get_char(Position::new(x, start.y));
                     res.push(buffer_parser.convert_to_unicode(ch.ch));
                 }
                 res.push('\n');
                 for y in start.y + 1..end.y {
                     for x in 0..self.buf.get_line_length(y) {
-                        let ch = self.buf.get_char(Position::new(x, y)).unwrap();
+                        let ch = self.buf.get_char(Position::new(x, y));
                         res.push(buffer_parser.convert_to_unicode(ch.ch));
                     }
                     res.push('\n');
                 }
                 for x in 0..=end.x {
-                    let ch = self.buf.get_char(Position::new(x, end.y)).unwrap();
+                    let ch = self.buf.get_char(Position::new(x, end.y));
                     res.push(buffer_parser.convert_to_unicode(ch.ch));
                 }
             }

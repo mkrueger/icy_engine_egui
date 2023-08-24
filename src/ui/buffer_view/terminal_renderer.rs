@@ -249,9 +249,7 @@ impl TerminalRenderer {
             let mut is_double_height = false;
 
             for x in 0..buf.get_buffer_width() {
-                let ch = buf
-                    .get_char_xy(x, first_line - scroll_back_line + y)
-                    .unwrap_or_default();
+                let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
 
                 if ch.attribute.is_double_height() {
                     is_double_height = true;
@@ -278,9 +276,7 @@ impl TerminalRenderer {
 
             if is_double_height {
                 for x in 0..buf.get_buffer_width() {
-                    let ch = buf
-                        .get_char_xy(x, first_line - scroll_back_line + y)
-                        .unwrap_or_default();
+                    let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
 
                     if ch.attribute.is_double_height() {
                         buffer_data.push(ch.ch as u8);
@@ -317,9 +313,7 @@ impl TerminalRenderer {
             let mut is_double_height = false;
 
             for x in 0..buf.get_buffer_width() {
-                let ch = buf
-                    .get_char_xy(x, first_line - scroll_back_line + y)
-                    .unwrap_or_default();
+                let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
 
                 let mut attr = if ch.attribute.is_double_underlined() {
                     3
@@ -343,9 +337,7 @@ impl TerminalRenderer {
 
             if is_double_height {
                 for x in 0..buf.get_buffer_width() {
-                    let ch = buf
-                        .get_char_xy(x, first_line - scroll_back_line + y)
-                        .unwrap_or_default();
+                    let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
                     let mut attr = if ch.attribute.is_double_underlined() {
                         3
                     } else {
