@@ -43,7 +43,6 @@ impl TerminalCalc {
     }
 }
 
-#[derive(Default)]
 pub struct TerminalOptions {
     pub focus_lock: bool,
     pub filter: i32,
@@ -51,6 +50,19 @@ pub struct TerminalOptions {
     pub stick_to_bottom: bool,
     pub scale: Option<Vec2>,
     pub clamp_to_top: bool,
+}
+
+impl Default for TerminalOptions {
+    fn default() -> Self {
+        Self {
+            focus_lock: Default::default(),
+            filter: glow::NEAREST as i32,
+            settings: Default::default(),
+            stick_to_bottom: Default::default(),
+            scale: Default::default(),
+            clamp_to_top: Default::default(),
+        }
+    }
 }
 
 pub fn show_terminal_area(
