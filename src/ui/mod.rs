@@ -35,10 +35,7 @@ pub struct TerminalCalc {
 impl TerminalCalc {
     /// Returns the char position of the cursor in the buffer
     pub fn calc_click_pos(&self, click_pos: Pos2) -> Vec2 {
-        (click_pos.to_vec2()
-            - self.buffer_rect.left_top().to_vec2()
-            - Vec2::new(0.0, self.terminal_rect.top()))
-            / self.char_size
+        (click_pos.to_vec2() - self.buffer_rect.left_top().to_vec2()) / self.char_size
             + Vec2::new(0.0, self.first_line)
     }
 }
