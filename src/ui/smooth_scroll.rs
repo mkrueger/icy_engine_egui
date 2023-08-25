@@ -131,6 +131,46 @@ impl SmoothScroll {
 
         let bar_offset = -bar_height / 2.0;
 
+        let how_on = if ui.is_enabled() {
+            let (dragged, hovered) = self.fun_name(ui, &response, x, bar_offset, calc, bg_rect);
+            ui.ctx().animate_bool(response.id, hovered || dragged)
+        } else {
+            0.0
+        };
+
+        let x_size = egui::lerp(2.0..=scrollbar_width, how_on);
+
+        // draw bg
+        ui.painter().rect_filled(
+            Rect::from_min_size(
+                Pos2::new(calc.terminal_rect.right() - x_size, bg_rect.top()),
+                Vec2::new(x_size, calc.terminal_rect.height()),
+            ),
+            0.,
+            Color32::from_rgba_unmultiplied(0x3F, 0x3F, 0x3F, 32),
+        );
+
+        // draw bar
+        ui.painter().rect_filled(
+            Rect::from_min_size(
+                Pos2::new(calc.terminal_rect.right() - x_size, bar_top),
+                Vec2::new(x_size, bar_height),
+            ),
+            4.,
+            Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x5F + (127.0 * how_on) as u8),
+        );
+        response
+    }
+
+    fn fun_name(
+        &mut self,
+        ui: &Ui,
+        response: &Response,
+        x: f32,
+        bar_offset: f32,
+        calc: &TerminalCalc,
+        bg_rect: Rect,
+    ) -> (bool, bool) {
         let events: Vec<egui::Event> = ui.input(|i| i.events.clone());
         for e in events {
             if let egui::Event::Scroll(vec) = e {
@@ -175,30 +215,6 @@ impl SmoothScroll {
         if response.drag_released() {
             self.drag_start = false;
         }
-
-        let how_on = ui.ctx().animate_bool(response.id, hovered || dragged);
-
-        let x_size = egui::lerp(2.0..=scrollbar_width, how_on);
-
-        // draw bg
-        ui.painter().rect_filled(
-            Rect::from_min_size(
-                Pos2::new(calc.terminal_rect.right() - x_size, bg_rect.top()),
-                Vec2::new(x_size, calc.terminal_rect.height()),
-            ),
-            0.,
-            Color32::from_rgba_unmultiplied(0x3F, 0x3F, 0x3F, 32),
-        );
-
-        // draw bar
-        ui.painter().rect_filled(
-            Rect::from_min_size(
-                Pos2::new(calc.terminal_rect.right() - x_size, bar_top),
-                Vec2::new(x_size, bar_height),
-            ),
-            4.,
-            Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x5F + (127.0 * how_on) as u8),
-        );
-        response
+        (dragged, hovered)
     }
 }
