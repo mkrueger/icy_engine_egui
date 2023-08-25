@@ -212,9 +212,11 @@ impl OutputRenderer {
             gl.get_uniform_location(self.output_shader, "u_buffer_rect")
                 .as_ref(),
             buffer_rect.left() / terminal_rect.width(),
-            buffer_rect.top() / terminal_rect.height(),
+            (info.screen_size_px[1] as f32 - buffer_rect.max.y * info.pixels_per_point)
+                / terminal_rect.height(),
             buffer_rect.right() / terminal_rect.width(),
-            buffer_rect.bottom() / terminal_rect.height(),
+            (info.screen_size_px[1] as f32 - buffer_rect.min.y * info.pixels_per_point)
+                / terminal_rect.height(),
         );
         gl.bind_vertex_array(Some(self.vertex_array));
         gl.draw_arrays(glow::TRIANGLES, 0, 6);

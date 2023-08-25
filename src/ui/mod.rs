@@ -98,10 +98,12 @@ pub fn show_terminal_area(
                 let buffer_rect = Rect::from_min_size(
                     Pos2::new(
                         rect.left() + (rect.width() - rect_w) / 2.,
-                        /*rect.top() +*/ (rect.height() - rect_h) / 2.,
+                        rect.top() + (rect.height() - rect_h) / 2.,
                     ),
                     Vec2::new(rect_w, rect_h),
                 );
+
+                // println!("rect: {:?} buffer_rect: {:?}", rect, buffer_rect);
 
                 // Set the scrolling height.
                 TerminalCalc {
