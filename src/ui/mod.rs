@@ -43,14 +43,20 @@ impl TerminalCalc {
     }
 }
 
+#[derive(Default)]
+pub struct TerminalOptions {
+    pub focus_lock: bool,
+    pub filter: i32,
+    pub settings: MonitorSettings,
+    pub stick_to_bottom: bool,
+    pub scale: Option<Vec2>,
+    pub clamp_to_top: bool,
+}
+
 pub fn show_terminal_area(
     ui: &mut egui::Ui,
     buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>,
-    focus_lock: bool,
-    filter: i32,
-    settings: MonitorSettings,
-    stick_to_bottom: bool,
-    scale: Option<Vec2>,
+    options: TerminalOptions,
 ) -> (Response, TerminalCalc) {
     let mut buf_h = buffer_view.lock().buf.get_buffer_height() as f32;
     let real_height = buffer_view.lock().buf.get_real_buffer_height() as f32;
@@ -61,8 +67,8 @@ pub fn show_terminal_area(
     let max = buffer_view2.lock().buf.terminal_state.height;
 
     let r = SmoothScroll::new()
-        .with_lock_focus(focus_lock)
-        .with_stick_to_bottom(stick_to_bottom)
+        .with_lock_focus(options.focus_lock)
+        .with_stick_to_bottom(options.stick_to_bottom)
         .show(
             ui,
             |rect| {
@@ -78,7 +84,7 @@ pub fn show_terminal_area(
                 }
                 let mut forced_height = -1;
 
-                if let Some(scale) = scale {
+                if let Some(scale) = options.scale {
                     scale_x = scale.x;
                     scale_y = scale.y;
 
@@ -98,12 +104,15 @@ pub fn show_terminal_area(
                 let buffer_rect = Rect::from_min_size(
                     Pos2::new(
                         rect.left() + (rect.width() - rect_w) / 2.,
-                        rect.top() + (rect.height() - rect_h) / 2.,
+                        rect.top()
+                            + if options.clamp_to_top || real_height < rect.height() {
+                                (rect.height() - rect_h) / 2.
+                            } else {
+                                0.0
+                            },
                     ),
                     Vec2::new(rect_w, rect_h),
                 );
-
-                // println!("rect: {:?} buffer_rect: {:?}", rect, buffer_rect);
 
                 // Set the scrolling height.
                 TerminalCalc {
@@ -151,8 +160,8 @@ pub fn show_terminal_area(
                                 &info,
                                 buffer_rect,
                                 terminal_rect,
-                                filter,
-                                &settings,
+                                options.filter,
+                                &options.settings,
                             );
                         },
                     )),
