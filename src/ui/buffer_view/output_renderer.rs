@@ -226,10 +226,10 @@ impl OutputRenderer {
                 .as_ref(),
             buffer_rect.left() / terminal_rect.width(),
             (info.screen_size_px[1] as f32 - buffer_rect.max.y * info.pixels_per_point)
-                / terminal_rect.height(),
+                / (terminal_rect.height() * info.pixels_per_point),
             buffer_rect.right() / terminal_rect.width(),
             (info.screen_size_px[1] as f32 - buffer_rect.min.y * info.pixels_per_point)
-                / terminal_rect.height(),
+                / (terminal_rect.height() * info.pixels_per_point),
         );
         gl.bind_vertex_array(Some(self.vertex_array));
         gl.draw_arrays(glow::TRIANGLES, 0, 6);
