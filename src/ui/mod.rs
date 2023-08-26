@@ -53,7 +53,6 @@ pub struct TerminalOptions {
     pub settings: MonitorSettings,
     pub stick_to_bottom: bool,
     pub scale: Option<Vec2>,
-    pub clamp_to_top: bool,
     pub font_extension: FontExtension,
 }
 
@@ -65,7 +64,6 @@ impl Default for TerminalOptions {
             settings: Default::default(),
             stick_to_bottom: Default::default(),
             scale: Default::default(),
-            clamp_to_top: Default::default(),
             font_extension: FontExtension::LineGraphicsEnable,
         }
     }
@@ -125,16 +123,10 @@ pub fn show_terminal_area(
 
                 let rect_w = buf_w * char_size.x;
                 let rect_h = buf_h * char_size.y;
-                println!("{} --- {}", rect_w, rect.width());
                 let buffer_rect = Rect::from_min_size(
                     Pos2::new(
                         rect.left() + (rect.width() - rect_w) / 2.,
-                        rect.top()
-                            + if options.clamp_to_top || real_height < rect.height() {
-                                (rect.height() - rect_h) / 2.
-                            } else {
-                                0.0
-                            },
+                        rect.top() + ((rect.height() - rect_h) / 2.).max(0.0),
                     ),
                     Vec2::new(rect_w, rect_h),
                 );
