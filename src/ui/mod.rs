@@ -30,6 +30,8 @@ pub struct TerminalCalc {
     pub scrollbar_rect: egui::Rect,
     pub char_scroll_positon: f32,
     pub forced_height: i32,
+
+    pub set_scroll_position_set_by_user: bool,
 }
 
 impl TerminalCalc {
@@ -54,6 +56,9 @@ pub struct TerminalOptions {
     pub stick_to_bottom: bool,
     pub scale: Option<Vec2>,
     pub font_extension: FontExtension,
+    pub render_real_height: bool,
+    pub use_terminal_height: bool,
+    pub scroll_offset: Option<f32>,
 }
 
 impl Default for TerminalOptions {
@@ -64,7 +69,10 @@ impl Default for TerminalOptions {
             settings: Default::default(),
             stick_to_bottom: Default::default(),
             scale: Default::default(),
+            render_real_height: false,
+            use_terminal_height: true,
             font_extension: FontExtension::LineGraphicsEnable,
+            scroll_offset: None,
         }
     }
 }
@@ -78,6 +86,10 @@ pub fn show_terminal_area(
     let real_height = buffer_view.lock().buf.get_real_buffer_height() as f32;
     let buf_w = buffer_view.lock().buf.get_buffer_width() as f32;
 
+    if !options.use_terminal_height {
+        buf_h = real_height;
+    }
+
     let font_dimensions = buffer_view.lock().buf.get_font_dimensions();
     let buffer_view2: Arc<egui::mutex::Mutex<BufferView>> = buffer_view.clone();
     let max = buffer_view2.lock().buf.terminal_state.height;
@@ -85,6 +97,7 @@ pub fn show_terminal_area(
     let r = SmoothScroll::new()
         .with_lock_focus(options.focus_lock)
         .with_stick_to_bottom(options.stick_to_bottom)
+        .with_scroll_offset(options.scroll_offset)
         .show(
             ui,
             |rect| {
@@ -111,7 +124,9 @@ pub fn show_terminal_area(
                     scale_x = scale.x;
                     scale_y = scale.y;
 
-                    buf_h = (size.y / (font_dimensions.height as f32 * scale_y)).ceil();
+                    buf_h = (size.y / (font_dimensions.height as f32 * scale_y))
+                        .ceil()
+                        .min(real_height);
                     forced_height = (buf_h as i32).min(real_height as i32);
                     buffer_view2.lock().redraw_view();
                 }
@@ -146,6 +161,7 @@ pub fn show_terminal_area(
                     buffer_rect,
                     scrollbar_rect: Rect::NOTHING,
                     char_scroll_positon: 0.,
+                    set_scroll_position_set_by_user: false,
                     forced_height,
                 }
             },

@@ -11,6 +11,9 @@ pub struct SmoothScroll {
     id: Id,
     lock_focus: bool,
     stick_to_bottom: bool,
+    scroll_offset: Option<f32>,
+    /// Scroll position set by the user
+    set_scroll_positon: bool,
 }
 
 impl Default for SmoothScroll {
@@ -28,6 +31,8 @@ impl SmoothScroll {
             drag_start: false,
             lock_focus: true,
             stick_to_bottom: true,
+            scroll_offset: None,
+            set_scroll_positon: false,
         }
     }
 
@@ -38,6 +43,11 @@ impl SmoothScroll {
 
     pub(crate) fn with_stick_to_bottom(mut self, stick_to_bottom: bool) -> Self {
         self.stick_to_bottom = stick_to_bottom;
+        self
+    }
+
+    pub(crate) fn with_scroll_offset(mut self, scroll_offset: Option<f32>) -> Self {
+        self.scroll_offset = scroll_offset;
         self
     }
 
@@ -94,6 +104,9 @@ impl SmoothScroll {
         }
         self.last_char_height = calc.char_height;
 
+        if let Some(sp) = self.scroll_offset {
+            self.char_scroll_positon = sp;
+        }
         self.char_scroll_positon = self.char_scroll_positon.clamp(
             0.0,
             calc.font_height * (calc.char_height - calc.buffer_char_height).max(0.0),
@@ -113,7 +126,7 @@ impl SmoothScroll {
         }
 
         self.persist_data(ui);
-
+        calc.set_scroll_position_set_by_user = self.set_scroll_positon;
         (response, calc)
     }
 
@@ -175,6 +188,7 @@ impl SmoothScroll {
         for e in events {
             if let egui::Event::Scroll(vec) = e {
                 self.char_scroll_positon -= vec.y;
+                self.set_scroll_positon = true;
             }
         }
 
@@ -185,6 +199,7 @@ impl SmoothScroll {
                     self.char_scroll_positon =
                         calc.char_height * calc.font_height * (my - bg_rect.top())
                             / bg_rect.height();
+                    self.set_scroll_positon = true;
                 }
             }
         }
@@ -197,6 +212,7 @@ impl SmoothScroll {
                 let my = mouse_pos.y + bar_offset;
                 self.char_scroll_positon =
                     calc.char_height * calc.font_height * (my - bg_rect.top()) / bg_rect.height();
+                self.set_scroll_positon = true;
             }
         }
         let mut hovered = false;
