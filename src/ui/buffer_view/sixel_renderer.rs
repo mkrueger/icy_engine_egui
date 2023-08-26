@@ -5,6 +5,7 @@ use icy_engine::Position;
 
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
+use crate::FontExtension;
 
 use super::output_renderer::OutputRenderer;
 use super::BufferView;
@@ -17,10 +18,15 @@ pub struct SixelRenderer {
 }
 
 impl SixelRenderer {
-    pub fn new(gl: &glow::Context, buf: &Buffer, filter: i32) -> Self {
+    pub fn new(
+        gl: &glow::Context,
+        buf: &Buffer,
+        filter: i32,
+        font_extension: FontExtension,
+    ) -> Self {
         unsafe {
             let sixel_shader = compile_shader(gl);
-            let sixel_render_texture = create_sixel_render_texture(gl, buf, filter);
+            let sixel_render_texture = create_sixel_render_texture(gl, buf, filter, font_extension);
 
             Self {
                 sixel_cache: Vec::new(),
@@ -43,6 +49,7 @@ impl SixelRenderer {
         gl: &glow::Context,
         buffer_view: &BufferView,
         output_renderer: &OutputRenderer,
+        font_extension: FontExtension,
     ) -> glow::Texture {
         let mut render_texture = output_renderer.render_texture;
         let mut sixel_render_texture = self.sixel_render_texture;
@@ -98,7 +105,14 @@ impl SixelRenderer {
             let fontdim: icy_engine::Size<u8> = buffer_view.buf.get_font_dimensions();
             let fh: f32 = fontdim.height as f32;
 
-            let x = sixel.pos.x as f32 * buffer_view.buf.get_font_dimensions().width as f32;
+            let w = fontdim.width as f32
+                + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+                    1.0
+                } else {
+                    0.0
+                };
+
+            let x = sixel.pos.x as f32 * w;
             let y = sixel.pos.y as f32 * buffer_view.buf.get_font_dimensions().height as f32
                 - (buffer_view.viewport_top / buffer_view.char_size.y * fh);
 
@@ -122,9 +136,22 @@ impl SixelRenderer {
         render_texture
     }
 
-    pub fn update_sixels(&mut self, gl: &glow::Context, buf: &mut Buffer, scale_filter: i32) {
+    pub fn update_sixels(
+        &mut self,
+        gl: &glow::Context,
+        buf: &mut Buffer,
+        scale_filter: i32,
+        font_extension: FontExtension,
+    ) {
+        let w = buf.get_font_dimensions().width as f32
+            + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+                1.0
+            } else {
+                0.0
+            };
+
         let render_buffer_size = Vec2::new(
-            buf.get_font_dimensions().width as f32 * buf.get_buffer_width() as f32,
+            w * buf.get_buffer_width() as f32,
             buf.get_font_dimensions().height as f32 * buf.get_buffer_height() as f32,
         );
         if render_buffer_size != self.render_buffer_size {
@@ -250,10 +277,18 @@ unsafe fn create_sixel_render_texture(
     gl: &glow::Context,
     buf: &Buffer,
     filter: i32,
+    font_extension: FontExtension,
 ) -> glow::Texture {
     let sixel_render_texture = gl.create_texture().unwrap();
+    let w = buf.get_font_dimensions().width as f32
+        + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+            1.0
+        } else {
+            0.0
+        };
+
     let render_buffer_size = Vec2::new(
-        buf.get_font_dimensions().width as f32 * buf.get_buffer_width() as f32,
+        w * buf.get_buffer_width() as f32,
         buf.get_font_dimensions().height as f32 * buf.get_buffer_height() as f32,
     );
 

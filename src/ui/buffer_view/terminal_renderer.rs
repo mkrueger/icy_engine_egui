@@ -9,6 +9,7 @@ use icy_engine::Shape;
 use web_time::Instant;
 
 use crate::prepare_shader;
+use crate::FontExtension;
 
 use super::Blink;
 use super::BufferView;
@@ -101,13 +102,14 @@ impl TerminalRenderer {
         buf: &mut Buffer,
         viewport_top: f32,
         char_size: Vec2,
+        font_extension: FontExtension,
     ) {
         self.check_blink_timers();
 
         if self.redraw_font || buf.is_font_table_updated() {
             self.redraw_font = false;
             buf.set_font_table_is_updated();
-            self.update_font_texture(gl, buf);
+            self.update_font_texture(gl, buf, font_extension);
         }
 
         if self.redraw_view {
@@ -132,17 +134,31 @@ impl TerminalRenderer {
         }
     }
 
-    fn update_font_texture(&mut self, gl: &glow::Context, buf: &Buffer) {
+    fn update_font_texture(
+        &mut self,
+        gl: &glow::Context,
+        buf: &Buffer,
+        font_extension: FontExtension,
+    ) {
         let size = buf.get_font(0).unwrap().size;
+
+        let w_ext = if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+            1
+        } else {
+            0
+        };
+
         let w = size.width as usize;
         let h = size.height as usize;
 
         let mut font_data = Vec::new();
         let chars_in_line = 16;
-        let line_width = w * chars_in_line * 4;
+        let line_width = (w + w_ext) * chars_in_line * 4;
         let height = h * 256 / chars_in_line;
         self.font_lookup_table.clear();
         font_data.resize(line_width * height * buf.font_count(), 0);
+
+        let lga_font = matches!(font_extension, FontExtension::LineGraphicsEnable);
 
         for (cur_font_num, font) in buf.font_iter().enumerate() {
             self.font_lookup_table.insert(*font.0, cur_font_num);
@@ -156,7 +172,7 @@ impl TerminalRenderer {
                 let x = ch % chars_in_line;
                 let y = ch / chars_in_line;
 
-                let offset = x * w * 4 + y * h * line_width + fontpage_start;
+                let offset = x * (w + w_ext) * 4 + y * h * line_width + fontpage_start;
                 let last_scan_line = h.min(cur_font.size.height as usize);
                 for y in 0..last_scan_line {
                     if let Some(scan_line) = glyph.data.get(y) {
@@ -176,6 +192,16 @@ impl TerminalRenderer {
                                 font_data[po] = 0xFF;
                                 po += 1;
                             }
+                        }
+                        if lga_font && (0xC0..=0xDF).contains(&ch) && (scan_line & 1) != 0 {
+                            // unroll
+                            font_data[po] = 0xFF;
+                            po += 1;
+                            font_data[po] = 0xFF;
+                            po += 1;
+                            font_data[po] = 0xFF;
+                            po += 1;
+                            font_data[po] = 0xFF;
                         }
                     } else {
                         log::error!("error in font {} can't get line {y}", font.0);
@@ -385,7 +411,12 @@ impl TerminalRenderer {
         }
     }
 
-    pub(crate) fn render_terminal(&self, gl: &glow::Context, view_state: &BufferView) {
+    pub(crate) fn render_terminal(
+        &self,
+        gl: &glow::Context,
+        view_state: &BufferView,
+        font_extension: FontExtension,
+    ) {
         unsafe {
             gl.active_texture(glow::TEXTURE0 + FONT_TEXTURE_SLOT);
             gl.bind_texture(glow::TEXTURE_2D_ARRAY, Some(self.font_texture));
@@ -400,6 +431,7 @@ impl TerminalRenderer {
                 gl,
                 view_state,
                 view_state.output_renderer.render_buffer_size,
+                font_extension,
             );
             gl.bind_vertex_array(Some(self.vertex_array));
             gl.draw_arrays(glow::TRIANGLES, 0, 6);
@@ -412,6 +444,7 @@ impl TerminalRenderer {
         gl: &glow::Context,
         buffer_view: &BufferView,
         render_buffer_size: egui::Vec2,
+        font_extension: FontExtension,
     ) {
         let fontdim: icy_engine::Size<u8> = buffer_view.buf.get_font_dimensions();
         let fh = fontdim.height as f32;
@@ -446,23 +479,28 @@ impl TerminalRenderer {
         let scroll_back_line = max(0, max_lines - first_line) - 1;
 
         let sbl = (buffer_view.buf.get_first_visible_line() - scroll_back_line) as f32;
-        let dims = buffer_view.buf.get_font_dimensions();
 
-        let caret_x = buffer_view.caret.get_position().x as f32 * dims.width as f32;
+        let font_width = fontdim.width as f32
+            + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+                1.0
+            } else {
+                0.0
+            };
+        let caret_x = buffer_view.caret.get_position().x as f32 * font_width;
 
         let caret_h = if buffer_view.caret.insert_mode {
-            dims.height as f32 / 2.0
+            fontdim.height as f32 / 2.0
         } else {
             2.0
         };
 
-        let caret_y = buffer_view.caret.get_position().y as f32 * dims.height as f32
-            + dims.height as f32
+        let caret_y = buffer_view.caret.get_position().y as f32 * fontdim.height as f32
+            + fontdim.height as f32
             - caret_h
             - (buffer_view.viewport_top / buffer_view.char_size.y * fh)
             + scroll_offset;
         let caret_w = if self.caret_blink.is_on() && buffer_view.caret.is_visible {
-            dims.width as f32
+            font_width
         } else {
             0.0
         };

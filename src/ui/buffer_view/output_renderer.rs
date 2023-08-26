@@ -7,6 +7,7 @@ use icy_engine::Buffer;
 
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
+use crate::FontExtension;
 use crate::MonitorSettings;
 
 pub const MONO_COLORS: [(u8, u8, u8); 5] = [
@@ -27,10 +28,22 @@ pub struct OutputRenderer {
 }
 
 impl OutputRenderer {
-    pub fn new(gl: &glow::Context, buf: &Buffer, filter: i32) -> Self {
+    pub fn new(
+        gl: &glow::Context,
+        buf: &Buffer,
+        filter: i32,
+        font_extension: FontExtension,
+    ) -> Self {
         unsafe {
+            let w = buf.get_font_dimensions().width as f32
+                + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+                    1.0
+                } else {
+                    0.0
+                };
+
             let render_buffer_size = Vec2::new(
-                buf.get_font_dimensions().width as f32 * buf.get_buffer_width() as f32,
+                w * buf.get_buffer_width() as f32,
                 buf.get_font_dimensions().height as f32 * buf.get_buffer_height() as f32,
             );
 
@@ -227,9 +240,17 @@ impl OutputRenderer {
         gl: &glow::Context,
         buf: &Buffer,
         scale_filter: i32,
+        font_extension: FontExtension,
     ) {
+        let w = buf.get_font_dimensions().width as f32
+            + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+                1.0
+            } else {
+                0.0
+            };
+
         let render_buffer_size = Vec2::new(
-            buf.get_font_dimensions().width as f32 * buf.get_buffer_width() as f32,
+            w * buf.get_buffer_width() as f32,
             buf.get_font_dimensions().height as f32 * buf.get_buffer_height() as f32,
         );
         if render_buffer_size == self.render_buffer_size {

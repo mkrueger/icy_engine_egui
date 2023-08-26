@@ -40,6 +40,13 @@ impl TerminalCalc {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum FontExtension {
+    #[default]
+    Off,
+    LineGraphicsEnable,
+}
+
 pub struct TerminalOptions {
     pub focus_lock: bool,
     pub filter: i32,
@@ -47,6 +54,7 @@ pub struct TerminalOptions {
     pub stick_to_bottom: bool,
     pub scale: Option<Vec2>,
     pub clamp_to_top: bool,
+    pub font_extension: FontExtension,
 }
 
 impl Default for TerminalOptions {
@@ -58,6 +66,7 @@ impl Default for TerminalOptions {
             stick_to_bottom: Default::default(),
             scale: Default::default(),
             clamp_to_top: Default::default(),
+            font_extension: FontExtension::LineGraphicsEnable,
         }
     }
 }
@@ -83,7 +92,14 @@ pub fn show_terminal_area(
             |rect| {
                 let size = rect.size();
 
-                let mut scale_x = size.x / font_dimensions.width as f32 / buf_w;
+                let font_width = font_dimensions.width as f32
+                    + if matches!(options.font_extension, FontExtension::LineGraphicsEnable) {
+                        1.0
+                    } else {
+                        0.0
+                    };
+
+                let mut scale_x = size.x / font_width / buf_w;
                 let mut scale_y = size.y / font_dimensions.height as f32 / buf_h;
 
                 if scale_x < scale_y {
@@ -103,13 +119,13 @@ pub fn show_terminal_area(
                 }
 
                 let char_size = Vec2::new(
-                    font_dimensions.width as f32 * scale_x,
+                    font_width * scale_x,
                     font_dimensions.height as f32 * scale_y,
                 );
 
                 let rect_w = buf_w * char_size.x;
                 let rect_h = buf_h * char_size.y;
-
+                println!("{} --- {}", rect_w, rect.width());
                 let buffer_rect = Rect::from_min_size(
                     Pos2::new(
                         rect.left() + (rect.width() - rect_w) / 2.,
@@ -129,7 +145,7 @@ pub fn show_terminal_area(
                     buffer_char_height: buf_h,
                     scale: Vec2::new(scale_x, scale_y),
                     char_size: Vec2::new(
-                        font_dimensions.width as f32 * scale_x,
+                        font_width * scale_x,
                         font_dimensions.height as f32 * scale_y,
                     ),
                     font_height: font_dimensions.height as f32,
@@ -171,6 +187,7 @@ pub fn show_terminal_area(
                                 terminal_rect,
                                 options.filter,
                                 &options.settings,
+                                options.font_extension,
                             );
                         },
                     )),
