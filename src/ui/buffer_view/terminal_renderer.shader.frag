@@ -14,6 +14,8 @@ uniform vec4        u_caret_rectangle;
 
 uniform vec4        u_selection;
 uniform float       u_selection_attr;
+uniform vec4        u_selection_fg;
+uniform vec4        u_selection_bg;
 
 uniform float       u_character_blink;
 
@@ -78,9 +80,14 @@ void main (void) {
         float x = floor(fb_pos.x);
         float y = floor(fb_pos.y);
         if (is_selected(x, y)) {
-            vec4 tmp = bg;
-            bg = fg;
-            fg = tmp;
+            if (u_selection_bg.w > 0.0) {
+                bg = u_selection_bg;
+            } else {
+                bg = fg;
+            }
+            if (u_selection_fg.w > 0.0) {
+                fg = u_selection_fg;
+            }
         }
     }
     if (char_data.x > 0.5 && (ch_attr[3] == 0.0 || u_character_blink > 0.0)) {

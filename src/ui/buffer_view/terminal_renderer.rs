@@ -8,6 +8,7 @@ use icy_engine::Buffer;
 use icy_engine::Shape;
 use web_time::Instant;
 
+use crate::MonitorSettings;
 use crate::prepare_shader;
 use crate::FontExtension;
 
@@ -416,6 +417,7 @@ impl TerminalRenderer {
         gl: &glow::Context,
         view_state: &BufferView,
         font_extension: FontExtension,
+        monitor_settings: &MonitorSettings,
     ) {
         unsafe {
             gl.active_texture(glow::TEXTURE0 + FONT_TEXTURE_SLOT);
@@ -432,6 +434,7 @@ impl TerminalRenderer {
                 view_state,
                 view_state.output_renderer.render_buffer_size,
                 font_extension,
+                &monitor_settings
             );
             gl.bind_vertex_array(Some(self.vertex_array));
             gl.draw_arrays(glow::TRIANGLES, 0, 6);
@@ -445,6 +448,7 @@ impl TerminalRenderer {
         buffer_view: &BufferView,
         render_buffer_size: egui::Vec2,
         font_extension: FontExtension,
+        monitor_settings: &MonitorSettings,
     ) {
         let fontdim: icy_engine::Size<u8> = buffer_view.buf.get_font_dimensions();
         let fh = fontdim.height as f32;
@@ -563,6 +567,23 @@ impl TerminalRenderer {
                         -1.0,
                     );
                 } else {
+                    gl.uniform_4_f32(
+                        gl.get_uniform_location(self.terminal_shader, "u_selection_fg")
+                            .as_ref(),
+                            monitor_settings.selection_fg.r() as f32 / 255.0,
+                            monitor_settings.selection_fg.g() as f32 / 255.0,
+                            monitor_settings.selection_fg.b() as f32 / 255.0,
+                            monitor_settings.selection_fg.a() as f32 / 255.0,
+                    );
+                    gl.uniform_4_f32(
+                        gl.get_uniform_location(self.terminal_shader, "u_selection_bg")
+                            .as_ref(),
+                            monitor_settings.selection_bg.r() as f32 / 255.0,
+                            monitor_settings.selection_bg.g() as f32 / 255.0,
+                            monitor_settings.selection_bg.b() as f32 / 255.0,
+                            monitor_settings.selection_bg.a() as f32 / 255.0,
+                    );
+    
                     if selection.anchor.y.floor() < selection.lead.y.floor()
                         || selection.anchor.y.floor() == selection.lead.y.floor()
                             && selection.anchor.x < selection.lead.x

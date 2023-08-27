@@ -1,4 +1,6 @@
 pub mod ui;
+use egui::Color32;
+use icy_engine::Color;
 pub use ui::*;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -17,6 +19,8 @@ pub struct MonitorSettings {
     pub scanlines: f32,
 
     pub background_effect: BackgroundEffect,
+    pub selection_fg: Color32,
+    pub selection_bg: Color32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -42,6 +46,8 @@ impl Default for MonitorSettings {
             curvature: 10.,
             scanlines: 10.,
             background_effect: BackgroundEffect::None,
+            selection_fg: Color32::from_rgb(0xAB, 0x00, 0xAB),
+            selection_bg: Color32::from_rgb(0xAB, 0xAB, 0xAB),
         }
     }
 }
