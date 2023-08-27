@@ -184,14 +184,6 @@ impl SmoothScroll {
         calc: &TerminalCalc,
         bg_rect: Rect,
     ) -> (bool, bool) {
-        let events: Vec<egui::Event> = ui.input(|i| i.events.clone());
-        for e in events {
-            if let egui::Event::Scroll(vec) = e {
-                self.char_scroll_positon -= vec.y;
-                self.set_scroll_positon = true;
-            }
-        }
-
         if response.clicked() {
             if let Some(mouse_pos) = response.interact_pointer_pos() {
                 if mouse_pos.x > x {
@@ -217,6 +209,14 @@ impl SmoothScroll {
         }
         let mut hovered = false;
         if response.hovered() {
+            let events: Vec<egui::Event> = ui.input(|i| i.events.clone());
+            for e in events {
+                if let egui::Event::Scroll(vec) = e {
+                    self.char_scroll_positon -= vec.y;
+                    self.set_scroll_positon = true;
+                }
+            }
+
             if let Some(mouse_pos) = response.hover_pos() {
                 if mouse_pos.x > x {
                     hovered = true;
