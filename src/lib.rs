@@ -1,6 +1,5 @@
 pub mod ui;
 use egui::Color32;
-use icy_engine::Color;
 pub use ui::*;
 
 #[derive(Debug, Clone, PartialEq)]

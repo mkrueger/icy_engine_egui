@@ -434,7 +434,7 @@ impl TerminalRenderer {
                 view_state,
                 view_state.output_renderer.render_buffer_size,
                 font_extension,
-                &monitor_settings
+                monitor_settings
             );
             gl.bind_vertex_array(Some(self.vertex_array));
             gl.draw_arrays(glow::TRIANGLES, 0, 6);
