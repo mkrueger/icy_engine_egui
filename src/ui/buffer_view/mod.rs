@@ -153,7 +153,7 @@ impl BufferView {
                 (selection.lead_pos, selection.anchor_pos)
             };
             if start.y == end.y {
-                for x in start.x..=end.x {
+                for x in start.x..end.x {
                     let ch = self.buf.get_char(Position::new(x, start.y));
                     res.push(buffer_parser.convert_to_unicode(ch.ch));
                 }
@@ -170,7 +170,7 @@ impl BufferView {
                     }
                     res.push('\n');
                 }
-                for x in 0..=end.x {
+                for x in 0..end.x {
                     let ch = self.buf.get_char(Position::new(x, end.y));
                     res.push(buffer_parser.convert_to_unicode(ch.ch));
                 }
