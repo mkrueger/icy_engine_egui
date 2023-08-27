@@ -59,6 +59,7 @@ pub struct TerminalOptions {
     pub render_real_height: bool,
     pub use_terminal_height: bool,
     pub scroll_offset: Option<f32>,
+    pub id: Option<egui::Id>,
 }
 
 impl Default for TerminalOptions {
@@ -73,6 +74,7 @@ impl Default for TerminalOptions {
             use_terminal_height: true,
             font_extension: FontExtension::LineGraphicsEnable,
             scroll_offset: None,
+            id: None,
         }
     }
 }
@@ -94,10 +96,16 @@ pub fn show_terminal_area(
     let buffer_view2: Arc<egui::mutex::Mutex<BufferView>> = buffer_view.clone();
     let max = buffer_view2.lock().buf.terminal_state.height;
 
-    let r = SmoothScroll::new()
-        .with_lock_focus(options.focus_lock)
-        .with_stick_to_bottom(options.stick_to_bottom)
-        .with_scroll_offset(options.scroll_offset)
+    let mut scroll = SmoothScroll::new()
+    .with_lock_focus(options.focus_lock)
+    .with_stick_to_bottom(options.stick_to_bottom)
+    .with_scroll_offset(options.scroll_offset);
+
+    if let Some(id) = options.id {
+        scroll = scroll.with_id(id);
+    }
+
+    let r = scroll
         .show(
             ui,
             |rect| {

@@ -36,6 +36,11 @@ impl SmoothScroll {
         }
     }
 
+    pub fn with_id(mut self, id: Id) -> Self {
+        self.id = id;
+        self
+    }
+
     pub fn with_lock_focus(mut self, lock_focus: bool) -> Self {
         self.lock_focus = lock_focus;
         self
