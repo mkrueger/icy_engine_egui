@@ -268,7 +268,7 @@ impl TerminalRenderer {
         let buf_h = buf.get_buffer_height();
         let max_lines = max(0, real_height - buf_h);
         let scroll_back_line = max(0, max_lines - first_line);
-        let first_line = 0.max(buf.layers[0].lines.len() as i32 - buf.get_buffer_height());
+        let first_line = 0.max(buf.get_real_buffer_height() - buf.get_buffer_height());
         let mut buffer_data =
             Vec::with_capacity(2 * buf.get_buffer_width() as usize * 4 * buf_h as usize);
         let colors = buf.palette.colors.len() as u32 - 1;
