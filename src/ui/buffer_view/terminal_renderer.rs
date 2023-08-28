@@ -384,7 +384,11 @@ impl TerminalRenderer {
                     buffer_data.push(attr);
                     buffer_data.push(attr);
                     buffer_data.push(attr);
-                    buffer_data.push(if ch.attribute.is_blinking() { 255 } else { 0 });
+                    if !ch.is_visible() {
+                        buffer_data.push(128);
+                    } else {
+                        buffer_data.push(if ch.attribute.is_blinking() { 255 } else { 0 });
+                    }
                 }
             }
 

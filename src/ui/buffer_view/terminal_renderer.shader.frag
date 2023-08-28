@@ -90,30 +90,33 @@ void main (void) {
             }
         }
     }
-    if (char_data.x > 0.5 && (ch_attr[3] == 0.0 || u_character_blink > 0.0)) {
-        fragColor = fg;
+    if (abs(ch_attr[3] - 0.5) < 0.1) {
+        fragColor = vec4(0.0);
     } else {
-        fragColor = bg;
-    }
-
-    // underline
-    if (check_bit(ch_attr[0], 0)) {
-        if (fract_fb_pos.y >= 15.0 / 16.0) {
+        if (char_data.x > 0.5 && (ch_attr[3] == 0.0 || u_character_blink > 0.0)) {
             fragColor = fg;
+        } else {
+            fragColor = bg;
         }
-    }
-
-    // double underline
-    if (check_bit(ch_attr[0], 1)) {
-        if (fract_fb_pos.y >= 13.0 / 16.0 && fract_fb_pos.y < 14.0 / 16.0) {
-            fragColor = fg;
+        // underline
+        if (check_bit(ch_attr[0], 0)) {
+            if (fract_fb_pos.y >= 15.0 / 16.0) {
+                fragColor = fg;
+            }
         }
-    }
 
-    // strike through
-    if (check_bit(ch_attr[0], 2)) {
-        if (fract_fb_pos.y >= 7.0 / 16.0 && fract_fb_pos.y < 8.0 / 16.0) {
-            fragColor = fg;
+        // double underline
+        if (check_bit(ch_attr[0], 1)) {
+            if (fract_fb_pos.y >= 13.0 / 16.0 && fract_fb_pos.y < 14.0 / 16.0) {
+                fragColor = fg;
+            }
+        }
+
+        // strike through
+        if (check_bit(ch_attr[0], 2)) {
+            if (fract_fb_pos.y >= 7.0 / 16.0 && fract_fb_pos.y < 8.0 / 16.0) {
+                fragColor = fg;
+            }
         }
     }
 

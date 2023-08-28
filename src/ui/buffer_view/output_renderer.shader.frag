@@ -92,7 +92,7 @@ void scanlines2(vec2 coord)
     color = postEffects(col, st);
 }
 
-void draw_background() {
+void draw_checkers_background() {
 	float checker_size = 8.0;
     vec2 p = floor(gl_FragCoord.xy / checker_size);
     float PatternMask = mod(p.x + mod(p.y, 2.0), 2.0);
@@ -100,6 +100,14 @@ void draw_background() {
 		color = vec3(0.4, 0.4, 0.4);
 	} else {
 		color = vec3(0.6, 0.6, 0.6);
+	}
+}
+
+void draw_background() {
+	if (u_effect > 1.9 && u_effect < 2.1) { 
+		draw_checkers_background();
+	} else {
+		color = vec3(0.25, 0.27, 0.29);
 	}
 }
 
@@ -114,7 +122,12 @@ void main() {
 		if (u_effect > 0.9 && u_effect < 1.1) { 
 			scanlines2(coord);
 		} else { 
-			color = texture(u_render_texture, coord).xyz;
+			vec4 c = texture(u_render_texture, coord);
+			if (c.w == 0.0) {
+				draw_background();
+				return;
+			}
+			color = c.xyz;
 		}
 		if (u_use_monochrome > 0.0) {
 			float mono = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
@@ -122,10 +135,6 @@ void main() {
 			color *= u_monchrome_mask;
 		}
 	} else {
-		if (u_effect > 1.9 && u_effect < 2.1) { 
-			draw_background();
-		} else {
-			color = vec3(0.25, 0.27, 0.29);
-		}
+		draw_background();
 	}
 }
