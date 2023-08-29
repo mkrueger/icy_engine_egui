@@ -264,19 +264,19 @@ impl TerminalRenderer {
         char_size: Vec2,
     ) {
         let first_line = (viewport_top / char_size.y) as i32;
-        let real_height = buf.get_real_buffer_height();
-        let buf_h = buf.get_buffer_height();
+        let real_height = buf.get_line_count();
+        let buf_h = buf.get_height();
         let max_lines = max(0, real_height - buf_h);
         let scroll_back_line = max(0, max_lines - first_line);
-        let first_line = 0.max(buf.get_real_buffer_height() - buf.get_buffer_height());
+        let first_line = 0.max(buf.get_line_count() - buf.get_height());
         let mut buffer_data =
-            Vec::with_capacity(2 * buf.get_buffer_width() as usize * 4 * buf_h as usize);
+            Vec::with_capacity(2 * buf.get_width() as usize * 4 * buf_h as usize);
         let colors = buf.palette.colors.len() as u32 - 1;
         let mut y = 0;
         while y <= buf_h {
             let mut is_double_height = false;
 
-            for x in 0..buf.get_buffer_width() {
+            for x in 0..buf.get_width() {
                 let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
 
                 if ch.attribute.is_double_height() {
@@ -303,7 +303,7 @@ impl TerminalRenderer {
             }
 
             if is_double_height {
-                for x in 0..buf.get_buffer_width() {
+                for x in 0..buf.get_width() {
                     let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
 
                     if ch.attribute.is_double_height() {
@@ -340,7 +340,7 @@ impl TerminalRenderer {
         while y <= buf_h {
             let mut is_double_height = false;
 
-            for x in 0..buf.get_buffer_width() {
+            for x in 0..buf.get_width() {
                 let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
 
                 let mut attr = if ch.attribute.is_double_underlined() {
@@ -364,7 +364,7 @@ impl TerminalRenderer {
             }
 
             if is_double_height {
-                for x in 0..buf.get_buffer_width() {
+                for x in 0..buf.get_width() {
                     let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
                     let mut attr = if ch.attribute.is_double_underlined() {
                         3
@@ -404,7 +404,7 @@ impl TerminalRenderer {
                 glow::TEXTURE_2D_ARRAY,
                 0,
                 glow::RGBA as i32,
-                buf.get_buffer_width(),
+                buf.get_width(),
                 buf_h + 1,
                 2,
                 0,
@@ -480,8 +480,8 @@ impl TerminalRenderer {
             scroll_offset - fh,
         );
         let first_line = (buffer_view.viewport_top / buffer_view.char_size.y) as i32;
-        let real_height = buffer_view.buf.get_real_buffer_height();
-        let buf_h = buffer_view.buf.get_buffer_height();
+        let real_height = buffer_view.buf.get_line_count();
+        let buf_h = buffer_view.buf.get_height();
 
         let max_lines = max(0, real_height - buf_h);
         let scroll_back_line = max(0, max_lines - first_line) - 1;
@@ -534,8 +534,8 @@ impl TerminalRenderer {
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_terminal_size")
                 .as_ref(),
-            buffer_view.buf.get_buffer_width() as f32 - 0.0001,
-            buffer_view.buf.get_buffer_height() as f32 - 0.0001,
+            buffer_view.buf.get_width() as f32 - 0.0001,
+            buffer_view.buf.get_height() as f32 - 0.0001,
         );
 
         gl.uniform_1_i32(

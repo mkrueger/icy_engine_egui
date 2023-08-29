@@ -43,8 +43,8 @@ impl OutputRenderer {
                 };
 
             let render_buffer_size = Vec2::new(
-                w * buf.get_buffer_width() as f32,
-                buf.get_font_dimensions().height as f32 * buf.get_buffer_height() as f32,
+                w * buf.get_width() as f32,
+                buf.get_font_dimensions().height as f32 * buf.get_height() as f32,
             );
 
             let output_shader = compile_output_shader(gl);
@@ -250,8 +250,8 @@ impl OutputRenderer {
             };
 
         let render_buffer_size = Vec2::new(
-            w * buf.get_buffer_width() as f32,
-            buf.get_font_dimensions().height as f32 * buf.get_buffer_height() as f32,
+            w * buf.get_width() as f32,
+            buf.get_font_dimensions().height as f32 * buf.get_height() as f32,
         );
         if render_buffer_size == self.render_buffer_size {
             return;

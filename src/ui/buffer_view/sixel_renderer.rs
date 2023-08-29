@@ -151,8 +151,8 @@ impl SixelRenderer {
             };
 
         let render_buffer_size = Vec2::new(
-            w * buf.get_buffer_width() as f32,
-            buf.get_font_dimensions().height as f32 * buf.get_buffer_height() as f32,
+            w * buf.get_width() as f32,
+            buf.get_font_dimensions().height as f32 * buf.get_height() as f32,
         );
         if render_buffer_size != self.render_buffer_size {
             self.render_buffer_size = render_buffer_size;
@@ -288,8 +288,8 @@ unsafe fn create_sixel_render_texture(
         };
 
     let render_buffer_size = Vec2::new(
-        w * buf.get_buffer_width() as f32,
-        buf.get_font_dimensions().height as f32 * buf.get_buffer_height() as f32,
+        w * buf.get_width() as f32,
+        buf.get_font_dimensions().height as f32 * buf.get_height() as f32,
     );
 
     gl.bind_texture(glow::TEXTURE_2D, Some(sixel_render_texture));

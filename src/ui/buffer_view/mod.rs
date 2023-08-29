@@ -121,7 +121,7 @@ impl BufferView {
     }
 
     pub fn clear(&mut self) {
-        self.caret.ff(&mut self.buf);
+        self.caret.ff(&mut self.buf, 0);
     }
 
     pub fn get_copy_text(&mut self, buffer_parser: &dyn BufferParser) -> Option<String> {
@@ -197,7 +197,7 @@ impl BufferView {
         parser: &mut Box<dyn BufferParser>,
         c: char,
     ) -> EngineResult<CallbackAction> {
-        let res = parser.print_char(&mut self.buf, &mut self.caret, c);
+        let res = parser.print_char(&mut self.buf, 0, &mut self.caret, c);
         self.redraw_view();
         res
     }
@@ -265,7 +265,7 @@ impl BufferView {
 
     pub fn clear_buffer_screen(&mut self) {
         self.caret.set_background(0);
-        self.buf.clear_screen(&mut self.caret);
+        self.buf.clear_screen(0, &mut self.caret);
         self.redraw_view();
     }
 
