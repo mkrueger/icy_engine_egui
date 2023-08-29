@@ -8,9 +8,9 @@ use icy_engine::Buffer;
 use icy_engine::Shape;
 use web_time::Instant;
 
-use crate::MonitorSettings;
 use crate::prepare_shader;
 use crate::FontExtension;
+use crate::MonitorSettings;
 
 use super::Blink;
 use super::BufferView;
@@ -269,8 +269,7 @@ impl TerminalRenderer {
         let max_lines = max(0, real_height - buf_h);
         let scroll_back_line = max(0, max_lines - first_line);
         let first_line = 0.max(buf.get_line_count() - buf.get_height());
-        let mut buffer_data =
-            Vec::with_capacity(2 * buf.get_width() as usize * 4 * buf_h as usize);
+        let mut buffer_data = Vec::with_capacity(2 * buf.get_width() as usize * 4 * buf_h as usize);
         let colors = buf.palette.colors.len() as u32 - 1;
         let mut y = 0;
         while y <= buf_h {
@@ -438,7 +437,7 @@ impl TerminalRenderer {
                 view_state,
                 view_state.output_renderer.render_buffer_size,
                 font_extension,
-                monitor_settings
+                monitor_settings,
             );
             gl.bind_vertex_array(Some(self.vertex_array));
             gl.draw_arrays(glow::TRIANGLES, 0, 6);
@@ -574,20 +573,20 @@ impl TerminalRenderer {
                     gl.uniform_4_f32(
                         gl.get_uniform_location(self.terminal_shader, "u_selection_fg")
                             .as_ref(),
-                            monitor_settings.selection_fg.r() as f32 / 255.0,
-                            monitor_settings.selection_fg.g() as f32 / 255.0,
-                            monitor_settings.selection_fg.b() as f32 / 255.0,
-                            monitor_settings.selection_fg.a() as f32 / 255.0,
+                        monitor_settings.selection_fg.r() as f32 / 255.0,
+                        monitor_settings.selection_fg.g() as f32 / 255.0,
+                        monitor_settings.selection_fg.b() as f32 / 255.0,
+                        monitor_settings.selection_fg.a() as f32 / 255.0,
                     );
                     gl.uniform_4_f32(
                         gl.get_uniform_location(self.terminal_shader, "u_selection_bg")
                             .as_ref(),
-                            monitor_settings.selection_bg.r() as f32 / 255.0,
-                            monitor_settings.selection_bg.g() as f32 / 255.0,
-                            monitor_settings.selection_bg.b() as f32 / 255.0,
-                            monitor_settings.selection_bg.a() as f32 / 255.0,
+                        monitor_settings.selection_bg.r() as f32 / 255.0,
+                        monitor_settings.selection_bg.g() as f32 / 255.0,
+                        monitor_settings.selection_bg.b() as f32 / 255.0,
+                        monitor_settings.selection_bg.a() as f32 / 255.0,
                     );
-    
+
                     if selection.anchor.y.floor() < selection.lead.y.floor()
                         || selection.anchor.y.floor() == selection.lead.y.floor()
                             && selection.anchor.x < selection.lead.x

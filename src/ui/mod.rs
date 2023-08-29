@@ -97,120 +97,117 @@ pub fn show_terminal_area(
     let max = buffer_view2.lock().buf.terminal_state.height;
 
     let mut scroll = SmoothScroll::new()
-    .with_lock_focus(options.focus_lock)
-    .with_stick_to_bottom(options.stick_to_bottom)
-    .with_scroll_offset(options.scroll_offset);
+        .with_lock_focus(options.focus_lock)
+        .with_stick_to_bottom(options.stick_to_bottom)
+        .with_scroll_offset(options.scroll_offset);
 
     if let Some(id) = options.id {
         scroll = scroll.with_id(id);
     }
 
-    let r = scroll
-        .show(
-            ui,
-            |rect| {
-                let size = rect.size();
+    let r = scroll.show(
+        ui,
+        |rect| {
+            let size = rect.size();
 
-                let font_width = font_dimensions.width as f32
-                    + if matches!(options.font_extension, FontExtension::LineGraphicsEnable) {
-                        1.0
-                    } else {
-                        0.0
-                    };
-
-                let mut scale_x = size.x / font_width / buf_w;
-                let mut scale_y = size.y / font_dimensions.height as f32 / buf_h;
-
-                if scale_x < scale_y {
-                    scale_y = scale_x;
+            let font_width = font_dimensions.width as f32
+                + if matches!(options.font_extension, FontExtension::LineGraphicsEnable) {
+                    1.0
                 } else {
-                    scale_x = scale_y;
-                }
-                let mut forced_height = -1;
+                    0.0
+                };
 
-                if let Some(scale) = options.scale {
-                    scale_x = scale.x;
-                    scale_y = scale.y;
+            let mut scale_x = size.x / font_width / buf_w;
+            let mut scale_y = size.y / font_dimensions.height as f32 / buf_h;
 
-                    buf_h = (size.y / (font_dimensions.height as f32 * scale_y))
-                        .ceil()
-                        .min(real_height);
-                    forced_height = (buf_h as i32).min(real_height as i32);
-                    buffer_view2.lock().redraw_view();
-                }
+            if scale_x < scale_y {
+                scale_y = scale_x;
+            } else {
+                scale_x = scale_y;
+            }
+            let mut forced_height = -1;
 
-                let char_size = Vec2::new(
+            if let Some(scale) = options.scale {
+                scale_x = scale.x;
+                scale_y = scale.y;
+
+                buf_h = (size.y / (font_dimensions.height as f32 * scale_y))
+                    .ceil()
+                    .min(real_height);
+                forced_height = (buf_h as i32).min(real_height as i32);
+                buffer_view2.lock().redraw_view();
+            }
+
+            let char_size = Vec2::new(
+                font_width * scale_x,
+                font_dimensions.height as f32 * scale_y,
+            );
+
+            let rect_w = buf_w * char_size.x;
+            let rect_h = buf_h * char_size.y;
+            let buffer_rect = Rect::from_min_size(
+                Pos2::new(
+                    rect.left() + (rect.width() - rect_w) / 2.,
+                    rect.top() + ((rect.height() - rect_h) / 2.).max(0.0),
+                ),
+                Vec2::new(rect_w, rect_h),
+            );
+
+            // Set the scrolling height.
+            TerminalCalc {
+                char_height: real_height,
+                buffer_char_height: buf_h,
+                scale: Vec2::new(scale_x, scale_y),
+                char_size: Vec2::new(
                     font_width * scale_x,
                     font_dimensions.height as f32 * scale_y,
-                );
+                ),
+                font_height: font_dimensions.height as f32,
+                first_line: 0.,
+                terminal_rect: rect,
+                buffer_rect,
+                scrollbar_rect: Rect::NOTHING,
+                char_scroll_positon: 0.,
+                set_scroll_position_set_by_user: false,
+                forced_height,
+            }
+        },
+        |ui, calc| {
+            let viewport_top = calc.char_scroll_positon * calc.scale.y;
+            calc.first_line = viewport_top / calc.char_size.y;
 
-                let rect_w = buf_w * char_size.x;
-                let rect_h = buf_h * char_size.y;
-                let buffer_rect = Rect::from_min_size(
-                    Pos2::new(
-                        rect.left() + (rect.width() - rect_w) / 2.,
-                        rect.top() + ((rect.height() - rect_h) / 2.).max(0.0),
-                    ),
-                    Vec2::new(rect_w, rect_h),
-                );
-
-                // Set the scrolling height.
-                TerminalCalc {
-                    char_height: real_height,
-                    buffer_char_height: buf_h,
-                    scale: Vec2::new(scale_x, scale_y),
-                    char_size: Vec2::new(
-                        font_width * scale_x,
-                        font_dimensions.height as f32 * scale_y,
-                    ),
-                    font_height: font_dimensions.height as f32,
-                    first_line: 0.,
-                    terminal_rect: rect,
-                    buffer_rect,
-                    scrollbar_rect: Rect::NOTHING,
-                    char_scroll_positon: 0.,
-                    set_scroll_position_set_by_user: false,
-                    forced_height,
+            {
+                let buffer_view = &mut buffer_view.lock();
+                buffer_view.char_size = calc.char_size;
+                if buffer_view.viewport_top != viewport_top {
+                    buffer_view.viewport_top = viewport_top;
+                    buffer_view.redraw_view();
                 }
-            },
-            |ui, calc| {
-                let viewport_top = calc.char_scroll_positon * calc.scale.y;
-                calc.first_line = viewport_top / calc.char_size.y;
+            }
 
-                {
-                    let buffer_view = &mut buffer_view.lock();
-                    buffer_view.char_size = calc.char_size;
-                    if buffer_view.viewport_top != viewport_top {
-                        buffer_view.viewport_top = viewport_top;
-                        buffer_view.redraw_view();
+            let buffer_rect = calc.buffer_rect;
+            let terminal_rect = calc.terminal_rect;
+            let fh = calc.forced_height;
+            let callback = egui::PaintCallback {
+                rect: terminal_rect,
+                callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
+                    if fh > 0 {
+                        buffer_view.lock().buf.terminal_state.height = fh;
                     }
-                }
-
-                let buffer_rect = calc.buffer_rect;
-                let terminal_rect = calc.terminal_rect;
-                let fh = calc.forced_height;
-                let callback = egui::PaintCallback {
-                    rect: terminal_rect,
-                    callback: std::sync::Arc::new(egui_glow::CallbackFn::new(
-                        move |info, painter| {
-                            if fh > 0 {
-                                buffer_view.lock().buf.terminal_state.height = fh;
-                            }
-                            buffer_view.lock().render_contents(
-                                painter.gl(),
-                                &info,
-                                buffer_rect,
-                                terminal_rect,
-                                options.filter,
-                                &options.settings,
-                                options.font_extension,
-                            );
-                        },
-                    )),
-                };
-                ui.painter().add(callback);
-            },
-        );
+                    buffer_view.lock().render_contents(
+                        painter.gl(),
+                        &info,
+                        buffer_rect,
+                        terminal_rect,
+                        options.filter,
+                        &options.settings,
+                        options.font_extension,
+                    );
+                })),
+            };
+            ui.painter().add(callback);
+        },
+    );
 
     buffer_view2.lock().buf.terminal_state.height = max;
     r
