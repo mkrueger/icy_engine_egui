@@ -123,7 +123,7 @@ void main() {
 			scanlines2(coord);
 		} else { 
 			vec4 c = texture(u_render_texture, coord);
-			if (c.w == 0.0) {
+			if (c.w < 1.0) {
 				draw_background();
 				return;
 			}
