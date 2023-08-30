@@ -75,7 +75,7 @@ pub struct BufferView {
 
 impl BufferView {
     pub fn new(gl: &glow::Context, filter: i32, font_extension: FontExtension) -> Self {
-        let mut buf = Buffer::create(80, 25);
+        let mut buf = Buffer::create((80, 25));
         buf.is_terminal_buffer = true;
 
         BufferView::from_buffer(gl, buf, filter, font_extension)

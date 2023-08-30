@@ -97,7 +97,7 @@ pub fn show_terminal_area(
 
     let font_dimensions = buffer_view.lock().buf.get_font_dimensions();
     let buffer_view2: Arc<egui::mutex::Mutex<BufferView>> = buffer_view.clone();
-    let max = buffer_view2.lock().buf.terminal_state.height;
+    let max = buffer_view2.lock().buf.terminal_state.get_height();
 
     let mut scroll = SmoothScroll::new()
         .with_lock_focus(options.focus_lock)
@@ -203,7 +203,11 @@ pub fn show_terminal_area(
                 rect: terminal_rect,
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
                     if fh > 0 {
-                        buffer_view.lock().buf.terminal_state.height = fh as usize;
+                        buffer_view
+                            .lock()
+                            .buf
+                            .terminal_state
+                            .set_height(fh as usize);
                     }
                     buffer_view.lock().render_contents(
                         painter.gl(),
@@ -220,6 +224,6 @@ pub fn show_terminal_area(
         },
     );
 
-    buffer_view2.lock().buf.terminal_state.height = max;
+    buffer_view2.lock().buf.terminal_state.set_height(max);
     r
 }
