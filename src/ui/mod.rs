@@ -30,7 +30,7 @@ pub struct TerminalCalc {
     pub scrollbar_rect: egui::Rect,
     pub char_scroll_positon: f32,
     pub forced_height: i32,
-    
+
     /// remainder for scaled mode
     pub scroll_remainder: f32,
 
@@ -137,10 +137,8 @@ pub fn show_terminal_area(
                 scale_y = scale.y;
 
                 let h = size.y / (font_dimensions.height as f32 * scale_y);
-                buf_h = h
-                    .ceil()
-                    .min(real_height);
-                
+                buf_h = h.ceil().min(real_height);
+
                 // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
                 scroll_remainder = 1.0 - h.fract();
                 forced_height = (buf_h as i32).min(real_height as i32);
@@ -179,7 +177,7 @@ pub fn show_terminal_area(
                 char_scroll_positon: 0.,
                 set_scroll_position_set_by_user: false,
                 forced_height,
-                scroll_remainder
+                scroll_remainder,
             }
         },
         |ui, calc| {
@@ -202,7 +200,7 @@ pub fn show_terminal_area(
                 rect: terminal_rect,
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
                     if fh > 0 {
-                                                buffer_view.lock().buf.terminal_state.height = fh;
+                        buffer_view.lock().buf.terminal_state.height = fh;
                     }
                     buffer_view.lock().render_contents(
                         painter.gl(),

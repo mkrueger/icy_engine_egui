@@ -136,14 +136,11 @@ impl SmoothScroll {
 
     fn clamp_scroll_position(&mut self, calc: &mut TerminalCalc) {
         let mut max: f32 = calc.font_height * (calc.char_height - calc.buffer_char_height).max(0.0);
-        
+
         // HACK around cutting the last line - I'm sure the error is somewhere else, but this works.
         max += calc.scroll_remainder * calc.font_height;
 
-        self.char_scroll_positon = self.char_scroll_positon.clamp(
-            0.0,
-            max,
-        );
+        self.char_scroll_positon = self.char_scroll_positon.clamp(0.0, max);
         calc.char_scroll_positon = self.char_scroll_positon;
     }
 
@@ -155,8 +152,7 @@ impl SmoothScroll {
 
         // HACK for scroll remainder workaround:
         let real_char_height = calc.scroll_remainder + calc.char_height.max(1.0);
-        let bar_height =
-            (calc.buffer_char_height / real_char_height) * calc.terminal_rect.height();
+        let bar_height = (calc.buffer_char_height / real_char_height) * calc.terminal_rect.height();
 
         let bar_offset = -bar_height / 2.0;
 
