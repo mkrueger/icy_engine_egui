@@ -102,7 +102,7 @@ impl SixelRenderer {
                 sixel.y_scale as f32,
             );
 
-            let fontdim: icy_engine::Size<u8> = buffer_view.buf.get_font_dimensions();
+            let fontdim: icy_engine::Size = buffer_view.buf.get_font_dimensions();
             let fh: f32 = fontdim.height as f32;
 
             let w = fontdim.width as f32
@@ -223,8 +223,8 @@ impl SixelRenderer {
                     x_scale: sixel.horizontal_scale,
                     y_scale: sixel.vertical_scale,
                     size: icy_engine::Size {
-                        width: sixel.width() as i32,
-                        height: sixel.height() as i32,
+                        width: sixel.width(),
+                        height: sixel.height(),
                     },
                     texture,
                 };
@@ -266,7 +266,7 @@ impl SixelRenderer {
 
 pub struct SixelCacheEntry {
     pub pos: Position,
-    pub size: icy_engine::Size<i32>,
+    pub size: icy_engine::Size,
     pub x_scale: i32,
     pub y_scale: i32,
 

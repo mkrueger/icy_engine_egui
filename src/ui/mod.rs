@@ -203,7 +203,7 @@ pub fn show_terminal_area(
                 rect: terminal_rect,
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
                     if fh > 0 {
-                        buffer_view.lock().buf.terminal_state.height = fh;
+                        buffer_view.lock().buf.terminal_state.height = fh as usize;
                     }
                     buffer_view.lock().render_contents(
                         painter.gl(),

@@ -264,19 +264,19 @@ impl TerminalRenderer {
         char_size: Vec2,
     ) {
         let first_line = (viewport_top / char_size.y) as i32;
-        let real_height = buf.get_line_count();
-        let buf_h = buf.get_height();
-        let max_lines = max(0, real_height - buf_h);
+        let real_height = buf.get_line_count() as i32;
+        let buf_h = buf.get_height() as i32;
+        let max_lines = max(0, real_height - buf_h) as i32;
         let scroll_back_line = max(0, max_lines - first_line);
-        let first_line = 0.max(buf.get_line_count() - buf.get_height());
+        let first_line = 0.max(buf.get_line_count() - buf.get_height()) as i32;
         let mut buffer_data = Vec::with_capacity(2 * buf.get_width() as usize * 4 * buf_h as usize);
         let colors = buf.palette.colors.len() as u32 - 1;
-        let mut y = 0;
+        let mut y: i32 = 0;
         while y <= buf_h {
             let mut is_double_height = false;
 
-            for x in 0..buf.get_width() {
-                let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
+            for x in 0..(buf.get_width() as i32) {
+                let ch = buf.get_char((x, first_line - scroll_back_line + y));
 
                 if ch.attribute.is_double_height() {
                     is_double_height = true;
@@ -303,7 +303,7 @@ impl TerminalRenderer {
 
             if is_double_height {
                 for x in 0..buf.get_width() {
-                    let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
+                    let ch = buf.get_char((x as i32, first_line - scroll_back_line + y as i32));
 
                     if ch.attribute.is_double_height() {
                         buffer_data.push(ch.ch as u8);
@@ -339,8 +339,8 @@ impl TerminalRenderer {
         while y <= buf_h {
             let mut is_double_height = false;
 
-            for x in 0..buf.get_width() {
-                let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
+            for x in 0..(buf.get_width() as i32) {
+                let ch = buf.get_char((x, first_line - scroll_back_line + y));
 
                 let mut attr = if ch.attribute.is_double_underlined() {
                     3
@@ -367,8 +367,8 @@ impl TerminalRenderer {
             }
 
             if is_double_height {
-                for x in 0..buf.get_width() {
-                    let ch = buf.get_char_xy(x, first_line - scroll_back_line + y);
+                for x in 0..(buf.get_width() as i32) {
+                    let ch = buf.get_char((x, first_line - scroll_back_line + y));
                     let mut attr = if ch.attribute.is_double_underlined() {
                         3
                     } else {
@@ -407,7 +407,7 @@ impl TerminalRenderer {
                 glow::TEXTURE_2D_ARRAY,
                 0,
                 glow::RGBA as i32,
-                buf.get_width(),
+                buf.get_width() as i32,
                 buf_h + 1,
                 2,
                 0,
@@ -457,7 +457,7 @@ impl TerminalRenderer {
         font_extension: FontExtension,
         monitor_settings: &MonitorSettings,
     ) {
-        let fontdim: icy_engine::Size<u8> = buffer_view.buf.get_font_dimensions();
+        let fontdim = buffer_view.buf.get_font_dimensions();
         let fh = fontdim.height as f32;
         gl.use_program(Some(self.terminal_shader));
         gl.uniform_2_f32(
@@ -483,13 +483,13 @@ impl TerminalRenderer {
             scroll_offset - fh,
         );
         let first_line = (buffer_view.viewport_top / buffer_view.char_size.y) as i32;
-        let real_height = buffer_view.buf.get_line_count();
-        let buf_h = buffer_view.buf.get_height();
+        let real_height = buffer_view.buf.get_line_count() as i32;
+        let buf_h = buffer_view.buf.get_height() as i32;
 
-        let max_lines = max(0, real_height - buf_h);
+        let max_lines = max(0, real_height - buf_h) as i32;
         let scroll_back_line = max(0, max_lines - first_line) - 1;
 
-        let sbl = (buffer_view.buf.get_first_visible_line() - scroll_back_line) as f32;
+        let sbl = (buffer_view.buf.get_first_visible_line() as i32 - scroll_back_line) as f32;
 
         let font_width = fontdim.width as f32
             + if matches!(font_extension, FontExtension::LineGraphicsEnable) {

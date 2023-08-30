@@ -157,13 +157,13 @@ impl BufferView {
                     res.push(buffer_parser.convert_to_unicode(ch));
                 }
             } else {
-                for x in start.x..self.buf.get_line_length(start.y) {
+                for x in start.x..(self.buf.get_line_length(start.y as usize) as i32) {
                     let ch = self.buf.get_char(Position::new(x, start.y));
                     res.push(buffer_parser.convert_to_unicode(ch));
                 }
                 res.push('\n');
                 for y in start.y + 1..end.y {
-                    for x in 0..self.buf.get_line_length(y) {
+                    for x in 0..(self.buf.get_line_length(y as usize) as i32) {
                         let ch = self.buf.get_char(Position::new(x, y));
                         res.push(buffer_parser.convert_to_unicode(ch));
                     }
