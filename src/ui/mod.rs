@@ -30,6 +30,9 @@ pub struct TerminalCalc {
     pub scrollbar_rect: egui::Rect,
     pub char_scroll_positon: f32,
     pub forced_height: i32,
+    
+    /// remainder for scaled mode
+    pub scroll_remainder: f32,
 
     pub set_scroll_position_set_by_user: bool,
 }
@@ -85,7 +88,7 @@ pub fn show_terminal_area(
     options: TerminalOptions,
 ) -> (Response, TerminalCalc) {
     let mut buf_h = buffer_view.lock().buf.get_height() as f32;
-    let real_height = buffer_view.lock().buf.get_line_count() as f32;
+    let mut real_height = buffer_view.lock().buf.get_line_count() as f32;
     let buf_w = buffer_view.lock().buf.get_width() as f32;
 
     if !options.use_terminal_height {
@@ -127,13 +130,19 @@ pub fn show_terminal_area(
             }
             let mut forced_height = -1;
 
+            let mut scroll_remainder = 0.0;
+
             if let Some(scale) = options.scale {
                 scale_x = scale.x;
                 scale_y = scale.y;
 
-                buf_h = (size.y / (font_dimensions.height as f32 * scale_y))
+                let h = size.y / (font_dimensions.height as f32 * scale_y);
+                buf_h = h
                     .ceil()
                     .min(real_height);
+                
+                // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
+                scroll_remainder = 1.0 - h.fract();
                 forced_height = (buf_h as i32).min(real_height as i32);
                 buffer_view2.lock().redraw_view();
             }
@@ -170,6 +179,7 @@ pub fn show_terminal_area(
                 char_scroll_positon: 0.,
                 set_scroll_position_set_by_user: false,
                 forced_height,
+                scroll_remainder
             }
         },
         |ui, calc| {
@@ -192,7 +202,7 @@ pub fn show_terminal_area(
                 rect: terminal_rect,
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
                     if fh > 0 {
-                        buffer_view.lock().buf.terminal_state.height = fh;
+                                                buffer_view.lock().buf.terminal_state.height = fh;
                     }
                     buffer_view.lock().render_contents(
                         painter.gl(),
