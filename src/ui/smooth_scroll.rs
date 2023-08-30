@@ -123,7 +123,6 @@ impl SmoothScroll {
         scrollbar_rect.set_left(x);
         calc.scrollbar_rect = scrollbar_rect;
 
-        calc.char_scroll_positon = self.char_scroll_positon;
         add_contents(ui, &mut calc);
 
         if calc.char_height > calc.buffer_char_height {
@@ -132,6 +131,13 @@ impl SmoothScroll {
 
         self.persist_data(ui);
         calc.set_scroll_position_set_by_user = self.set_scroll_positon;
+
+        self.char_scroll_positon = self.char_scroll_positon.clamp(
+            0.0,
+            calc.font_height * (calc.char_height - calc.buffer_char_height).max(0.0),
+        );
+        calc.char_scroll_positon = self.char_scroll_positon;
+
         (response, calc)
     }
 
