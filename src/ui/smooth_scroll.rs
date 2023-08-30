@@ -112,10 +112,6 @@ impl SmoothScroll {
         if let Some(sp) = self.scroll_offset {
             self.char_scroll_positon = sp;
         }
-        self.char_scroll_positon = self.char_scroll_positon.clamp(
-            0.0,
-            calc.font_height * (calc.char_height - calc.buffer_char_height).max(0.0),
-        );
 
         let scrollbar_width = ui.style().spacing.scroll_bar_width;
         let x = rect.right() - scrollbar_width;
@@ -126,29 +122,31 @@ impl SmoothScroll {
         add_contents(ui, &mut calc);
 
         if calc.char_height > calc.buffer_char_height {
-            response = self.show_scrollbar(ui, response, &calc);
+            self.clamp_scroll_position(&mut calc);
+            response = self.show_scrollbar(ui, response, &mut calc);
         }
 
         self.persist_data(ui);
         calc.set_scroll_position_set_by_user = self.set_scroll_positon;
 
+        self.clamp_scroll_position(&mut calc);
+
+        (response, calc)
+    }
+
+    fn clamp_scroll_position(&mut self, calc: &mut TerminalCalc) {
         self.char_scroll_positon = self.char_scroll_positon.clamp(
             0.0,
             calc.font_height * (calc.char_height - calc.buffer_char_height).max(0.0),
         );
         calc.char_scroll_positon = self.char_scroll_positon;
-
-        (response, calc)
     }
 
-    fn show_scrollbar(&mut self, ui: &Ui, response: Response, calc: &TerminalCalc) -> Response {
+    fn show_scrollbar(&mut self, ui: &Ui, response: Response, calc: &mut TerminalCalc) -> Response {
         let scrollbar_width = ui.style().spacing.scroll_bar_width;
         let x = calc.terminal_rect.right() - scrollbar_width;
         let mut bg_rect: Rect = calc.terminal_rect;
         bg_rect.set_left(x);
-        let bar_top = calc.terminal_rect.top()
-            + calc.terminal_rect.height() * self.char_scroll_positon
-                / (calc.font_height * calc.char_height.max(1.0));
 
         let bar_height =
             (calc.buffer_char_height / calc.char_height.max(1.0)) * calc.terminal_rect.height();
@@ -156,12 +154,13 @@ impl SmoothScroll {
         let bar_offset = -bar_height / 2.0;
 
         let how_on = if ui.is_enabled() {
-            let (dragged, hovered) = self.fun_name(ui, &response, x, bar_offset, calc, bg_rect);
+            let (dragged, hovered) = self.handle_user_input(ui, &response, x, bar_offset, calc, bg_rect);
+            self.clamp_scroll_position(calc);
             ui.ctx().animate_bool(response.id, hovered || dragged)
         } else {
             0.0
         };
-
+      
         let x_size = egui::lerp(2.0..=scrollbar_width, how_on);
 
         // draw bg
@@ -175,6 +174,9 @@ impl SmoothScroll {
         );
 
         // draw bar
+        let bar_top = calc.terminal_rect.top()
+        + calc.terminal_rect.height() * self.char_scroll_positon
+            / (calc.font_height * calc.char_height.max(1.0));
         ui.painter().rect_filled(
             Rect::from_min_size(
                 Pos2::new(calc.terminal_rect.right() - x_size, bar_top),
@@ -186,7 +188,7 @@ impl SmoothScroll {
         response
     }
 
-    fn fun_name(
+    fn handle_user_input(
         &mut self,
         ui: &Ui,
         response: &Response,
