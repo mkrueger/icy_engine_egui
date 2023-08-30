@@ -1,13 +1,7 @@
 /// Check for OpenGL error and report it using `log::error`.
 ///
 /// Only active in debug builds!
-///
-/// ``` no_run
-/// # let glow_context = todo!();
-/// use check_gl_error;
-/// check_for_gl_error!(glow_context);
-/// check_for_gl_error!(glow_context, "during painting");
-/// ```
+
 #[macro_export]
 macro_rules! check_gl_error {
     ($gl: expr, $context: literal) => {{
