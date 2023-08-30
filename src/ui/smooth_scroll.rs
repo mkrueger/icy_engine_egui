@@ -112,6 +112,7 @@ impl SmoothScroll {
         if let Some(sp) = self.scroll_offset {
             self.char_scroll_positon = sp;
         }
+        self.clamp_scroll_position(&mut calc);
 
         let scrollbar_width = ui.style().spacing.scroll_bar_width;
         let x = rect.right() - scrollbar_width;
@@ -153,7 +154,6 @@ impl SmoothScroll {
         // HACK for scroll remainder workaround:
         let real_char_height = calc.scroll_remainder + calc.char_height.max(1.0);
         let bar_height = (calc.buffer_char_height / real_char_height) * calc.terminal_rect.height();
-
         let bar_offset = -bar_height / 2.0;
 
         let how_on = if ui.is_enabled() {

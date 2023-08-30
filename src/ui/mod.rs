@@ -139,8 +139,11 @@ pub fn show_terminal_area(
                 let h = size.y / (font_dimensions.height as f32 * scale_y);
                 buf_h = h.ceil().min(real_height);
 
-                // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
-                scroll_remainder = 1.0 - h.fract();
+                if real_height > buf_h {
+                    // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
+                    scroll_remainder = 1.0 - h.fract();
+                }
+
                 forced_height = (buf_h as i32).min(real_height as i32);
                 buffer_view2.lock().redraw_view();
             }
