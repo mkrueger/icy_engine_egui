@@ -147,10 +147,10 @@ pub fn show_terminal_area(
             let rect_h = buf_h * char_size.y;
             let buffer_rect = Rect::from_min_size(
                 Pos2::new(
-                    rect.left() + (rect.width() - rect_w) / 2.,
-                    rect.top() + ((rect.height() - rect_h) / 2.).max(0.0),
+                    (rect.left() + (rect.width() - rect_w) / 2.).floor(),
+                    rect.top() + ((rect.height() - rect_h) / 2.).max(0.0).floor(),
                 ),
-                Vec2::new(rect_w, rect_h),
+                Vec2::new(rect_w.floor(), rect_h.floor()),
             );
 
             // Set the scrolling height.

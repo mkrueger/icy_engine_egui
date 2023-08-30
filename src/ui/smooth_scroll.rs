@@ -154,13 +154,14 @@ impl SmoothScroll {
         let bar_offset = -bar_height / 2.0;
 
         let how_on = if ui.is_enabled() {
-            let (dragged, hovered) = self.handle_user_input(ui, &response, x, bar_offset, calc, bg_rect);
+            let (dragged, hovered) =
+                self.handle_user_input(ui, &response, x, bar_offset, calc, bg_rect);
             self.clamp_scroll_position(calc);
             ui.ctx().animate_bool(response.id, hovered || dragged)
         } else {
             0.0
         };
-      
+
         let x_size = egui::lerp(2.0..=scrollbar_width, how_on);
 
         // draw bg
@@ -175,8 +176,8 @@ impl SmoothScroll {
 
         // draw bar
         let bar_top = calc.terminal_rect.top()
-        + calc.terminal_rect.height() * self.char_scroll_positon
-            / (calc.font_height * calc.char_height.max(1.0));
+            + calc.terminal_rect.height() * self.char_scroll_positon
+                / (calc.font_height * calc.char_height.max(1.0));
         ui.painter().rect_filled(
             Rect::from_min_size(
                 Pos2::new(calc.terminal_rect.right() - x_size, bar_top),
