@@ -153,8 +153,10 @@ impl SmoothScroll {
         let mut bg_rect: Rect = calc.terminal_rect;
         bg_rect.set_left(x);
 
+        // HACK for scroll remainder workaround:
+        let real_char_height = calc.scroll_remainder + calc.char_height.max(1.0);
         let bar_height =
-            (calc.buffer_char_height / calc.char_height.max(1.0)) * calc.terminal_rect.height();
+            (calc.buffer_char_height / real_char_height) * calc.terminal_rect.height();
 
         let bar_offset = -bar_height / 2.0;
 
@@ -182,7 +184,7 @@ impl SmoothScroll {
         // draw bar
         let bar_top = calc.terminal_rect.top()
             + calc.terminal_rect.height() * self.char_scroll_positon
-                / (calc.font_height * calc.char_height.max(1.0));
+                / (calc.font_height * real_char_height);
         ui.painter().rect_filled(
             Rect::from_min_size(
                 Pos2::new(calc.terminal_rect.right() - x_size, bar_top),
