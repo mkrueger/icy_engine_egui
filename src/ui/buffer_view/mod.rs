@@ -1,4 +1,3 @@
-use std::cmp::{max, min};
 
 use egui::{Response, Vec2};
 use glow::HasContext;
@@ -130,14 +129,8 @@ impl BufferView {
 
         let mut res = String::new();
         if matches!(selection.shape, Shape::Rectangle) {
-            let start = Position::new(
-                min(selection.anchor_pos.x, selection.lead_pos.x),
-                min(selection.anchor_pos.y, selection.lead_pos.y),
-            );
-            let end = Position::new(
-                max(selection.anchor_pos.x, selection.lead_pos.x),
-                max(selection.anchor_pos.y, selection.lead_pos.y),
-            );
+            let start = selection.min();
+            let end = selection.max();
             for y in start.y..=end.y {
                 for x in start.x..end.x {
                     let ch = self.buf.get_char(Position::new(x, y));
@@ -146,10 +139,10 @@ impl BufferView {
                 res.push('\n');
             }
         } else {
-            let (start, end) = if selection.anchor_pos < selection.lead_pos {
-                (selection.anchor_pos, selection.lead_pos)
+            let (start, end) = if selection.anchor.as_position() < selection.lead.as_position() {
+                (selection.anchor.as_position(), selection.lead.as_position())
             } else {
-                (selection.lead_pos, selection.anchor_pos)
+                (selection.lead.as_position(), selection.anchor.as_position())
             };
             if start.y == end.y {
                 for x in start.x..end.x {
