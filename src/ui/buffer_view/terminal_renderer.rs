@@ -149,8 +149,8 @@ impl TerminalRenderer {
             0
         };
 
-        let w = size.width as usize;
-        let h = size.height as usize;
+        let w = size.width;
+        let h = size.height;
 
         let mut font_data = Vec::new();
         let chars_in_line = 16;
@@ -174,7 +174,7 @@ impl TerminalRenderer {
                 let y = ch / chars_in_line;
 
                 let offset = x * (w + w_ext) * 4 + y * h * line_width + fontpage_start;
-                let last_scan_line = h.min(cur_font.size.height as usize);
+                let last_scan_line = h.min(cur_font.size.height);
                 for y in 0..last_scan_line {
                     if let Some(scan_line) = glyph.data.get(y) {
                         let mut po = offset + y * line_width;
@@ -266,10 +266,11 @@ impl TerminalRenderer {
         let first_line = (viewport_top / char_size.y) as i32;
         let real_height = buf.get_line_count() as i32;
         let buf_h = buf.get_height() as i32;
+
         let max_lines = max(0, real_height - buf_h) as i32;
         let scroll_back_line = max(0, max_lines - first_line);
-        let first_line = 0.max(buf.get_line_count() - buf.get_height()) as i32;
-        let mut buffer_data = Vec::with_capacity(2 * buf.get_width() as usize * 4 * buf_h as usize);
+        let first_line = 0.max(buf.get_line_count().saturating_sub(buf.get_height())) as i32;
+        let mut buffer_data = Vec::with_capacity(2 * buf.get_width() * 4 * buf_h as usize);
         let colors = buf.palette.colors.len() as u32 - 1;
         let mut y: i32 = 0;
         while y <= buf_h {
@@ -277,7 +278,6 @@ impl TerminalRenderer {
 
             for x in 0..(buf.get_width() as i32) {
                 let ch = buf.get_char((x, first_line - scroll_back_line + y));
-
                 if ch.attribute.is_double_height() {
                     is_double_height = true;
                 }
@@ -286,12 +286,15 @@ impl TerminalRenderer {
                 } else {
                     buffer_data.push(ch.ch as u8);
                 }
-                if ch.attribute.is_bold() && ch.attribute.get_foreground() < 8 {
-                    buffer_data.push(conv_color(ch.attribute.get_foreground() + 8, colors));
+                let fg = if ch.attribute.is_bold() && ch.attribute.get_foreground() < 8 {
+                    conv_color(ch.attribute.get_foreground() + 8, colors)
                 } else {
-                    buffer_data.push(conv_color(ch.attribute.get_foreground(), colors));
-                }
-                buffer_data.push(conv_color(ch.attribute.get_background(), colors));
+                    conv_color(ch.attribute.get_foreground(), colors)
+                };
+                buffer_data.push(fg);
+
+                let bg = conv_color(ch.attribute.get_background(), colors);
+                buffer_data.push(bg);
                 if buf.has_fonts() {
                     let font_number: usize =
                         *self.font_lookup_table.get(&ch.get_font_page()).unwrap();
@@ -303,7 +306,7 @@ impl TerminalRenderer {
 
             if is_double_height {
                 for x in 0..buf.get_width() {
-                    let ch = buf.get_char((x as i32, first_line - scroll_back_line + y as i32));
+                    let ch = buf.get_char((x as i32, first_line - scroll_back_line + y));
 
                     if ch.attribute.is_double_height() {
                         buffer_data.push(ch.ch as u8);
@@ -401,6 +404,7 @@ impl TerminalRenderer {
                 y += 1;
             }
         }
+
         unsafe {
             gl.bind_texture(glow::TEXTURE_2D_ARRAY, Some(self.terminal_render_texture));
             gl.tex_image_3d(

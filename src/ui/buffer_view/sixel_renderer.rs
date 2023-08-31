@@ -162,7 +162,7 @@ impl SixelRenderer {
         }
 
         let sixels_updated = buf.update_sixel_threads();
-        if buf.layers[0].sixels.is_empty() {
+        if !buf.layers.iter().any(|l| !l.sixels.is_empty()) {
             for sx in &self.sixel_cache {
                 unsafe {
                     gl.delete_texture(sx.texture);

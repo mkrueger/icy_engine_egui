@@ -90,7 +90,6 @@ pub fn show_terminal_area(
     let mut buf_h = buffer_view.lock().buf.get_height() as f32;
     let real_height = buffer_view.lock().buf.get_line_count() as f32;
     let buf_w = buffer_view.lock().buf.get_width() as f32;
-
     if !options.use_terminal_height {
         buf_h = real_height;
     }
