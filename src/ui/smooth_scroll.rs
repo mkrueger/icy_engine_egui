@@ -139,7 +139,7 @@ impl SmoothScroll {
         let mut max: f32 = calc.font_height * (calc.char_height - calc.buffer_char_height).max(0.0);
 
         // HACK around cutting the last line - I'm sure the error is somewhere else, but this works.
-        max += calc.scroll_remainder * calc.font_height;
+        max += calc.scroll_remainder * (calc.font_height - 1.0);
 
         self.char_scroll_positon = self.char_scroll_positon.clamp(0.0, max);
         calc.char_scroll_positon = self.char_scroll_positon;
