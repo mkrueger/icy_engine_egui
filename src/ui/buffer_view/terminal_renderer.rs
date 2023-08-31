@@ -429,6 +429,7 @@ impl TerminalRenderer {
         view_state: &BufferView,
         font_extension: FontExtension,
         monitor_settings: &MonitorSettings,
+        has_focus: bool,
     ) {
         unsafe {
             gl.active_texture(glow::TEXTURE0 + FONT_TEXTURE_SLOT);
@@ -446,6 +447,7 @@ impl TerminalRenderer {
                 view_state.output_renderer.render_buffer_size,
                 font_extension,
                 monitor_settings,
+                has_focus,
             );
             gl.bind_vertex_array(Some(self.vertex_array));
             gl.draw_arrays(glow::TRIANGLES, 0, 6);
@@ -460,6 +462,7 @@ impl TerminalRenderer {
         render_buffer_size: egui::Vec2,
         font_extension: FontExtension,
         monitor_settings: &MonitorSettings,
+        has_focus: bool,
     ) {
         let fontdim = buffer_view.buf.get_font_dimensions();
         let fh = fontdim.height as f32;
@@ -514,7 +517,7 @@ impl TerminalRenderer {
             - caret_h
             - (buffer_view.viewport_top / buffer_view.char_size.y * fh)
             + scroll_offset;
-        let caret_w = if self.caret_blink.is_on() && buffer_view.caret.is_visible {
+        let caret_w = if self.caret_blink.is_on() && buffer_view.caret.is_visible && has_focus {
             font_width
         } else {
             0.0

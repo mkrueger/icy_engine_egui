@@ -210,14 +210,20 @@ impl BufferView {
         scale_filter: i32,
         monitor_settings: &MonitorSettings,
         font_extension: FontExtension,
+        has_focus: bool,
     ) {
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
             self.update_contents(gl, scale_filter, font_extension);
 
             self.output_renderer.init_output(gl);
-            self.terminal_renderer
-                .render_terminal(gl, self, font_extension, monitor_settings);
+            self.terminal_renderer.render_terminal(
+                gl,
+                self,
+                font_extension,
+                monitor_settings,
+                has_focus,
+            );
             // draw sixels
             let render_texture =
                 self.sixel_renderer

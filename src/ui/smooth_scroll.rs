@@ -92,16 +92,16 @@ impl SmoothScroll {
         let (_, rect) = ui.allocate_space(Vec2::new(size.x, size.y));
         let mut response = ui.interact(rect, self.id, Sense::click_and_drag());
 
+        let mut calc = calc_contents(rect);
+        calc.char_scroll_positon = self.char_scroll_positon;
         if self.lock_focus {
             self.lock_focus = false;
             ui.memory_mut(|m| {
                 m.request_focus(self.id);
                 m.lock_focus(self.id, true);
             });
+            calc.has_focus = true;
         }
-
-        let mut calc = calc_contents(rect);
-        calc.char_scroll_positon = self.char_scroll_positon;
 
         if self.stick_to_bottom && (calc.char_height - self.last_char_height).abs() > 0.1 {
             self.char_scroll_positon =
@@ -119,6 +119,7 @@ impl SmoothScroll {
         let mut scrollbar_rect: Rect = rect;
         scrollbar_rect.set_left(x);
         calc.scrollbar_rect = scrollbar_rect;
+        calc.has_focus |= response.has_focus();
 
         add_contents(ui, &mut calc);
 
@@ -131,7 +132,9 @@ impl SmoothScroll {
         calc.set_scroll_position_set_by_user = self.set_scroll_positon;
 
         self.clamp_scroll_position(&mut calc);
-
+        if response.clicked() {
+            response.request_focus();
+        }
         (response, calc)
     }
 

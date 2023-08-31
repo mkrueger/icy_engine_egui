@@ -35,6 +35,8 @@ pub struct TerminalCalc {
     pub scroll_remainder: f32,
 
     pub set_scroll_position_set_by_user: bool,
+
+    pub has_focus: bool,
 }
 
 impl TerminalCalc {
@@ -180,6 +182,8 @@ pub fn show_terminal_area(
                 set_scroll_position_set_by_user: false,
                 forced_height,
                 scroll_remainder,
+
+                has_focus: false,
             }
         },
         |ui, calc| {
@@ -194,10 +198,10 @@ pub fn show_terminal_area(
                     buffer_view.redraw_view();
                 }
             }
-
             let buffer_rect = calc.buffer_rect;
             let terminal_rect = calc.terminal_rect;
             let fh = calc.forced_height;
+            let has_focus = calc.has_focus;
             let callback = egui::PaintCallback {
                 rect: terminal_rect,
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
@@ -208,6 +212,7 @@ pub fn show_terminal_area(
                             .terminal_state
                             .set_height(fh as usize);
                     }
+
                     buffer_view.lock().render_contents(
                         painter.gl(),
                         &info,
@@ -216,6 +221,7 @@ pub fn show_terminal_area(
                         options.filter,
                         &options.settings,
                         options.font_extension,
+                        has_focus,
                     );
                 })),
             };
