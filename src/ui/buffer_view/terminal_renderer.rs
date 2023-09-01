@@ -9,7 +9,6 @@ use icy_engine::Shape;
 use web_time::Instant;
 
 use crate::prepare_shader;
-use crate::FontExtension;
 use crate::MonitorSettings;
 
 use super::Blink;
@@ -103,14 +102,13 @@ impl TerminalRenderer {
         buf: &mut Buffer,
         viewport_top: f32,
         char_size: Vec2,
-        font_extension: FontExtension,
     ) {
         self.check_blink_timers();
 
         if self.redraw_font || buf.is_font_table_updated() {
             self.redraw_font = false;
             buf.set_font_table_is_updated();
-            self.update_font_texture(gl, buf, font_extension);
+            self.update_font_texture(gl, buf);
         }
 
         if self.redraw_view {
@@ -139,11 +137,10 @@ impl TerminalRenderer {
         &mut self,
         gl: &glow::Context,
         buf: &Buffer,
-        font_extension: FontExtension,
     ) {
         let size = buf.get_font(0).unwrap().size;
 
-        let w_ext = if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+        let w_ext = if buf.use_letter_spacing {
             1
         } else {
             0
@@ -158,8 +155,6 @@ impl TerminalRenderer {
         let height = h * 256 / chars_in_line;
         self.font_lookup_table.clear();
         font_data.resize(line_width * height * buf.font_count(), 0);
-
-        let lga_font = matches!(font_extension, FontExtension::LineGraphicsEnable);
 
         for (cur_font_num, font) in buf.font_iter().enumerate() {
             self.font_lookup_table.insert(*font.0, cur_font_num);
@@ -194,7 +189,7 @@ impl TerminalRenderer {
                                 po += 1;
                             }
                         }
-                        if lga_font && (0xC0..=0xDF).contains(&ch) && (scan_line & 1) != 0 {
+                        if buf.use_letter_spacing && (0xC0..=0xDF).contains(&ch) && (scan_line & 1) != 0 {
                             // unroll
                             font_data[po] = 0xFF;
                             po += 1;
@@ -427,7 +422,6 @@ impl TerminalRenderer {
         &self,
         gl: &glow::Context,
         view_state: &BufferView,
-        font_extension: FontExtension,
         monitor_settings: &MonitorSettings,
         has_focus: bool,
     ) {
@@ -445,7 +439,6 @@ impl TerminalRenderer {
                 gl,
                 view_state,
                 view_state.output_renderer.render_buffer_size,
-                font_extension,
                 monitor_settings,
                 has_focus,
             );
@@ -460,7 +453,6 @@ impl TerminalRenderer {
         gl: &glow::Context,
         buffer_view: &BufferView,
         render_buffer_size: egui::Vec2,
-        font_extension: FontExtension,
         monitor_settings: &MonitorSettings,
         has_focus: bool,
     ) {
@@ -499,7 +491,7 @@ impl TerminalRenderer {
         let sbl = (buffer_view.buf.get_first_visible_line() as i32 - scroll_back_line) as f32;
 
         let font_width = fontdim.width as f32
-            + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+            + if buffer_view.buf.use_letter_spacing {
                 1.0
             } else {
                 0.0

@@ -47,20 +47,12 @@ impl TerminalCalc {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub enum FontExtension {
-    #[default]
-    Off,
-    LineGraphicsEnable,
-}
-
 pub struct TerminalOptions {
     pub focus_lock: bool,
     pub filter: i32,
     pub settings: MonitorSettings,
     pub stick_to_bottom: bool,
     pub scale: Option<Vec2>,
-    pub font_extension: FontExtension,
     pub render_real_height: bool,
     pub use_terminal_height: bool,
     pub scroll_offset: Option<f32>,
@@ -77,7 +69,6 @@ impl Default for TerminalOptions {
             scale: Default::default(),
             render_real_height: false,
             use_terminal_height: true,
-            font_extension: FontExtension::LineGraphicsEnable,
             scroll_offset: None,
             id: None,
         }
@@ -115,7 +106,7 @@ pub fn show_terminal_area(
             let size = rect.size();
 
             let font_width = font_dimensions.width as f32
-                + if matches!(options.font_extension, FontExtension::LineGraphicsEnable) {
+                + if buffer_view2.lock().buf.use_letter_spacing {
                     1.0
                 } else {
                     0.0
@@ -220,7 +211,6 @@ pub fn show_terminal_area(
                         terminal_rect,
                         options.filter,
                         &options.settings,
-                        options.font_extension,
                         has_focus,
                     );
                 })),

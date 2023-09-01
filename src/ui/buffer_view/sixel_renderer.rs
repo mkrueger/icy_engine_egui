@@ -5,7 +5,6 @@ use icy_engine::Position;
 
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
-use crate::FontExtension;
 
 use super::output_renderer::OutputRenderer;
 use super::BufferView;
@@ -22,11 +21,10 @@ impl SixelRenderer {
         gl: &glow::Context,
         buf: &Buffer,
         filter: i32,
-        font_extension: FontExtension,
     ) -> Self {
         unsafe {
             let sixel_shader = compile_shader(gl);
-            let sixel_render_texture = create_sixel_render_texture(gl, buf, filter, font_extension);
+            let sixel_render_texture = create_sixel_render_texture(gl, buf, filter);
 
             Self {
                 sixel_cache: Vec::new(),
@@ -49,7 +47,6 @@ impl SixelRenderer {
         gl: &glow::Context,
         buffer_view: &BufferView,
         output_renderer: &OutputRenderer,
-        font_extension: FontExtension,
     ) -> glow::Texture {
         let mut render_texture = output_renderer.render_texture;
         let mut sixel_render_texture = self.sixel_render_texture;
@@ -106,7 +103,7 @@ impl SixelRenderer {
             let fh: f32 = fontdim.height as f32;
 
             let w = fontdim.width as f32
-                + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+                + if buffer_view.buf.use_letter_spacing {
                     1.0
                 } else {
                     0.0
@@ -141,10 +138,9 @@ impl SixelRenderer {
         gl: &glow::Context,
         buf: &mut Buffer,
         scale_filter: i32,
-        font_extension: FontExtension,
     ) {
         let w = buf.get_font_dimensions().width as f32
-            + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+            + if buf.use_letter_spacing {
                 1.0
             } else {
                 0.0
@@ -277,11 +273,10 @@ unsafe fn create_sixel_render_texture(
     gl: &glow::Context,
     buf: &Buffer,
     filter: i32,
-    font_extension: FontExtension,
 ) -> glow::Texture {
     let sixel_render_texture = gl.create_texture().unwrap();
     let w = buf.get_font_dimensions().width as f32
-        + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+        + if buf.use_letter_spacing {
             1.0
         } else {
             0.0

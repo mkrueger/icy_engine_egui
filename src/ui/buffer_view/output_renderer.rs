@@ -7,7 +7,6 @@ use icy_engine::Buffer;
 
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
-use crate::FontExtension;
 use crate::MonitorSettings;
 
 pub const MONO_COLORS: [(u8, u8, u8); 5] = [
@@ -32,11 +31,10 @@ impl OutputRenderer {
         gl: &glow::Context,
         buf: &Buffer,
         filter: i32,
-        font_extension: FontExtension,
     ) -> Self {
         unsafe {
             let w = buf.get_font_dimensions().width as f32
-                + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+                + if buf.use_letter_spacing {
                     1.0
                 } else {
                     0.0
@@ -240,10 +238,9 @@ impl OutputRenderer {
         gl: &glow::Context,
         buf: &Buffer,
         scale_filter: i32,
-        font_extension: FontExtension,
     ) {
         let w = buf.get_font_dimensions().width as f32
-            + if matches!(font_extension, FontExtension::LineGraphicsEnable) {
+            + if buf.use_letter_spacing {
                 1.0
             } else {
                 0.0

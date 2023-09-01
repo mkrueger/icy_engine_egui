@@ -7,7 +7,7 @@ use icy_engine::{
 
 pub mod glerror;
 
-use crate::{check_gl_error, FontExtension, MonitorSettings, TerminalCalc};
+use crate::{check_gl_error, MonitorSettings, TerminalCalc};
 
 mod output_renderer;
 mod sixel_renderer;
@@ -73,23 +73,22 @@ pub struct BufferView {
 }
 
 impl BufferView {
-    pub fn new(gl: &glow::Context, filter: i32, font_extension: FontExtension) -> Self {
+    pub fn new(gl: &glow::Context, filter: i32) -> Self {
         let mut buf = Buffer::create((80, 25));
         buf.is_terminal_buffer = true;
 
-        BufferView::from_buffer(gl, buf, filter, font_extension)
+        BufferView::from_buffer(gl, buf, filter)
     }
 
     pub fn from_buffer(
         gl: &glow::Context,
         buf: Buffer,
         filter: i32,
-        font_extension: FontExtension,
     ) -> Self {
         let terminal_renderer = terminal_renderer::TerminalRenderer::new(gl);
-        let sixel_renderer = sixel_renderer::SixelRenderer::new(gl, &buf, filter, font_extension);
+        let sixel_renderer = sixel_renderer::SixelRenderer::new(gl, &buf, filter);
         let output_renderer =
-            output_renderer::OutputRenderer::new(gl, &buf, filter, font_extension);
+            output_renderer::OutputRenderer::new(gl, &buf, filter);
         Self {
             buf,
             caret: Caret::default(),
@@ -202,25 +201,23 @@ impl BufferView {
         terminal_rect: egui::Rect,
         scale_filter: i32,
         monitor_settings: &MonitorSettings,
-        font_extension: FontExtension,
         has_focus: bool,
     ) {
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
-            self.update_contents(gl, scale_filter, font_extension);
+            self.update_contents(gl, scale_filter);
 
             self.output_renderer.init_output(gl);
             self.terminal_renderer.render_terminal(
                 gl,
                 self,
-                font_extension,
                 monitor_settings,
                 has_focus,
             );
             // draw sixels
             let render_texture =
                 self.sixel_renderer
-                    .render_sixels(gl, self, &self.output_renderer, font_extension);
+                    .render_sixels(gl, self, &self.output_renderer);
             gl.enable(glow::SCISSOR_TEST);
 
             self.output_renderer.render_to_screen(
@@ -238,20 +235,18 @@ impl BufferView {
     pub fn update_contents(
         &mut self,
         gl: &glow::Context,
-        scale_filter: i32,
-        font_extension: FontExtension,
+        scale_filter: i32
     ) {
         self.sixel_renderer
-            .update_sixels(gl, &mut self.buf, scale_filter, font_extension);
+            .update_sixels(gl, &mut self.buf, scale_filter);
         self.terminal_renderer.update_textures(
             gl,
             &mut self.buf,
             self.viewport_top,
             self.char_size,
-            font_extension,
         );
         self.output_renderer
-            .update_render_buffer(gl, &self.buf, scale_filter, font_extension);
+            .update_render_buffer(gl, &self.buf, scale_filter);
         check_gl_error!(gl, "buffer_view.update_contents");
     }
 
