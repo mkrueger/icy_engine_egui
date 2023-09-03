@@ -27,18 +27,10 @@ pub struct OutputRenderer {
 }
 
 impl OutputRenderer {
-    pub fn new(
-        gl: &glow::Context,
-        buf: &Buffer,
-        filter: i32,
-    ) -> Self {
+    pub fn new(gl: &glow::Context, buf: &Buffer, filter: i32) -> Self {
         unsafe {
             let w = buf.get_font_dimensions().width as f32
-                + if buf.use_letter_spacing {
-                    1.0
-                } else {
-                    0.0
-                };
+                + if buf.use_letter_spacing { 1.0 } else { 0.0 };
 
             let render_buffer_size = Vec2::new(
                 w * buf.get_width() as f32,
@@ -239,12 +231,8 @@ impl OutputRenderer {
         buf: &Buffer,
         scale_filter: i32,
     ) {
-        let w = buf.get_font_dimensions().width as f32
-            + if buf.use_letter_spacing {
-                1.0
-            } else {
-                0.0
-            };
+        let w =
+            buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing { 1.0 } else { 0.0 };
 
         let render_buffer_size = Vec2::new(
             w * buf.get_width() as f32,

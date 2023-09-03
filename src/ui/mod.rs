@@ -80,16 +80,16 @@ pub fn show_terminal_area(
     buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>,
     options: TerminalOptions,
 ) -> (Response, TerminalCalc) {
-    let mut buf_h = buffer_view.lock().buf.get_height() as f32;
-    let real_height = buffer_view.lock().buf.get_line_count() as f32;
-    let buf_w = buffer_view.lock().buf.get_width() as f32;
+    let mut buf_h = buffer_view.lock().get_buffer().get_height() as f32;
+    let real_height = buffer_view.lock().get_buffer().get_line_count() as f32;
+    let buf_w = buffer_view.lock().get_buffer().get_width() as f32;
     if !options.use_terminal_height {
         buf_h = real_height;
     }
 
-    let font_dimensions = buffer_view.lock().buf.get_font_dimensions();
+    let font_dimensions = buffer_view.lock().get_buffer().get_font_dimensions();
     let buffer_view2: Arc<egui::mutex::Mutex<BufferView>> = buffer_view.clone();
-    let max = buffer_view2.lock().buf.terminal_state.get_height();
+    let max = buffer_view2.lock().get_buffer().terminal_state.get_height();
 
     let mut scroll = SmoothScroll::new()
         .with_lock_focus(options.focus_lock)
@@ -106,7 +106,7 @@ pub fn show_terminal_area(
             let size = rect.size();
 
             let font_width = font_dimensions.width as f32
-                + if buffer_view2.lock().buf.use_letter_spacing {
+                + if buffer_view2.lock().get_buffer().use_letter_spacing {
                     1.0
                 } else {
                     0.0
@@ -199,7 +199,7 @@ pub fn show_terminal_area(
                     if fh > 0 {
                         buffer_view
                             .lock()
-                            .buf
+                            .get_buffer_mut()
                             .terminal_state
                             .set_height(fh as usize);
                     }
@@ -219,6 +219,10 @@ pub fn show_terminal_area(
         },
     );
 
-    buffer_view2.lock().buf.terminal_state.set_height(max);
+    buffer_view2
+        .lock()
+        .get_buffer_mut()
+        .terminal_state
+        .set_height(max);
     r
 }

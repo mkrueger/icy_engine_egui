@@ -17,11 +17,7 @@ pub struct SixelRenderer {
 }
 
 impl SixelRenderer {
-    pub fn new(
-        gl: &glow::Context,
-        buf: &Buffer,
-        filter: i32,
-    ) -> Self {
+    pub fn new(gl: &glow::Context, buf: &Buffer, filter: i32) -> Self {
         unsafe {
             let sixel_shader = compile_shader(gl);
             let sixel_render_texture = create_sixel_render_texture(gl, buf, filter);
@@ -99,18 +95,19 @@ impl SixelRenderer {
                 sixel.y_scale as f32,
             );
 
-            let fontdim: icy_engine::Size = buffer_view.buf.get_font_dimensions();
+            let fontdim: icy_engine::Size = buffer_view.get_buffer().get_font_dimensions();
             let fh: f32 = fontdim.height as f32;
 
             let w = fontdim.width as f32
-                + if buffer_view.buf.use_letter_spacing {
+                + if buffer_view.get_buffer().use_letter_spacing {
                     1.0
                 } else {
                     0.0
                 };
 
             let x = sixel.pos.x as f32 * w;
-            let y = sixel.pos.y as f32 * buffer_view.buf.get_font_dimensions().height as f32
+            let y = sixel.pos.y as f32
+                * buffer_view.get_buffer().get_font_dimensions().height as f32
                 - (buffer_view.viewport_top / buffer_view.char_size.y * fh);
 
             let w = sixel.size.width as f32;
@@ -133,18 +130,9 @@ impl SixelRenderer {
         render_texture
     }
 
-    pub fn update_sixels(
-        &mut self,
-        gl: &glow::Context,
-        buf: &mut Buffer,
-        scale_filter: i32,
-    ) {
-        let w = buf.get_font_dimensions().width as f32
-            + if buf.use_letter_spacing {
-                1.0
-            } else {
-                0.0
-            };
+    pub fn update_sixels(&mut self, gl: &glow::Context, buf: &mut Buffer, scale_filter: i32) {
+        let w =
+            buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing { 1.0 } else { 0.0 };
 
         let render_buffer_size = Vec2::new(
             w * buf.get_width() as f32,
@@ -275,12 +263,7 @@ unsafe fn create_sixel_render_texture(
     filter: i32,
 ) -> glow::Texture {
     let sixel_render_texture = gl.create_texture().unwrap();
-    let w = buf.get_font_dimensions().width as f32
-        + if buf.use_letter_spacing {
-            1.0
-        } else {
-            0.0
-        };
+    let w = buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing { 1.0 } else { 0.0 };
 
     let render_buffer_size = Vec2::new(
         w * buf.get_width() as f32,

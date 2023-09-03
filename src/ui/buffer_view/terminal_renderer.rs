@@ -133,18 +133,10 @@ impl TerminalRenderer {
         }
     }
 
-    fn update_font_texture(
-        &mut self,
-        gl: &glow::Context,
-        buf: &Buffer,
-    ) {
+    fn update_font_texture(&mut self, gl: &glow::Context, buf: &Buffer) {
         let size = buf.get_font(0).unwrap().size;
 
-        let w_ext = if buf.use_letter_spacing {
-            1
-        } else {
-            0
-        };
+        let w_ext = if buf.use_letter_spacing { 1 } else { 0 };
 
         let w = size.width;
         let h = size.height;
@@ -189,7 +181,10 @@ impl TerminalRenderer {
                                 po += 1;
                             }
                         }
-                        if buf.use_letter_spacing && (0xC0..=0xDF).contains(&ch) && (scan_line & 1) != 0 {
+                        if buf.use_letter_spacing
+                            && (0xC0..=0xDF).contains(&ch)
+                            && (scan_line & 1) != 0
+                        {
                             // unroll
                             font_data[po] = 0xFF;
                             po += 1;
@@ -456,7 +451,7 @@ impl TerminalRenderer {
         monitor_settings: &MonitorSettings,
         has_focus: bool,
     ) {
-        let fontdim = buffer_view.buf.get_font_dimensions();
+        let fontdim = buffer_view.get_buffer().get_font_dimensions();
         let fh = fontdim.height as f32;
         gl.use_program(Some(self.terminal_shader));
         gl.uniform_2_f32(
@@ -482,34 +477,36 @@ impl TerminalRenderer {
             scroll_offset - fh,
         );
         let first_line = (buffer_view.viewport_top / buffer_view.char_size.y) as i32;
-        let real_height = buffer_view.buf.get_line_count() as i32;
-        let buf_h = buffer_view.buf.get_height() as i32;
+        let real_height = buffer_view.get_buffer().get_line_count() as i32;
+        let buf_h = buffer_view.get_buffer().get_height() as i32;
 
         let max_lines = max(0, real_height - buf_h) as i32;
         let scroll_back_line = max(0, max_lines - first_line) - 1;
 
-        let sbl = (buffer_view.buf.get_first_visible_line() as i32 - scroll_back_line) as f32;
+        let sbl =
+            (buffer_view.get_buffer().get_first_visible_line() as i32 - scroll_back_line) as f32;
 
         let font_width = fontdim.width as f32
-            + if buffer_view.buf.use_letter_spacing {
+            + if buffer_view.get_buffer().use_letter_spacing {
                 1.0
             } else {
                 0.0
             };
-        let caret_x = buffer_view.caret.get_position().x as f32 * font_width;
+        let caret_x = buffer_view.get_caret().get_position().x as f32 * font_width;
 
-        let caret_h = if buffer_view.caret.insert_mode {
+        let caret_h = if buffer_view.get_caret().insert_mode {
             fontdim.height as f32 / 2.0
         } else {
             2.0
         };
 
-        let caret_y = buffer_view.caret.get_position().y as f32 * fontdim.height as f32
+        let caret_y = buffer_view.get_caret().get_position().y as f32 * fontdim.height as f32
             + fontdim.height as f32
             - caret_h
             - (buffer_view.viewport_top / buffer_view.char_size.y * fh)
             + scroll_offset;
-        let caret_w = if self.caret_blink.is_on() && buffer_view.caret.is_visible && has_focus {
+        let caret_w = if self.caret_blink.is_on() && buffer_view.get_caret().is_visible && has_focus
+        {
             font_width
         } else {
             0.0
@@ -536,8 +533,8 @@ impl TerminalRenderer {
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_terminal_size")
                 .as_ref(),
-            buffer_view.buf.get_width() as f32 - 0.0001,
-            buffer_view.buf.get_height() as f32 - 0.0001,
+            buffer_view.get_buffer().get_width() as f32 - 0.0001,
+            buffer_view.get_buffer().get_height() as f32 - 0.0001,
         );
 
         gl.uniform_1_i32(
@@ -556,7 +553,7 @@ impl TerminalRenderer {
             BUFFER_TEXTURE_SLOT as i32,
         );
 
-        match &buffer_view.selection_opt {
+        match buffer_view.get_selection() {
             Some(selection) => {
                 if selection.is_empty() {
                     gl.uniform_4_f32(

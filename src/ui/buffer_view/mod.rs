@@ -1,8 +1,8 @@
-
 use egui::{Response, Vec2};
 use glow::HasContext;
 use icy_engine::{
-    Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position, Selection, Shape,
+    editor::EditState, Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position,
+    Selection,
 };
 
 pub mod glerror;
@@ -52,8 +52,7 @@ impl Blink {
 }
 
 pub struct BufferView {
-    pub buf: Buffer,
-    pub caret: Caret,
+    edit_state: EditState,
 
     pub scale: f32,
     pub buffer_input_mode: BufferInputMode,
@@ -62,8 +61,6 @@ pub struct BufferView {
     pub char_size: Vec2,
 
     pub button_pressed: bool,
-
-    selection_opt: Option<Selection>,
 
     terminal_renderer: terminal_renderer::TerminalRenderer,
     sixel_renderer: sixel_renderer::SixelRenderer,
@@ -80,23 +77,16 @@ impl BufferView {
         BufferView::from_buffer(gl, buf, filter)
     }
 
-    pub fn from_buffer(
-        gl: &glow::Context,
-        buf: Buffer,
-        filter: i32,
-    ) -> Self {
+    pub fn from_buffer(gl: &glow::Context, buf: Buffer, filter: i32) -> Self {
         let terminal_renderer = terminal_renderer::TerminalRenderer::new(gl);
         let sixel_renderer = sixel_renderer::SixelRenderer::new(gl, &buf, filter);
-        let output_renderer =
-            output_renderer::OutputRenderer::new(gl, &buf, filter);
+        let output_renderer = output_renderer::OutputRenderer::new(gl, &buf, filter);
         Self {
-            buf,
-            caret: Caret::default(),
+            edit_state: EditState::from_buffer(buf),
             scale: 1.0,
             buffer_input_mode: BufferInputMode::CP437,
             button_pressed: false,
             viewport_top: 0.,
-            selection_opt: None,
             char_size: Vec2::ZERO,
             terminal_renderer,
             sixel_renderer,
@@ -105,70 +95,67 @@ impl BufferView {
         }
     }
 
-    pub fn get_selection(&mut self) -> &mut Option<Selection> {
-        &mut self.selection_opt
+    pub fn set_parser(&mut self, parser: Box<dyn BufferParser>) {
+        self.edit_state.set_parser(parser);
+    }
+
+    pub fn get_parser(&self) -> &dyn BufferParser {
+        self.edit_state.get_parser()
+    }
+
+    pub fn get_width(&self) -> usize {
+        self.edit_state.get_buffer().get_width()
+    }
+
+    pub fn get_height(&self) -> usize {
+        self.edit_state.get_buffer().get_height()
+    }
+
+    pub fn get_edit_state_mut(&mut self) -> &mut EditState {
+        &mut self.edit_state
+    }
+
+    pub fn get_buffer(&self) -> &Buffer {
+        self.edit_state.get_buffer()
+    }
+
+    pub fn get_buffer_mut(&mut self) -> &mut Buffer {
+        self.edit_state.get_buffer_mut()
+    }
+
+    pub fn get_caret(&self) -> &Caret {
+        self.edit_state.get_caret()
+    }
+
+    pub fn get_caret_mut(&mut self) -> &mut Caret {
+        self.edit_state.get_caret_mut()
+    }
+
+    pub fn get_selection(&self) -> Option<Selection> {
+        self.edit_state.get_selection()
     }
 
     pub fn set_selection(&mut self, sel: Selection) {
-        self.selection_opt = Some(sel);
+        self.edit_state.set_selection(sel);
     }
 
     pub fn clear_selection(&mut self) {
-        self.selection_opt = None;
+        self.edit_state.clear_selection();
     }
 
     pub fn clear(&mut self) {
-        self.caret.ff(&mut self.buf, 0);
+        let cur_layer = self.edit_state.get_current_layer();
+        self.get_buffer_mut().reset_terminal();
+        self.get_buffer_mut().layers[cur_layer].clear();
+        self.get_buffer_mut().stop_sixel_threads();
+
+        self.get_caret_mut().set_position(Position::default());
+        self.get_caret_mut().is_visible = true;
+        self.get_caret_mut().reset_color_attribute();
     }
 
-    pub fn get_copy_text(&mut self, buffer_parser: &dyn BufferParser) -> Option<String> {
-        let Some(selection) = &self.selection_opt else {
-            return None;
-        };
-
-        let mut res = String::new();
-        if matches!(selection.shape, Shape::Rectangle) {
-            let start = selection.min();
-            let end = selection.max();
-            for y in start.y..=end.y {
-                for x in start.x..end.x {
-                    let ch = self.buf.get_char(Position::new(x, y));
-                    res.push(buffer_parser.convert_to_unicode(ch));
-                }
-                res.push('\n');
-            }
-        } else {
-            let (start, end) = if selection.anchor.as_position() < selection.lead.as_position() {
-                (selection.anchor.as_position(), selection.lead.as_position())
-            } else {
-                (selection.lead.as_position(), selection.anchor.as_position())
-            };
-            if start.y == end.y {
-                for x in start.x..end.x {
-                    let ch = self.buf.get_char(Position::new(x, start.y));
-                    res.push(buffer_parser.convert_to_unicode(ch));
-                }
-            } else {
-                for x in start.x..(self.buf.get_line_length(start.y as usize) as i32) {
-                    let ch = self.buf.get_char(Position::new(x, start.y));
-                    res.push(buffer_parser.convert_to_unicode(ch));
-                }
-                res.push('\n');
-                for y in start.y + 1..end.y {
-                    for x in 0..(self.buf.get_line_length(y as usize) as i32) {
-                        let ch = self.buf.get_char(Position::new(x, y));
-                        res.push(buffer_parser.convert_to_unicode(ch));
-                    }
-                    res.push('\n');
-                }
-                for x in 0..end.x {
-                    let ch = self.buf.get_char(Position::new(x, end.y));
-                    res.push(buffer_parser.convert_to_unicode(ch));
-                }
-            }
-        }
-        self.selection_opt = None;
-        Some(res)
+    pub fn get_copy_text(&mut self) -> Option<String> {
+        self.edit_state.get_copy_text()
     }
 
     pub fn redraw_view(&mut self) {
@@ -183,14 +170,10 @@ impl BufferView {
         self.terminal_renderer.redraw_font();
     }
 
-    pub fn print_char(
-        &mut self,
-        parser: &mut Box<dyn BufferParser>,
-        c: char,
-    ) -> EngineResult<CallbackAction> {
-        let res = parser.print_char(&mut self.buf, 0, &mut self.caret, c);
-        self.redraw_view();
-        res
+    pub fn print_char(&mut self, c: char) -> EngineResult<CallbackAction> {
+        let edit_state = &mut self.edit_state;
+        let (buf, caret, parser) = edit_state.get_buffer_and_caret_mut();
+        parser.print_char(buf, 0, caret, c)
     }
 
     pub fn render_contents(
@@ -208,16 +191,12 @@ impl BufferView {
             self.update_contents(gl, scale_filter);
 
             self.output_renderer.init_output(gl);
-            self.terminal_renderer.render_terminal(
-                gl,
-                self,
-                monitor_settings,
-                has_focus,
-            );
+            self.terminal_renderer
+                .render_terminal(gl, self, monitor_settings, has_focus);
             // draw sixels
-            let render_texture =
-                self.sixel_renderer
-                    .render_sixels(gl, self, &self.output_renderer);
+            let render_texture = self
+                .sixel_renderer
+                .render_sixels(gl, self, &self.output_renderer);
             gl.enable(glow::SCISSOR_TEST);
 
             self.output_renderer.render_to_screen(
@@ -232,21 +211,19 @@ impl BufferView {
         check_gl_error!(gl, "buffer_view.render_contents");
     }
 
-    pub fn update_contents(
-        &mut self,
-        gl: &glow::Context,
-        scale_filter: i32
-    ) {
+    pub fn update_contents(&mut self, gl: &glow::Context, scale_filter: i32) {
+        let edit_state = &mut self.edit_state;
         self.sixel_renderer
-            .update_sixels(gl, &mut self.buf, scale_filter);
+            .update_sixels(gl, edit_state.get_buffer_mut(), scale_filter);
         self.terminal_renderer.update_textures(
             gl,
-            &mut self.buf,
+            edit_state.get_buffer_mut(),
             self.viewport_top,
             self.char_size,
         );
         self.output_renderer
-            .update_render_buffer(gl, &self.buf, scale_filter);
+            .update_render_buffer(gl, edit_state.get_buffer_mut(), scale_filter);
+
         check_gl_error!(gl, "buffer_view.update_contents");
     }
 
@@ -257,13 +234,13 @@ impl BufferView {
     }
 
     pub fn clear_buffer_screen(&mut self) {
-        self.caret.set_background(0);
-        self.buf.clear_screen(0, &mut self.caret);
+        self.get_caret_mut().set_background(0);
+        self.clear();
         self.redraw_view();
     }
 
     pub fn set_buffer(&mut self, buf: Buffer) {
-        self.buf = buf;
+        self.edit_state.set_buffer(buf);
         self.redraw_font();
         self.redraw_palette();
     }
