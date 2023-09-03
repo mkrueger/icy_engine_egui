@@ -111,6 +111,10 @@ impl BufferView {
         self.edit_state.get_buffer().get_height()
     }
 
+    pub fn get_edit_state(&self) -> &EditState {
+        &self.edit_state
+    }
+
     pub fn get_edit_state_mut(&mut self) -> &mut EditState {
         &mut self.edit_state
     }
