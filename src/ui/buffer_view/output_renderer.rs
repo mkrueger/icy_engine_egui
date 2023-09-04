@@ -299,7 +299,7 @@ impl OutputRenderer {
                     y / (terminal_rect.height() * info.pixels_per_point),
                 );
                 match layer.role {
-                    icy_engine::Role::Normal => {
+                    icy_engine::Role::Normal | icy_engine::Role::Image => {
                         gl.uniform_3_f32(
                             gl.get_uniform_location(self.output_shader, "u_layer_rectangle_color")
                                 .as_ref(),
@@ -308,7 +308,7 @@ impl OutputRenderer {
                             1.0,
                         );
                     }
-                    icy_engine::Role::PastePreview => {
+                    icy_engine::Role::PastePreview | icy_engine::Role::PasteImage => {
                         gl.uniform_3_f32(
                             gl.get_uniform_location(self.output_shader, "u_layer_rectangle_color")
                                 .as_ref(),

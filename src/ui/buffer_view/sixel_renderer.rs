@@ -152,8 +152,9 @@ impl SixelRenderer {
             }
         }
 
-        let sixels_updated = buf.update_sixel_threads();
-        if !buf.layers.iter().any(|l| !l.sixels.is_empty()) {
+        let count: usize = buf.layers.iter().map(|l| l.sixels.len()).sum();
+        let mut sixels_updated = buf.update_sixel_threads() || count != self.sixel_cache.len();
+        if count == 0 {
             for sx in &self.sixel_cache {
                 unsafe {
                     gl.delete_texture(sx.texture);
@@ -162,6 +163,21 @@ impl SixelRenderer {
             self.sixel_cache.clear();
             return;
         }
+
+        let mut i = 0;
+        for layer in &buf.layers {
+            for sixel in &layer.sixels {
+                if i >= self.sixel_cache.len() {
+                    sixels_updated = true;
+                    break;
+                }
+                if self.sixel_cache[i].pos != sixel.position + layer.get_offset() {
+                    sixels_updated = true;
+                }
+            }
+            i += 1;
+        }
+
         if !sixels_updated {
             return;
         }
@@ -171,55 +187,56 @@ impl SixelRenderer {
             }
         }
         self.sixel_cache.clear();
+        for layer in &buf.layers {
+            for sixel in &layer.sixels {
+                unsafe {
+                    let texture = gl.create_texture().unwrap();
+                    gl.active_texture(glow::TEXTURE0 + 6);
+                    gl.bind_texture(glow::TEXTURE_2D, Some(texture));
+                    gl.tex_parameter_i32(
+                        glow::TEXTURE_2D,
+                        glow::TEXTURE_MIN_FILTER,
+                        glow::NEAREST as i32,
+                    );
+                    gl.tex_parameter_i32(
+                        glow::TEXTURE_2D,
+                        glow::TEXTURE_MAG_FILTER,
+                        glow::NEAREST as i32,
+                    );
+                    gl.tex_parameter_i32(
+                        glow::TEXTURE_2D,
+                        glow::TEXTURE_WRAP_S,
+                        glow::CLAMP_TO_EDGE as i32,
+                    );
+                    gl.tex_parameter_i32(
+                        glow::TEXTURE_2D,
+                        glow::TEXTURE_WRAP_T,
+                        glow::CLAMP_TO_EDGE as i32,
+                    );
+                    gl.tex_image_2d(
+                        glow::TEXTURE_2D,
+                        0,
+                        glow::RGBA as i32,
+                        sixel.get_width(),
+                        sixel.get_height(),
+                        0,
+                        glow::RGBA,
+                        glow::UNSIGNED_BYTE,
+                        Some(&sixel.picture_data),
+                    );
 
-        for sixel in &buf.layers[0].sixels {
-            unsafe {
-                let texture = gl.create_texture().unwrap();
-                gl.active_texture(glow::TEXTURE0 + 6);
-                gl.bind_texture(glow::TEXTURE_2D, Some(texture));
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_MIN_FILTER,
-                    glow::NEAREST as i32,
-                );
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_MAG_FILTER,
-                    glow::NEAREST as i32,
-                );
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_WRAP_S,
-                    glow::CLAMP_TO_EDGE as i32,
-                );
-                gl.tex_parameter_i32(
-                    glow::TEXTURE_2D,
-                    glow::TEXTURE_WRAP_T,
-                    glow::CLAMP_TO_EDGE as i32,
-                );
-                gl.tex_image_2d(
-                    glow::TEXTURE_2D,
-                    0,
-                    glow::RGBA as i32,
-                    sixel.width(),
-                    sixel.height(),
-                    0,
-                    glow::RGBA,
-                    glow::UNSIGNED_BYTE,
-                    Some(&sixel.picture_data),
-                );
-
-                let new_entry = SixelCacheEntry {
-                    pos: sixel.position,
-                    x_scale: sixel.horizontal_scale,
-                    y_scale: sixel.vertical_scale,
-                    size: icy_engine::Size {
-                        width: sixel.width(),
-                        height: sixel.height(),
-                    },
-                    texture,
-                };
-                self.sixel_cache.push(new_entry);
+                    let new_entry = SixelCacheEntry {
+                        pos: sixel.position + layer.get_offset(),
+                        x_scale: sixel.horizontal_scale,
+                        y_scale: sixel.vertical_scale,
+                        size: icy_engine::Size {
+                            width: sixel.get_width(),
+                            height: sixel.get_height(),
+                        },
+                        texture,
+                    };
+                    self.sixel_cache.push(new_entry);
+                }
             }
         }
         crate::check_gl_error!(gl, "update_sixels");
