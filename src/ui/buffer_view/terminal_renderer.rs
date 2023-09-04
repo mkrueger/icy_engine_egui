@@ -483,10 +483,7 @@ impl TerminalRenderer {
         let real_height = buffer_view.get_buffer().get_line_count();
         let buf_h = buffer_view.calc.forced_height;
 
-        let max_lines = max(0, real_height - buf_h) as i32;
-        let scroll_back_line = max(0, max_lines - first_line) - 1;
-
-        let sbl = (buffer_view.get_buffer().get_first_visible_line() - scroll_back_line) as f32;
+        let sbl = first_line as f32;
 
         let font_width = fontdim.width as f32
             + if buffer_view.get_buffer().use_letter_spacing {
