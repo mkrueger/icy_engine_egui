@@ -8,6 +8,7 @@ use icy_engine::Buffer;
 use icy_engine::Shape;
 use web_time::Instant;
 
+use crate::TerminalCalc;
 use crate::prepare_shader;
 use crate::MonitorSettings;
 
@@ -100,6 +101,7 @@ impl TerminalRenderer {
         &mut self,
         gl: &glow::Context,
         buf: &mut Buffer,
+        calc: &TerminalCalc,
         viewport_top: f32,
         char_size: Vec2,
     ) {
@@ -113,7 +115,7 @@ impl TerminalRenderer {
 
         if self.redraw_view {
             self.redraw_view = false;
-            self.update_terminal_texture(gl, buf, viewport_top, char_size);
+            self.update_terminal_texture(gl, buf, calc, viewport_top, char_size);
         }
 
         if self.redraw_palette || self.old_palette_color_count != buf.palette.colors.len() {
@@ -250,16 +252,17 @@ impl TerminalRenderer {
         &self,
         gl: &glow::Context,
         buf: &Buffer,
+        calc: &TerminalCalc,
         viewport_top: f32,
         char_size: Vec2,
     ) {
         let first_line = (viewport_top / char_size.y) as i32;
         let real_height = buf.get_line_count();
-        let buf_h = buf.get_height();
+        let buf_h = calc.forced_height;
 
         let max_lines = max(0, real_height - buf_h) as i32;
         let scroll_back_line = max(0, max_lines - first_line);
-        let first_line = 0.max(buf.get_line_count().saturating_sub(buf.get_height()));
+        let first_line = 0.max(buf.get_line_count().saturating_sub(calc.forced_height));
         let mut buffer_data = Vec::with_capacity((2 * buf.get_width() * 4 * buf_h) as usize);
         let colors = buf.palette.colors.len() as u32 - 1;
         let mut y: i32 = 0;
@@ -478,7 +481,7 @@ impl TerminalRenderer {
         );
         let first_line = (buffer_view.viewport_top / buffer_view.char_size.y) as i32;
         let real_height = buffer_view.get_buffer().get_line_count();
-        let buf_h = buffer_view.get_buffer().get_height();
+        let buf_h = buffer_view.calc.forced_height;
 
         let max_lines = max(0, real_height - buf_h) as i32;
         let scroll_back_line = max(0, max_lines - first_line) - 1;
@@ -536,7 +539,7 @@ impl TerminalRenderer {
             gl.get_uniform_location(self.terminal_shader, "u_terminal_size")
                 .as_ref(),
             buffer_view.get_buffer().get_width() as f32 - 0.0001,
-            buffer_view.get_buffer().get_height() as f32 - 0.0001,
+            buffer_view.calc.forced_height as f32 - 0.0001,
         );
 
         gl.uniform_1_i32(

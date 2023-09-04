@@ -3,6 +3,7 @@ use glow::HasContext as _;
 use icy_engine::Buffer;
 use icy_engine::Position;
 
+use crate::TerminalCalc;
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
 
@@ -17,10 +18,10 @@ pub struct SixelRenderer {
 }
 
 impl SixelRenderer {
-    pub fn new(gl: &glow::Context, buf: &Buffer, filter: i32) -> Self {
+    pub fn new(gl: &glow::Context, buf: &Buffer, calc: &TerminalCalc, filter: i32) -> Self {
         unsafe {
             let sixel_shader = compile_shader(gl);
-            let sixel_render_texture = create_sixel_render_texture(gl, buf, filter);
+            let sixel_render_texture = create_sixel_render_texture(gl, buf, calc, filter);
 
             Self {
                 sixel_cache: Vec::new(),
@@ -130,13 +131,13 @@ impl SixelRenderer {
         render_texture
     }
 
-    pub fn update_sixels(&mut self, gl: &glow::Context, buf: &mut Buffer, scale_filter: i32) {
+    pub fn update_sixels(&mut self, gl: &glow::Context, buf: &mut Buffer, calc: &TerminalCalc, scale_filter: i32) {
         let w =
             buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing { 1.0 } else { 0.0 };
 
         let render_buffer_size = Vec2::new(
             w * buf.get_width() as f32,
-            buf.get_font_dimensions().height as f32 * buf.get_height() as f32,
+            buf.get_font_dimensions().height as f32 * calc.forced_height as f32,
         );
         if render_buffer_size != self.render_buffer_size {
             self.render_buffer_size = render_buffer_size;
@@ -260,6 +261,7 @@ pub struct SixelCacheEntry {
 unsafe fn create_sixel_render_texture(
     gl: &glow::Context,
     buf: &Buffer,
+calc: &TerminalCalc,
     filter: i32,
 ) -> glow::Texture {
     let sixel_render_texture = gl.create_texture().unwrap();
@@ -267,7 +269,7 @@ unsafe fn create_sixel_render_texture(
 
     let render_buffer_size = Vec2::new(
         w * buf.get_width() as f32,
-        buf.get_font_dimensions().height as f32 * buf.get_height() as f32,
+        buf.get_font_dimensions().height as f32 * calc.forced_height as f32,
     );
 
     gl.bind_texture(glow::TEXTURE_2D, Some(sixel_render_texture));

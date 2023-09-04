@@ -112,7 +112,6 @@ pub fn show_terminal_area(
 
     let font_dimensions = buffer_view.lock().get_buffer().get_font_dimensions();
     let buffer_view2: Arc<egui::mutex::Mutex<BufferView>> = buffer_view.clone();
-    let max = buffer_view2.lock().get_buffer().terminal_state.get_height();
 
     let mut scroll = SmoothScroll::new()
         .with_lock_focus(options.focus_lock)
@@ -212,22 +211,13 @@ pub fn show_terminal_area(
                 }
             }
             let fh = calc.forced_height;
-            let calc2 = *calc;
+            buffer_view.lock().calc = *calc;
             let callback = egui::PaintCallback {
                 rect: calc.terminal_rect,
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
-                    if fh > 0 {
-                        buffer_view
-                            .lock()
-                            .get_buffer_mut()
-                            .terminal_state
-                            .set_height(fh);
-                    }
-
                     buffer_view.lock().render_contents(
                         painter.gl(),
                         &info,
-                        calc2,
                         options.filter,
                         &options.settings,
                     );

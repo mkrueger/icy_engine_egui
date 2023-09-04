@@ -60,6 +60,8 @@ pub struct BufferView {
 
     pub char_size: Vec2,
 
+    pub calc: TerminalCalc,
+
     pub button_pressed: bool,
 
     terminal_renderer: terminal_renderer::TerminalRenderer,
@@ -79,8 +81,9 @@ impl BufferView {
 
     pub fn from_buffer(gl: &glow::Context, buf: Buffer, filter: i32) -> Self {
         let terminal_renderer = terminal_renderer::TerminalRenderer::new(gl);
-        let sixel_renderer = sixel_renderer::SixelRenderer::new(gl, &buf, filter);
-        let output_renderer = output_renderer::OutputRenderer::new(gl, &buf, filter);
+        let calc = TerminalCalc::default();
+        let sixel_renderer = sixel_renderer::SixelRenderer::new(gl, &buf, &calc, filter);
+        let output_renderer = output_renderer::OutputRenderer::new(gl, &buf, &calc, filter);
         Self {
             edit_state: EditState::from_buffer(buf),
             scale: 1.0,
@@ -92,6 +95,7 @@ impl BufferView {
             sixel_renderer,
             output_renderer,
             drag_start: None,
+            calc,
         }
     }
 
@@ -184,11 +188,10 @@ impl BufferView {
         &mut self,
         gl: &glow::Context,
         info: &egui::PaintCallbackInfo,
-        calc: TerminalCalc,
         scale_filter: i32,
         monitor_settings: &MonitorSettings,
     ) {
-        let has_focus = calc.has_focus;
+        let has_focus = self.calc.has_focus;
 
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
@@ -208,7 +211,7 @@ impl BufferView {
                 info,
                 self,
                 render_texture,
-                &calc,
+                &self.calc,
                 monitor_settings,
             );
         }
@@ -218,15 +221,16 @@ impl BufferView {
     pub fn update_contents(&mut self, gl: &glow::Context, scale_filter: i32) {
         let edit_state = &mut self.edit_state;
         self.sixel_renderer
-            .update_sixels(gl, edit_state.get_buffer_mut(), scale_filter);
+            .update_sixels(gl, edit_state.get_buffer_mut(), &self.calc, scale_filter);
         self.terminal_renderer.update_textures(
             gl,
             edit_state.get_buffer_mut(),
+            &self.calc,
             self.viewport_top,
             self.char_size,
         );
         self.output_renderer
-            .update_render_buffer(gl, edit_state.get_buffer_mut(), scale_filter);
+            .update_render_buffer(gl, edit_state.get_buffer_mut(), &self.calc, scale_filter);
 
         check_gl_error!(gl, "buffer_view.update_contents");
     }
