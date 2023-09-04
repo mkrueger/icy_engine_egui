@@ -492,8 +492,9 @@ impl TerminalRenderer {
                 0.0
             };
         let mut caret_pos = buffer_view.get_caret().get_position();
-        let layer = buffer_view.edit_state.get_current_layer();
-        caret_pos += buffer_view.get_buffer().layers[layer].get_offset();
+        if let Some(layer) = buffer_view.edit_state.get_cur_layer() {
+            caret_pos += layer.get_offset();
+        }
 
         let caret_x = caret_pos.x as f32 * font_width;
 
