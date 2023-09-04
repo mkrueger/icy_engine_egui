@@ -8,9 +8,9 @@ use icy_engine::Buffer;
 use icy_engine::Shape;
 use web_time::Instant;
 
-use crate::TerminalCalc;
 use crate::prepare_shader;
 use crate::MonitorSettings;
+use crate::TerminalCalc;
 
 use super::Blink;
 use super::BufferView;

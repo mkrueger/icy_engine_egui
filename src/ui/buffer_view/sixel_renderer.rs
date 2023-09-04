@@ -3,9 +3,9 @@ use glow::HasContext as _;
 use icy_engine::Buffer;
 use icy_engine::Position;
 
-use crate::TerminalCalc;
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
+use crate::TerminalCalc;
 
 use super::output_renderer::OutputRenderer;
 use super::BufferView;
@@ -131,7 +131,13 @@ impl SixelRenderer {
         render_texture
     }
 
-    pub fn update_sixels(&mut self, gl: &glow::Context, buf: &mut Buffer, calc: &TerminalCalc, scale_filter: i32) {
+    pub fn update_sixels(
+        &mut self,
+        gl: &glow::Context,
+        buf: &mut Buffer,
+        calc: &TerminalCalc,
+        scale_filter: i32,
+    ) {
         let w =
             buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing { 1.0 } else { 0.0 };
 
@@ -261,7 +267,7 @@ pub struct SixelCacheEntry {
 unsafe fn create_sixel_render_texture(
     gl: &glow::Context,
     buf: &Buffer,
-calc: &TerminalCalc,
+    calc: &TerminalCalc,
     filter: i32,
 ) -> glow::Texture {
     let sixel_render_texture = gl.create_texture().unwrap();

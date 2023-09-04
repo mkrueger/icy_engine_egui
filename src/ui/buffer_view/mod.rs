@@ -220,8 +220,12 @@ impl BufferView {
 
     pub fn update_contents(&mut self, gl: &glow::Context, scale_filter: i32) {
         let edit_state = &mut self.edit_state;
-        self.sixel_renderer
-            .update_sixels(gl, edit_state.get_buffer_mut(), &self.calc, scale_filter);
+        self.sixel_renderer.update_sixels(
+            gl,
+            edit_state.get_buffer_mut(),
+            &self.calc,
+            scale_filter,
+        );
         self.terminal_renderer.update_textures(
             gl,
             edit_state.get_buffer_mut(),
@@ -229,8 +233,12 @@ impl BufferView {
             self.viewport_top,
             self.char_size,
         );
-        self.output_renderer
-            .update_render_buffer(gl, edit_state.get_buffer_mut(), &self.calc, scale_filter);
+        self.output_renderer.update_render_buffer(
+            gl,
+            edit_state.get_buffer_mut(),
+            &self.calc,
+            scale_filter,
+        );
 
         check_gl_error!(gl, "buffer_view.update_contents");
     }
