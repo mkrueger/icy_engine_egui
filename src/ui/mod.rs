@@ -210,7 +210,6 @@ pub fn show_terminal_area(
                     buffer_view.redraw_view();
                 }
             }
-            let fh = calc.forced_height;
             buffer_view.lock().calc = *calc;
             let callback = egui::PaintCallback {
                 rect: calc.terminal_rect,

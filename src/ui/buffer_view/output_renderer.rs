@@ -234,7 +234,7 @@ impl OutputRenderer {
 
             let border = 2.0;
 
-            if let Some(po) = layer.preview_offset {
+            if let Some(po) = layer.get_preview_offset() {
                 let layer_x = po.x as f32 * calc.char_size.x;
                 let layer_y = po.y as f32 * calc.char_size.y - border + scroll_offset;
                 let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
@@ -277,8 +277,8 @@ impl OutputRenderer {
                 );
             }
 
-            let layer_x = layer.offset.x as f32 * calc.char_size.x;
-            let layer_y = layer.offset.y as f32 * calc.char_size.y - border + scroll_offset;
+            let layer_x = layer.get_offset().x as f32 * calc.char_size.x;
+            let layer_y = layer.get_offset().y as f32 * calc.char_size.y - border + scroll_offset;
             let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
             let layer_h = layer.get_height() as f32 * calc.char_size.y + border * 2.0;
             let x = buffer_rect.left() + layer_x - border;
