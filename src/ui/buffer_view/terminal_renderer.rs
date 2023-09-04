@@ -491,7 +491,11 @@ impl TerminalRenderer {
             } else {
                 0.0
             };
-        let caret_x = buffer_view.get_caret().get_position().x as f32 * font_width;
+        let mut caret_pos = buffer_view.get_caret().get_position();
+        let layer = buffer_view.edit_state.get_current_layer();
+        caret_pos += buffer_view.get_buffer().layers[layer].offset;
+
+        let caret_x = caret_pos.x as f32 * font_width;
 
         let caret_h = if buffer_view.get_caret().insert_mode {
             fontdim.height as f32 / 2.0
@@ -499,8 +503,7 @@ impl TerminalRenderer {
             2.0
         };
 
-        let caret_y = buffer_view.get_caret().get_position().y as f32 * fontdim.height as f32
-            + fontdim.height as f32
+        let caret_y = caret_pos.y as f32 * fontdim.height as f32 + fontdim.height as f32
             - caret_h
             - (buffer_view.viewport_top / buffer_view.char_size.y * fh)
             + scroll_offset;
