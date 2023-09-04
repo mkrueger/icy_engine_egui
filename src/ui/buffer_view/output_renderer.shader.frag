@@ -5,6 +5,11 @@ uniform vec2      u_resolution;
 uniform float     u_effect;
 uniform vec4      u_buffer_rect;
 
+uniform vec4        u_layer_rectangle;
+uniform vec3        u_layer_rectangle_color;
+uniform vec4        u_preview_layer_rectangle;
+uniform vec3        u_preview_layer_rectangle_color;
+
 uniform float gamma;
 uniform float contrast;
 uniform float saturation;
@@ -111,20 +116,194 @@ void draw_background() {
 	}
 }
 
+
+
+void draw_layer_rectangle() {
+	if (u_layer_rectangle_color == vec3(0.0)) {
+		return;
+	}
+
+	vec2 uv   = gl_FragCoord.xy / u_resolution;
+	vec2 from = u_buffer_rect.xy;
+	vec2 to   = u_buffer_rect.zw;
+  //  uv = vec2(uv.s, 1.0 - uv.t)
+  
+  	vec2 bfrom = u_buffer_rect.xy;
+	vec2 bto   = u_buffer_rect.zw;
+	vec2 px = 0.8 / u_resolution;
+
+
+	vec2 coord = (uv - from) / (bto - bfrom);
+
+
+    vec2 upper_left = u_buffer_rect.xy;
+    vec2 bottom_right = u_buffer_rect.zw;
+
+
+
+	float checker_size = 2.0;
+    vec2 p = floor(gl_FragCoord.xy / checker_size);
+    float PatternMask = mod(p.x + mod(p.y, 2.0), 2.0);
+
+	// left
+    if (abs(upper_left.x - uv.x) <= px.x   && 
+         upper_left.y <= uv.y && uv.y < bottom_right.y)  {
+	if (PatternMask < 1.0) {
+		color = vec3(1.0, 1.0, 1.0);
+	} else {
+		color = vec3(0, 0, 0);
+	}
+    }
+	
+	// top
+    if (abs(upper_left.y - uv.y) <= px.y  && 
+         upper_left.x <= uv.x && uv.x < bottom_right.x)  {
+		if (PatternMask < 1.0) {
+			color = vec3(1.0, 1.0, 1.0);
+		} else {
+			color = vec3(0, 0, 0);
+		}
+    }
+
+	// right
+    if (abs( bottom_right.x - uv.x) <= px.x   && 
+         upper_left.y <= uv.y && uv.y < bottom_right.y)  {
+		if (PatternMask < 1.0) {
+			color = vec3(1.0, 1.0, 1.0);
+		} else {
+			color = vec3(0, 0, 0);
+		}
+
+    }
+
+	// bottom
+    if (abs(bottom_right.y - uv.y) <= px.y && 
+         upper_left.x <= uv.x && uv.x < bottom_right.x)  {
+		if (PatternMask < 1.0) {
+			color = vec3(1.0, 1.0, 1.0);
+		} else {
+			color = vec3(0, 0, 0);
+		}
+    }
+
+
+ // paint layer_rectangle
+    upper_left = u_layer_rectangle.xy;
+    bottom_right = u_layer_rectangle.zw;
+
+
+	// left
+    if (abs(upper_left.x - uv.x) <= px.x * 3.0  && 
+         upper_left.y <= uv.y && uv.y < bottom_right.y)  {
+
+		if (abs(upper_left.x - uv.x) <= px.x) {
+        	color = u_layer_rectangle_color;
+		} else {
+			color = vec3(0.0);
+		}
+    }
+	
+	// top
+    if (abs(upper_left.y - uv.y) <= px.y * 3.0  && 
+         upper_left.x <= uv.x && uv.x < bottom_right.x)  {
+
+		if (abs(upper_left.y - uv.y) <= px.y) {
+        	color = u_layer_rectangle_color;
+		} else {
+			color = vec3(0.0);
+		}
+    }
+
+	// right
+    if (abs( bottom_right.x - uv.x) <= px.x * 3.0  && 
+         upper_left.y <= uv.y && uv.y < bottom_right.y)  {
+
+		if (abs( bottom_right.x - uv.x) <= px.x) {
+        	color = u_layer_rectangle_color;
+		} else {
+			color = vec3(0.0);
+		}
+    }
+
+	// bottom
+    if (abs(bottom_right.y - uv.y) <= px.y * 3.0  && 
+         upper_left.x <= uv.x && uv.x < bottom_right.x)  {
+
+		if (abs(bottom_right.y - uv.y) <= px.y) {
+        	color = u_layer_rectangle_color;
+		} else {
+			color = vec3(0.0);
+		}
+    }
+
+    // paint layer_rectangle
+    upper_left = u_preview_layer_rectangle.xy;
+    bottom_right = u_preview_layer_rectangle.zw;
+
+
+	// left
+    if (abs(upper_left.x - uv.x) <= px.x * 3.0  && 
+         upper_left.y <= uv.y && uv.y < bottom_right.y)  {
+
+		if (abs(upper_left.x - uv.x) <= px.x) {
+        	color = u_preview_layer_rectangle_color;
+		} else {
+			color = vec3(0.0);
+		}
+    }
+	
+	// top
+    if (abs(upper_left.y - uv.y) <= px.y * 3.0  && 
+         upper_left.x <= uv.x && uv.x < bottom_right.x)  {
+
+		if (abs(upper_left.y - uv.y) <= px.y) {
+        	color = u_preview_layer_rectangle_color;
+		} else {
+			color = vec3(0.0);
+		}
+    }
+
+	// right
+    if (abs( bottom_right.x - uv.x) <= px.x * 3.0  && 
+         upper_left.y <= uv.y && uv.y < bottom_right.y)  {
+
+		if (abs( bottom_right.x - uv.x) <= px.x) {
+        	color = u_preview_layer_rectangle_color;
+		} else {
+			color = vec3(0.0);
+		}
+    }
+
+	// bottom
+    if (abs(bottom_right.y - uv.y) <= px.y * 3.0  && 
+         upper_left.x <= uv.x && uv.x < bottom_right.x)  {
+
+		if (abs(bottom_right.y - uv.y) <= px.y) {
+        	color = u_preview_layer_rectangle_color;
+		} else {
+			color = vec3(0.0);
+		}
+    }
+
+	
+}
+
 void main() {
 	vec2 uv   = gl_FragCoord.xy / u_resolution;
 	vec2 from = u_buffer_rect.xy;
 	vec2 to   = u_buffer_rect.zw;
 
+	vec2 coord = (uv - from) / (to - from);
+
 	if (from.x <= uv.x && uv.x < to.x && 
 		from.y <= uv.y && uv.y < to.y) {
-		vec2 coord = (uv - from) / (to - from);
 		if (u_effect > 0.9 && u_effect < 1.1) { 
 			scanlines2(coord);
 		} else { 
 			vec4 c = texture(u_render_texture, coord);
 			if (c.w < 1.0) {
 				draw_background();
+				draw_layer_rectangle();
 				return;
 			}
 			color = c.xyz;
@@ -137,4 +316,6 @@ void main() {
 	} else {
 		draw_background();
 	}
+
+	draw_layer_rectangle();
 }

@@ -12,6 +12,7 @@ pub use keymaps::*;
 
 use crate::MonitorSettings;
 
+#[derive(Clone, Copy)]
 pub struct TerminalCalc {
     /// The height of the buffer in chars
     pub char_height: f32,
@@ -37,6 +38,27 @@ pub struct TerminalCalc {
     pub set_scroll_position_set_by_user: bool,
 
     pub has_focus: bool,
+}
+
+impl Default for TerminalCalc {
+    fn default() -> Self {
+        Self {
+            char_height: Default::default(),
+            buffer_char_height: Default::default(),
+            scale: Default::default(),
+            char_size: Default::default(),
+            font_height: Default::default(),
+            first_line: Default::default(),
+            terminal_rect: egui::Rect::NOTHING,
+            buffer_rect: egui::Rect::NOTHING,
+            scrollbar_rect: egui::Rect::NOTHING,
+            char_scroll_positon: Default::default(),
+            forced_height: Default::default(),
+            scroll_remainder: Default::default(),
+            set_scroll_position_set_by_user: Default::default(),
+            has_focus: Default::default(),
+        }
+    }
 }
 
 impl TerminalCalc {
@@ -80,7 +102,8 @@ pub fn show_terminal_area(
     buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>,
     options: TerminalOptions,
 ) -> (Response, TerminalCalc) {
-    let mut buf_h = buffer_view.lock().get_buffer().get_height() as f32;
+    let mut forced_height = buffer_view.lock().get_buffer().get_height();
+    let mut buf_h = forced_height as f32;
     let real_height = buffer_view.lock().get_buffer().get_line_count() as f32;
     let buf_w = buffer_view.lock().get_buffer().get_width() as f32;
     if !options.use_terminal_height {
@@ -120,7 +143,6 @@ pub fn show_terminal_area(
             } else {
                 scale_x = scale_y;
             }
-            let mut forced_height = -1;
 
             let mut scroll_remainder = 0.0;
 
@@ -189,12 +211,10 @@ pub fn show_terminal_area(
                     buffer_view.redraw_view();
                 }
             }
-            let buffer_rect = calc.buffer_rect;
-            let terminal_rect = calc.terminal_rect;
             let fh = calc.forced_height;
-            let has_focus = calc.has_focus;
+            let calc2 = *calc;
             let callback = egui::PaintCallback {
-                rect: terminal_rect,
+                rect: calc.terminal_rect,
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
                     if fh > 0 {
                         buffer_view
@@ -207,22 +227,14 @@ pub fn show_terminal_area(
                     buffer_view.lock().render_contents(
                         painter.gl(),
                         &info,
-                        buffer_rect,
-                        terminal_rect,
+                        calc2,
                         options.filter,
                         &options.settings,
-                        has_focus,
                     );
                 })),
             };
             ui.painter().add(callback);
         },
     );
-
-    buffer_view2
-        .lock()
-        .get_buffer_mut()
-        .terminal_state
-        .set_height(max);
     r
 }

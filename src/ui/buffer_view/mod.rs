@@ -184,12 +184,12 @@ impl BufferView {
         &mut self,
         gl: &glow::Context,
         info: &egui::PaintCallbackInfo,
-        buffer_rect: egui::Rect,
-        terminal_rect: egui::Rect,
+        calc: TerminalCalc,
         scale_filter: i32,
         monitor_settings: &MonitorSettings,
-        has_focus: bool,
     ) {
+        let has_focus = calc.has_focus;
+
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
             self.update_contents(gl, scale_filter);
@@ -206,9 +206,9 @@ impl BufferView {
             self.output_renderer.render_to_screen(
                 gl,
                 info,
+                self,
                 render_texture,
-                buffer_rect,
-                terminal_rect,
+                &calc,
                 monitor_settings,
             );
         }

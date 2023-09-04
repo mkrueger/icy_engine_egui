@@ -1,10 +1,11 @@
 use egui::PaintCallbackInfo;
-use egui::Rect;
 use egui::Vec2;
 use glow::HasContext as _;
 use glow::Texture;
 use icy_engine::Buffer;
 
+use crate::BufferView;
+use crate::TerminalCalc;
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
 use crate::MonitorSettings;
@@ -88,11 +89,14 @@ impl OutputRenderer {
         &self,
         gl: &glow::Context,
         info: &PaintCallbackInfo,
+        buffer_view: &BufferView,
         output_texture: glow::Texture,
-        buffer_rect: egui::Rect,
-        terminal_rect: Rect,
+        calc: &TerminalCalc,
         monitor_settings: &MonitorSettings,
     ) {
+        let buffer_rect = calc.buffer_rect;
+        let terminal_rect = calc.terminal_rect;
+
         gl.bind_framebuffer(glow::FRAMEBUFFER, None);
         gl.viewport(
             (terminal_rect.left() * info.pixels_per_point) as i32,
@@ -214,13 +218,91 @@ impl OutputRenderer {
         gl.uniform_4_f32(
             gl.get_uniform_location(self.output_shader, "u_buffer_rect")
                 .as_ref(),
-            buffer_rect.left() / terminal_rect.width(),
+                buffer_rect.left() / terminal_rect.width(),
             (info.screen_size_px[1] as f32 - buffer_rect.max.y * info.pixels_per_point)
-                / (terminal_rect.height() * info.pixels_per_point),
+            / (terminal_rect.height() * info.pixels_per_point),
             buffer_rect.right() / terminal_rect.width(),
             (info.screen_size_px[1] as f32 - buffer_rect.min.y * info.pixels_per_point)
-                / (terminal_rect.height() * info.pixels_per_point),
+            / (terminal_rect.height() * info.pixels_per_point),
         );
+
+
+        if !buffer_view.get_buffer().is_terminal_buffer {
+
+            let layer = buffer_view.edit_state.get_current_layer();
+            let layer = &buffer_view.get_buffer().layers[layer];
+            let fh = 16.0;
+            let scroll_offset = (buffer_view.viewport_top / buffer_view.char_size.y * fh) % fh;
+        
+            let border = 2.0;
+
+            if let Some(po) = layer.preview_offset {
+                let layer_x = po.x as f32 * calc.char_size.x;
+                let layer_y = po.y as f32 * calc.char_size.y + scroll_offset;
+                let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
+                let layer_h = layer.get_height() as f32 * calc.char_size.y + border * 2.0;
+
+
+                let x = buffer_rect.left() + layer_x - border;
+                let y = buffer_rect.bottom() + layer_y;
+                let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point - border;
+                gl.uniform_4_f32(
+                gl.get_uniform_location(self.output_shader, "u_preview_layer_rectangle")
+                        .as_ref(),
+                        x / terminal_rect.width(),
+                        y / (terminal_rect.height() * info.pixels_per_point),
+                        (x + layer_w)  / terminal_rect.width(),
+                        (y + layer_h) / (terminal_rect.height() * info.pixels_per_point),
+                );
+
+                gl.uniform_3_f32(
+                    gl.get_uniform_location(self.output_shader, "u_preview_layer_rectangle_color")
+                        .as_ref(),
+                    0.0, 1.0, 1.0
+                );
+            } else { 
+                gl.uniform_4_f32(
+                    gl.get_uniform_location(self.output_shader, "u_preview_layer_rectangle")
+                            .as_ref(), 0.0, 0.0, 0.0, 0.0);
+        
+                gl.uniform_3_f32(
+                    gl.get_uniform_location(self.output_shader, "u_preview_layer_rectangle_color")
+                        .as_ref(),
+                    0.0, 1.0, 1.0
+                );
+            }
+
+            let layer_x = layer.offset.x as f32 * calc.char_size.x;
+            let layer_y = layer.offset.y as f32 * calc.char_size.y + scroll_offset;
+            let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
+            let layer_h = layer.get_height() as f32 * calc.char_size.y + border * 2.0;
+
+
+            let x = buffer_rect.left() + layer_x - border;
+            let y = buffer_rect.bottom() + layer_y;
+            let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point - border;
+            gl.uniform_4_f32(
+            gl.get_uniform_location(self.output_shader, "u_layer_rectangle")
+                    .as_ref(),
+                    x / terminal_rect.width(),
+                    y / (terminal_rect.height() * info.pixels_per_point),
+                    (x + layer_w)  / terminal_rect.width(),
+                    (y + layer_h) / (terminal_rect.height() * info.pixels_per_point),
+            );
+
+            gl.uniform_3_f32(
+                gl.get_uniform_location(self.output_shader, "u_layer_rectangle_color")
+                    .as_ref(),
+                1.0, 1.0, 1.0
+            );
+
+        } else {
+            gl.uniform_3_f32(
+                gl.get_uniform_location(self.output_shader, "u_layer_rectangle_color")
+                    .as_ref(),
+                0.0, 0.0, 0.0
+            );
+        }
         gl.bind_vertex_array(Some(self.vertex_array));
         gl.draw_arrays(glow::TRIANGLES, 0, 6);
     }
