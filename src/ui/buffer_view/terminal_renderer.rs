@@ -146,12 +146,12 @@ impl TerminalRenderer {
         let line_width = (w + w_ext) * chars_in_line * 4;
         let height = h * 256 / chars_in_line;
         self.font_lookup_table.clear();
-        font_data.resize(line_width * height * buf.font_count(), 0);
+        font_data.resize((line_width * height) as usize * buf.font_count(), 0);
 
         for (cur_font_num, font) in buf.font_iter().enumerate() {
             self.font_lookup_table.insert(*font.0, cur_font_num);
-            let fontpage_start = cur_font_num * line_width * height;
-            for ch in 0..256usize {
+            let fontpage_start = cur_font_num as i32 * (line_width * height);
+            for ch in 0..256 {
                 let cur_font = font.1;
                 let glyph = cur_font
                     .get_glyph(unsafe { char::from_u32_unchecked(ch as u32) })
@@ -163,8 +163,8 @@ impl TerminalRenderer {
                 let offset = x * (w + w_ext) * 4 + y * h * line_width + fontpage_start;
                 let last_scan_line = h.min(cur_font.size.height);
                 for y in 0..last_scan_line {
-                    if let Some(scan_line) = glyph.data.get(y) {
-                        let mut po = offset + y * line_width;
+                    if let Some(scan_line) = glyph.data.get(y as usize) {
+                        let mut po = (offset + y * line_width) as usize;
 
                         for x in 0..w {
                             if scan_line & (128 >> x) == 0 {
@@ -196,7 +196,7 @@ impl TerminalRenderer {
                         }
                     } else {
                         log::error!("error in font {} can't get line {y}", font.0);
-                        font_data.extend(vec![0xFF; w * 4]);
+                        font_data.extend(vec![0xFF; (w as usize) * 4]);
                     }
                 }
             }
@@ -209,8 +209,8 @@ impl TerminalRenderer {
                 glow::TEXTURE_2D_ARRAY,
                 0,
                 glow::RGBA as i32,
-                line_width as i32 / 4,
-                height as i32,
+                line_width / 4,
+                height,
                 buf.font_count() as i32,
                 0,
                 glow::RGBA,
@@ -254,19 +254,19 @@ impl TerminalRenderer {
         char_size: Vec2,
     ) {
         let first_line = (viewport_top / char_size.y) as i32;
-        let real_height = buf.get_line_count() as i32;
-        let buf_h = buf.get_height() as i32;
+        let real_height = buf.get_line_count();
+        let buf_h = buf.get_height();
 
         let max_lines = max(0, real_height - buf_h) as i32;
         let scroll_back_line = max(0, max_lines - first_line);
-        let first_line = 0.max(buf.get_line_count().saturating_sub(buf.get_height())) as i32;
-        let mut buffer_data = Vec::with_capacity(2 * buf.get_width() * 4 * buf_h as usize);
+        let first_line = 0.max(buf.get_line_count().saturating_sub(buf.get_height()));
+        let mut buffer_data = Vec::with_capacity((2 * buf.get_width() * 4 * buf_h) as usize);
         let colors = buf.palette.colors.len() as u32 - 1;
         let mut y: i32 = 0;
         while y <= buf_h {
             let mut is_double_height = false;
 
-            for x in 0..(buf.get_width() as i32) {
+            for x in 0..buf.get_width() {
                 let ch = buf.get_char((x, first_line - scroll_back_line + y));
                 if ch.attribute.is_double_height() {
                     is_double_height = true;
@@ -296,7 +296,7 @@ impl TerminalRenderer {
 
             if is_double_height {
                 for x in 0..buf.get_width() {
-                    let ch = buf.get_char((x as i32, first_line - scroll_back_line + y));
+                    let ch = buf.get_char((x, first_line - scroll_back_line + y));
 
                     if ch.attribute.is_double_height() {
                         buffer_data.push(ch.ch as u8);
@@ -332,7 +332,7 @@ impl TerminalRenderer {
         while y <= buf_h {
             let mut is_double_height = false;
 
-            for x in 0..(buf.get_width() as i32) {
+            for x in 0..buf.get_width() {
                 let ch = buf.get_char((x, first_line - scroll_back_line + y));
 
                 let mut attr = if ch.attribute.is_double_underlined() {
@@ -360,7 +360,7 @@ impl TerminalRenderer {
             }
 
             if is_double_height {
-                for x in 0..(buf.get_width() as i32) {
+                for x in 0..buf.get_width() {
                     let ch = buf.get_char((x, first_line - scroll_back_line + y));
                     let mut attr = if ch.attribute.is_double_underlined() {
                         3
@@ -401,7 +401,7 @@ impl TerminalRenderer {
                 glow::TEXTURE_2D_ARRAY,
                 0,
                 glow::RGBA as i32,
-                buf.get_width() as i32,
+                buf.get_width(),
                 buf_h + 1,
                 2,
                 0,
@@ -477,14 +477,13 @@ impl TerminalRenderer {
             scroll_offset - fh,
         );
         let first_line = (buffer_view.viewport_top / buffer_view.char_size.y) as i32;
-        let real_height = buffer_view.get_buffer().get_line_count() as i32;
-        let buf_h = buffer_view.get_buffer().get_height() as i32;
+        let real_height = buffer_view.get_buffer().get_line_count();
+        let buf_h = buffer_view.get_buffer().get_height();
 
         let max_lines = max(0, real_height - buf_h) as i32;
         let scroll_back_line = max(0, max_lines - first_line) - 1;
 
-        let sbl =
-            (buffer_view.get_buffer().get_first_visible_line() as i32 - scroll_back_line) as f32;
+        let sbl = (buffer_view.get_buffer().get_first_visible_line() - scroll_back_line) as f32;
 
         let font_width = fontdim.width as f32
             + if buffer_view.get_buffer().use_letter_spacing {

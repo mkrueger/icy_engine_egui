@@ -201,7 +201,7 @@ pub fn show_terminal_area(
                             .lock()
                             .get_buffer_mut()
                             .terminal_state
-                            .set_height(fh as usize);
+                            .set_height(fh);
                     }
 
                     buffer_view.lock().render_contents(

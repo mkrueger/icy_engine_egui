@@ -103,11 +103,11 @@ impl BufferView {
         self.edit_state.get_parser()
     }
 
-    pub fn get_width(&self) -> usize {
+    pub fn get_width(&self) -> i32 {
         self.edit_state.get_buffer().get_width()
     }
 
-    pub fn get_height(&self) -> usize {
+    pub fn get_height(&self) -> i32 {
         self.edit_state.get_buffer().get_height()
     }
 

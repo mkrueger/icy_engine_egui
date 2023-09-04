@@ -39,7 +39,7 @@ bool check_bit(float v, int bit) {
 
 bool is_selected(float x, float y) {
     if (u_selection_attr > 0.0) {
-        return u_selection.y <= y && y <= u_selection.w && u_selection.x <= x && x <= u_selection.z;
+        return u_selection.y <= y && y < u_selection.w && u_selection.x <= x && x < u_selection.z;
     }
     return u_selection.y == y && u_selection.w == y && u_selection.x <= x && x < u_selection.z || // same line
            u_selection.y < y && y < u_selection.w || // between start & end line
