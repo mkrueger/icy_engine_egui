@@ -257,12 +257,12 @@ impl TerminalRenderer {
         char_size: Vec2,
     ) {
         let first_line = (viewport_top / char_size.y) as i32;
-        let real_height = buf.get_line_count();
+        let real_height = buf.get_height();
         let buf_h = calc.forced_height;
 
         let max_lines = max(0, real_height - buf_h) as i32;
         let scroll_back_line = max(0, max_lines - first_line);
-        let first_line = 0.max(buf.get_line_count().saturating_sub(calc.forced_height));
+        let first_line = 0.max(buf.get_height().saturating_sub(calc.forced_height));
         let mut buffer_data = Vec::with_capacity((2 * buf.get_width() * 4 * buf_h) as usize);
         let colors = buf.palette.colors.len() as u32 - 1;
         let mut y: i32 = 0;
@@ -480,7 +480,7 @@ impl TerminalRenderer {
             scroll_offset - fh,
         );
         let first_line = (buffer_view.viewport_top / buffer_view.char_size.y) as i32;
-        let real_height = buffer_view.get_buffer().get_line_count();
+        let real_height = buffer_view.get_buffer().get_height();
         let buf_h = buffer_view.calc.forced_height;
 
         let sbl = first_line as f32;
