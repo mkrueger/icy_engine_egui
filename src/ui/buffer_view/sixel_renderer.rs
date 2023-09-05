@@ -140,8 +140,8 @@ impl SixelRenderer {
         calc: &TerminalCalc,
         scale_filter: i32,
     ) {
-        let w =
-            buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
+        let w = buf.get_font_dimensions().width as f32
+            + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
 
         let render_buffer_size = Vec2::new(
             w * buf.get_width() as f32,
@@ -290,7 +290,8 @@ unsafe fn create_sixel_render_texture(
     filter: i32,
 ) -> glow::Texture {
     let sixel_render_texture = gl.create_texture().unwrap();
-    let w = buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
+    let w =
+        buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
 
     let render_buffer_size = Vec2::new(
         w * buf.get_width() as f32,

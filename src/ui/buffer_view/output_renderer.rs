@@ -233,7 +233,8 @@ impl OutputRenderer {
 
                 if let Some(po) = layer.get_preview_offset() {
                     let layer_x = po.x as f32 * calc.char_size.x;
-                    let layer_y = po.y as f32 * calc.char_size.y - border - buffer_view.viewport_top;
+                    let layer_y =
+                        po.y as f32 * calc.char_size.y - border - buffer_view.viewport_top;
                     let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
                     let layer_h = layer.get_height() as f32 * calc.char_size.y + border * 2.0;
                     let x = buffer_rect.left() + layer_x - border;
@@ -281,8 +282,9 @@ impl OutputRenderer {
                 }
 
                 let layer_x = layer.get_offset().x as f32 * calc.char_size.x;
-                let layer_y =
-                    layer.get_offset().y as f32 * calc.char_size.y - border - buffer_view.viewport_top;
+                let layer_y = layer.get_offset().y as f32 * calc.char_size.y
+                    - border
+                    - buffer_view.viewport_top;
                 let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
                 let layer_h = layer.get_height() as f32 * calc.char_size.y + border * 2.0;
                 let x = buffer_rect.left() + layer_x - border;
@@ -345,8 +347,8 @@ impl OutputRenderer {
         calc: &TerminalCalc,
         scale_filter: i32,
     ) {
-        let w =
-            buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
+        let w = buf.get_font_dimensions().width as f32
+            + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
 
         let render_buffer_size = Vec2::new(
             w * buf.get_width() as f32,

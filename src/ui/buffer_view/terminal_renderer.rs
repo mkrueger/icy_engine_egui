@@ -481,7 +481,6 @@ impl TerminalRenderer {
             scroll_offset - fh,
         );
         let first_line = (buffer_view.viewport_top / buffer_view.char_size.y) as i32;
-
         let font_width = fontdim.width as f32
             + if buffer_view.get_buffer().use_letter_spacing() {
                 1.0
@@ -586,7 +585,7 @@ impl TerminalRenderer {
                         monitor_settings.selection_bg.b() as f32 / 255.0,
                         monitor_settings.selection_bg.a() as f32 / 255.0,
                     );
-
+                    let first_line = first_line + 1; // correct additional scrolling line
                     if selection.anchor.y.floor() < selection.lead.y.floor()
                         || selection.anchor.y.floor() == selection.lead.y.floor()
                             && selection.anchor.x < selection.lead.x
