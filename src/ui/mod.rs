@@ -128,7 +128,7 @@ pub fn show_terminal_area(
             let size = rect.size();
 
             let font_width = font_dimensions.width as f32
-                + if buffer_view2.lock().get_buffer().use_letter_spacing {
+                + if buffer_view2.lock().get_buffer().use_letter_spacing() {
                     1.0
                 } else {
                     0.0

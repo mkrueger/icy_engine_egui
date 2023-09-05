@@ -31,7 +31,7 @@ impl OutputRenderer {
     pub fn new(gl: &glow::Context, buf: &Buffer, calc: &TerminalCalc, filter: i32) -> Self {
         unsafe {
             let w = buf.get_font_dimensions().width as f32
-                + if buf.use_letter_spacing { 1.0 } else { 0.0 };
+                + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
 
             let render_buffer_size = Vec2::new(
                 w * buf.get_width() as f32,
@@ -228,14 +228,11 @@ impl OutputRenderer {
 
         if let Some(layer) = buffer_view.edit_state.get_cur_layer() {
             if !buffer_view.get_buffer().is_terminal_buffer {
-                let fh = 16.0;
-                let scroll_offset = (buffer_view.viewport_top / buffer_view.char_size.y * fh) % fh;
-
                 let border = 2.0;
 
                 if let Some(po) = layer.get_preview_offset() {
                     let layer_x = po.x as f32 * calc.char_size.x;
-                    let layer_y = po.y as f32 * calc.char_size.y - border + scroll_offset;
+                    let layer_y = po.y as f32 * calc.char_size.y - border - buffer_view.viewport_top;
                     let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
                     let layer_h = layer.get_height() as f32 * calc.char_size.y + border * 2.0;
                     let x = buffer_rect.left() + layer_x - border;
@@ -284,7 +281,7 @@ impl OutputRenderer {
 
                 let layer_x = layer.get_offset().x as f32 * calc.char_size.x;
                 let layer_y =
-                    layer.get_offset().y as f32 * calc.char_size.y - border + scroll_offset;
+                    layer.get_offset().y as f32 * calc.char_size.y - border - buffer_view.viewport_top;
                 let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
                 let layer_h = layer.get_height() as f32 * calc.char_size.y + border * 2.0;
                 let x = buffer_rect.left() + layer_x - border;
@@ -348,7 +345,7 @@ impl OutputRenderer {
         scale_filter: i32,
     ) {
         let w =
-            buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing { 1.0 } else { 0.0 };
+            buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
 
         let render_buffer_size = Vec2::new(
             w * buf.get_width() as f32,

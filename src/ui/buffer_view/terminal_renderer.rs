@@ -138,7 +138,7 @@ impl TerminalRenderer {
     fn update_font_texture(&mut self, gl: &glow::Context, buf: &Buffer) {
         let size = buf.get_font(0).unwrap().size;
 
-        let w_ext = if buf.use_letter_spacing { 1 } else { 0 };
+        let w_ext = if buf.use_letter_spacing() { 1 } else { 0 };
 
         let w = size.width;
         let h = size.height;
@@ -183,7 +183,7 @@ impl TerminalRenderer {
                                 po += 1;
                             }
                         }
-                        if buf.use_letter_spacing
+                        if buf.use_letter_spacing()
                             && (0xC0..=0xDF).contains(&ch)
                             && (scan_line & 1) != 0
                         {
@@ -480,13 +480,9 @@ impl TerminalRenderer {
             scroll_offset - fh,
         );
         let first_line = (buffer_view.viewport_top / buffer_view.char_size.y) as i32;
-        let real_height = buffer_view.get_buffer().get_height();
-        let buf_h = buffer_view.calc.forced_height;
-
-        let sbl = first_line as f32;
 
         let font_width = fontdim.width as f32
-            + if buffer_view.get_buffer().use_letter_spacing {
+            + if buffer_view.get_buffer().use_letter_spacing() {
                 1.0
             } else {
                 0.0
@@ -598,18 +594,18 @@ impl TerminalRenderer {
                             gl.get_uniform_location(self.terminal_shader, "u_selection")
                                 .as_ref(),
                             selection.anchor.x.floor(),
-                            selection.anchor.y.floor() - sbl,
+                            selection.anchor.y.floor() - (first_line as f32),
                             selection.lead.x.floor(),
-                            selection.lead.y.floor() - sbl,
+                            selection.lead.y.floor() - (first_line as f32),
                         );
                     } else {
                         gl.uniform_4_f32(
                             gl.get_uniform_location(self.terminal_shader, "u_selection")
                                 .as_ref(),
                             selection.lead.x.floor(),
-                            selection.lead.y.floor() - sbl,
+                            selection.lead.y.floor() - (first_line as f32),
                             selection.anchor.x.floor(),
-                            selection.anchor.y.floor() - sbl,
+                            selection.anchor.y.floor() - (first_line as f32),
                         );
                     }
                     if matches!(selection.shape, Shape::Rectangle) {
