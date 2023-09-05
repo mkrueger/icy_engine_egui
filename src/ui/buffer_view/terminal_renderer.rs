@@ -6,6 +6,7 @@ use egui::Vec2;
 use glow::HasContext as _;
 use icy_engine::Buffer;
 use icy_engine::Shape;
+use icy_engine::TextPane;
 use web_time::Instant;
 
 use crate::prepare_shader;

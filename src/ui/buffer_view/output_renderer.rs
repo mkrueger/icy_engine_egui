@@ -3,6 +3,7 @@ use egui::Vec2;
 use glow::HasContext as _;
 use glow::Texture;
 use icy_engine::Buffer;
+use icy_engine::TextPane;
 
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;

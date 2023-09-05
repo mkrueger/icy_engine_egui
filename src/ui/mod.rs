@@ -5,6 +5,7 @@ pub use buffer_view::*;
 
 pub mod smooth_scroll;
 use egui::{Pos2, Rect, Response, Vec2};
+use icy_engine::TextPane;
 pub use smooth_scroll::*;
 
 pub mod keymaps;

@@ -2,6 +2,7 @@ use egui::Vec2;
 use glow::HasContext as _;
 use icy_engine::Buffer;
 use icy_engine::Position;
+use icy_engine::TextPane;
 
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
@@ -131,6 +132,7 @@ impl SixelRenderer {
         render_texture
     }
 
+    #[allow(clippy::explicit_counter_loop)]
     pub fn update_sixels(
         &mut self,
         gl: &glow::Context,

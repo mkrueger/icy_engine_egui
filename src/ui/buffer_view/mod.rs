@@ -2,7 +2,7 @@ use egui::{Response, Vec2};
 use glow::HasContext;
 use icy_engine::{
     editor::EditState, Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position,
-    Selection,
+    Selection, TextPane,
 };
 
 pub mod glerror;
