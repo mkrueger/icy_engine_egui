@@ -275,6 +275,24 @@ impl BufferView {
         }
         //if response.dragged() {}
     }
+
+    pub fn load_reference_image(&mut self, path: &std::path::Path) {
+        if let Ok(image)= image::open(path) {
+            let image = image.to_rgba8();
+            self.terminal_renderer.reference_image = Some(image);
+            self.terminal_renderer.show_reference_image = true;
+            self.terminal_renderer.load_reference_image = true;
+        }
+    }
+
+    pub fn clear_reference_image(&mut self) {
+        self.terminal_renderer.reference_image = None;
+        self.terminal_renderer.show_reference_image = false;
+    }
+
+    pub fn toggle_reference_image(&mut self) {
+        self.terminal_renderer.show_reference_image = !self.terminal_renderer.show_reference_image;
+    }   
 }
 
 #[cfg(not(target_arch = "wasm32"))]

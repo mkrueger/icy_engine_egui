@@ -19,6 +19,10 @@ uniform vec4        u_selection_bg;
 
 uniform float       u_character_blink;
 
+uniform sampler2D   u_reference_image;
+uniform float       u_has_reference_image;
+uniform vec2        u_reference_image_size;
+
 out     vec4        fragColor;
 
 vec4 get_char(vec2 p, float c, float page) {
@@ -120,6 +124,13 @@ void main (void) {
         }
     }
 
+    if (u_has_reference_image > 0.5) {
+        vec2 view_coord = gl_FragCoord.xy / u_reference_image_size;
+        view_coord = vec2(view_coord.s, 1.0 - view_coord.t);
+
+        vec4 img = texture(u_reference_image, view_coord);
+        fragColor = 0.2 * img + fragColor * 0.8;
+    }
 
     // paint caret
 
