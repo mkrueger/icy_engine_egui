@@ -143,8 +143,8 @@ impl BufferView {
         self.edit_state.get_selection()
     }
 
-    pub fn set_selection(&mut self, sel: Selection) {
-        self.edit_state.set_selection(sel);
+    pub fn set_selection(&mut self, sel: impl Into<Selection>) {
+        self.edit_state.set_selection(sel.into());
     }
 
     pub fn clear_selection(&mut self) {
