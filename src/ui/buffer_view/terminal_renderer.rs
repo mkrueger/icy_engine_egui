@@ -586,26 +586,26 @@ impl TerminalRenderer {
                         monitor_settings.selection_bg.a() as f32 / 255.0,
                     );
                     let first_line = first_line + 1; // correct additional scrolling line
-                    if selection.anchor.y.floor() < selection.lead.y.floor()
-                        || selection.anchor.y.floor() == selection.lead.y.floor()
+                    if selection.anchor.y < selection.lead.y
+                        || selection.anchor.y == selection.lead.y
                             && selection.anchor.x < selection.lead.x
                     {
                         gl.uniform_4_f32(
                             gl.get_uniform_location(self.terminal_shader, "u_selection")
                                 .as_ref(),
-                            selection.anchor.x.floor(),
-                            selection.anchor.y.floor() - (first_line as f32),
-                            selection.lead.x.floor(),
-                            selection.lead.y.floor() - (first_line as f32),
+                            selection.anchor.x as f32,
+                            (selection.anchor.y - first_line) as f32,
+                            selection.lead.x as f32,
+                            (selection.lead.y - first_line) as f32,
                         );
                     } else {
                         gl.uniform_4_f32(
                             gl.get_uniform_location(self.terminal_shader, "u_selection")
                                 .as_ref(),
-                            selection.lead.x.floor(),
-                            selection.lead.y.floor() - (first_line as f32),
-                            selection.anchor.x.floor(),
-                            selection.anchor.y.floor() - (first_line as f32),
+                            selection.lead.x as f32,
+                            (selection.lead.y - first_line) as f32,
+                            selection.anchor.x as f32,
+                            (selection.anchor.y - first_line) as f32,
                         );
                     }
                     if matches!(selection.shape, Shape::Rectangle) {
