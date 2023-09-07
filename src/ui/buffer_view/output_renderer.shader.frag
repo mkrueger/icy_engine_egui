@@ -4,11 +4,13 @@ uniform sampler2D u_render_texture;
 uniform vec2      u_resolution;
 uniform float     u_effect;
 uniform vec4      u_buffer_rect;
+uniform float     u_time;
 
 uniform vec4        u_layer_rectangle;
 uniform vec3        u_layer_rectangle_color;
 uniform vec4        u_preview_layer_rectangle;
 uniform vec3        u_preview_layer_rectangle_color;
+uniform vec4        u_selection_rectangle;
 
 uniform float gamma;
 uniform float contrast;
@@ -108,137 +110,256 @@ void draw_checkers_background() {
 	}
 }
 
-void draw_background() {
-	if (u_effect > 1.9 && u_effect < 2.1) { 
-		draw_checkers_background();
+void draw_dash() {
+	float checker_size = 2.0;
+    vec2 p = floor(gl_FragCoord.xy / checker_size);
+    float PatternMask = mod(p.x + mod(p.y, 4.0) + u_time, 4.0);
+	if (PatternMask < 2.0) {
+		color = vec3(1.0);
 	} else {
-		color = vec3(0.25, 0.27, 0.29);
-	}
+		color = vec3(0.0);
+	} 
+
 }
 
-void draw_rect(vec2 upper_left, vec2 bottom_right, vec3 rect_color) {
-	vec2 uv   = gl_FragCoord.xy / u_resolution;
+void draw_background() {
+	color = vec3(0.25, 0.27, 0.29);
+}
+
+void selection_border()
+{
+	color = 0.6 * color;
+}
+
+void draw_selection_rect(vec2 upper_left, vec2 bottom_right, bool in_buffer_rect) {
+	vec2 uv   = gl_FragCoord.xy + vec2(0.5);
 	vec2 from = u_buffer_rect.xy;
-	vec2 to   = u_buffer_rect.zw;
+	vec2 to   = u_buffer_rect.zw ;
   
   	vec2 bfrom = u_buffer_rect.xy;
-	vec2 bto   = u_buffer_rect.zw;
-	vec2 px = 0.8 / u_resolution;
+	vec2 bto   = u_buffer_rect.zw ;
 
-	// left
-    if (abs(upper_left.x - uv.x) <= px.x * 3.0  && 
-         upper_left.y <= uv.y && uv.y < bottom_right.y)  {
-
-		if (abs(upper_left.x - uv.x) <= px.x) {
-        	color = rect_color;
+	float v = 1.0;
+    if (upper_left.y <= uv.y && uv.y <= bottom_right.y)  {
+		// left
+		if (upper_left.x == uv.x) {
+			if (in_buffer_rect) {
+				draw_dash();
+			} else {
+				color = vec3(1.0);
+			}
 		} else {
-			color = vec3(0.0);
+			// inner left border
+			if (upper_left.x == uv.x - 1.0 && upper_left.y < uv.y && uv.y < bottom_right.y) {
+				selection_border();
+			}
+		}
+		
+		// right
+		if (bottom_right.x == uv.x) {
+			if (in_buffer_rect) {
+				draw_dash();
+			} else {
+				color = vec3(1.0);
+			}
+		} else {
+			// inner left border
+			if (bottom_right.x == uv.x + 1.0 && upper_left.y < uv.y && uv.y < bottom_right.y) {
+				selection_border();
+			}
+		}
+    }
+
+	if (upper_left.y - 1.0 <= uv.y && uv.y <= bottom_right.y + 1.0)  {
+		// outer left border
+		if (upper_left.x == uv.x + 1.0) {
+			selection_border();
+		}	
+		// outer left border
+		if (bottom_right.x == uv.x - 1.0) {
+			selection_border();
+		}
+	}
+	
+    if (upper_left.x <= uv.x && uv.x <= bottom_right.x)  {
+		// bottom
+		if (upper_left.y == uv.y) {
+			if (in_buffer_rect) {
+				draw_dash();
+			} else {
+				color = vec3(1.0);
+			}
+		} else {
+			// inner
+			if (upper_left.y == uv.y - 1.0 && upper_left.x + 1 < uv.x && uv.x < bottom_right.x - 1) {
+				selection_border();
+			}
+			// outer
+			if (upper_left.y == uv.y + 1.0 ) {
+				selection_border();
+			}
+		}
+
+		// top
+		if (bottom_right.y == uv.y) {
+			if (in_buffer_rect) {
+				draw_dash();
+			} else {
+				color = vec3(1.0);
+			}
+		}  else {
+			// inner
+			if (bottom_right.y == uv.y + 1.0 && upper_left.x + 1 < uv.x && uv.x < bottom_right.x - 1) {
+				selection_border();
+			}
+			// outer
+			if (bottom_right.y == uv.y - 1.0 ) {
+				selection_border();
+			}
+		}
+    }
+}
+
+
+void draw_color_dash(vec3 rect_color) {
+	vec2 uv   = gl_FragCoord.xy + vec2(0.5);
+	vec2 upper_left = u_selection_rectangle.xy;
+	vec2 bottom_right = u_selection_rectangle.zw;
+
+	if (upper_left.y <= uv.y && uv.y <= bottom_right.y && 
+	    upper_left.x <= uv.x && uv.x <= bottom_right.x)  {
+		draw_dash();
+		return;
+	}
+
+	float checker_size = 2.0;
+    vec2 p = floor(gl_FragCoord.xy / checker_size);
+    float PatternMask = mod(p.x + mod(p.y, 4.0), 4.0);
+	if (PatternMask < 2.0) {
+		color = rect_color;
+	} else {
+		color = vec3(0.0);
+	} 
+}
+
+
+void draw_layer_rect(vec2 upper_left, vec2 bottom_right, vec3 rect_color) {
+	vec2 uv   = gl_FragCoord.xy + vec2(0.5);
+	vec2 from = u_buffer_rect.xy;
+	vec2 to   = u_buffer_rect.zw ;
+  
+  	vec2 bfrom = u_buffer_rect.xy;
+	vec2 bto   = u_buffer_rect.zw ;
+
+	float v = 1.0;
+    if (upper_left.y <= uv.y && uv.y <= bottom_right.y)  {
+		// left
+		if (upper_left.x == uv.x) {
+			draw_color_dash(rect_color);
+		} 
+		
+		// right
+		if (bottom_right.x == uv.x) {
+			draw_color_dash(rect_color);
 		}
     }
 	
-	// top
-    if (abs(upper_left.y - uv.y) <= px.y * 3.0  && 
-         upper_left.x <= uv.x && uv.x < bottom_right.x)  {
+    if (upper_left.x <= uv.x && uv.x <= bottom_right.x)  {
+		// bottom
+		if (upper_left.y == uv.y) {
+			draw_color_dash(rect_color);
+		} 
 
-		if (abs(upper_left.y - uv.y) <= px.y) {
-        	color = rect_color;
-		} else {
-			color = vec3(0.0);
-		}
-    }
-
-	// right
-    if (abs( bottom_right.x - uv.x) <= px.x * 3.0  && 
-         upper_left.y <= uv.y && uv.y < bottom_right.y)  {
-
-		if (abs( bottom_right.x - uv.x) <= px.x) {
-        	color = rect_color;
-		} else {
-			color = vec3(0.0);
-		}
-    }
-
-	// bottom
-    if (abs(bottom_right.y - uv.y) <= px.y * 3.0  && 
-         upper_left.x <= uv.x && uv.x < bottom_right.x)  {
-
-		if (abs(bottom_right.y - uv.y) <= px.y) {
-        	color = rect_color;
-		} else {
-			color = vec3(0.0);
+		// top
+		if (bottom_right.y == uv.y) {
+			draw_color_dash(rect_color);
 		}
     }
 }
 
-void draw_layer_rectangle() {
+void draw_preview_rect(vec2 upper_left, vec2 bottom_right, vec3 rect_color) {
+	vec2 uv   = gl_FragCoord.xy + vec2(0.5);
+	vec2 from = u_buffer_rect.xy;
+	vec2 to   = u_buffer_rect.zw ;
+  
+  	vec2 bfrom = u_buffer_rect.xy;
+	vec2 bto   = u_buffer_rect.zw ;
+
+	float v = 1.0;
+    if (upper_left.y <= uv.y && uv.y <= bottom_right.y)  {
+		// left
+		if (upper_left.x == uv.x) {
+			color = rect_color;
+		} else {
+			// inner left border
+			if (upper_left.x == uv.x - 1.0 && upper_left.y < uv.y && uv.y < bottom_right.y) {
+				selection_border();
+			}
+		}
+		
+		// right
+		if (bottom_right.x == uv.x) {
+			color = rect_color;
+		} else {
+			// inner left border
+			if (bottom_right.x == uv.x + 1.0 && upper_left.y < uv.y && uv.y < bottom_right.y) {
+				selection_border();
+			}
+		}
+    }
+
+	if (upper_left.y - 1.0 <= uv.y && uv.y <= bottom_right.y + 1.0)  {
+		// outer left border
+		if (upper_left.x == uv.x + 1.0) {
+			selection_border();
+		}	
+		// outer left border
+		if (bottom_right.x == uv.x - 1.0) {
+			selection_border();
+		}
+	}
+	
+    if (upper_left.x <= uv.x && uv.x <= bottom_right.x)  {
+		// bottom
+		if (upper_left.y == uv.y) {
+			color = rect_color;
+		} else {
+			// inner
+			if (upper_left.y == uv.y - 1.0 && upper_left.x + 1 < uv.x && uv.x < bottom_right.x - 1) {
+				selection_border();
+			}
+			// outer
+			if (upper_left.y == uv.y + 1.0 ) {
+				selection_border();
+			}
+		}
+
+		// top
+		if (bottom_right.y == uv.y) {
+			color = rect_color;
+		}  else {
+			// inner
+			if (bottom_right.y == uv.y + 1.0 && upper_left.x + 1 < uv.x && uv.x < bottom_right.x - 1) {
+				selection_border();
+			}
+			// outer
+			if (bottom_right.y == uv.y - 1.0 ) {
+				selection_border();
+			}
+		}
+    }
+}
+
+
+void draw_layer_rectangle(bool in_buffer_rect) {
 	if (u_layer_rectangle_color == vec3(0.0)) {
 		return;
 	}
 
-	vec2 uv   = gl_FragCoord.xy / u_resolution;
-	vec2 from = u_buffer_rect.xy;
-	vec2 to   = u_buffer_rect.zw;
-  //  uv = vec2(uv.s, 1.0 - uv.t)
-  
-  	vec2 bfrom = u_buffer_rect.xy;
-	vec2 bto   = u_buffer_rect.zw;
-	vec2 px = 0.8 / u_resolution;
-	vec2 coord = (uv - from) / (bto - bfrom);
-
-    vec2 upper_left = u_buffer_rect.xy;
-    vec2 bottom_right = u_buffer_rect.zw;
-
-	float checker_size = 2.0;
-    vec2 p = floor(gl_FragCoord.xy / checker_size);
-    float PatternMask = mod(p.x + mod(p.y, 2.0), 2.0);
-
-	// left
-    if (abs(upper_left.x - uv.x) <= px.x   && 
-         upper_left.y <= uv.y && uv.y < bottom_right.y)  {
-	if (PatternMask < 1.0) {
-		color = vec3(1.0, 1.0, 1.0);
-	} else {
-		color = vec3(0, 0, 0);
-	}
-    }
-	
-	// top
-    if (abs(upper_left.y - uv.y) <= px.y  && 
-         upper_left.x <= uv.x && uv.x < bottom_right.x)  {
-		if (PatternMask < 1.0) {
-			color = vec3(1.0, 1.0, 1.0);
-		} else {
-			color = vec3(0, 0, 0);
-		}
-    }
-
-	// right
-    if (abs( bottom_right.x - uv.x) <= px.x   && 
-         upper_left.y <= uv.y && uv.y < bottom_right.y)  {
-		if (PatternMask < 1.0) {
-			color = vec3(1.0, 1.0, 1.0);
-		} else {
-			color = vec3(0, 0, 0);
-		}
-
-    }
-
-	// bottom
-    if (abs(bottom_right.y - uv.y) <= px.y && 
-         upper_left.x <= uv.x && uv.x < bottom_right.x)  {
-		if (PatternMask < 1.0) {
-			color = vec3(1.0, 1.0, 1.0);
-		} else {
-			color = vec3(0, 0, 0);
-		}
-    }
-
-	draw_rect(u_layer_rectangle.xy, u_layer_rectangle.zw, u_layer_rectangle_color);
-	draw_rect(u_preview_layer_rectangle.xy, u_preview_layer_rectangle.zw, u_preview_layer_rectangle_color);
-
+	draw_layer_rect(u_layer_rectangle.xy, u_layer_rectangle.zw, u_layer_rectangle_color);
+	draw_preview_rect(u_preview_layer_rectangle.xy, u_preview_layer_rectangle.zw, u_preview_layer_rectangle_color);
+	draw_selection_rect(u_selection_rectangle.xy, u_selection_rectangle.zw, in_buffer_rect);
 }
-
-
 
 
 void main() {
@@ -255,8 +376,8 @@ void main() {
 		} else { 
 			vec4 c = texture(u_render_texture, coord);
 			if (c.w < 1.0) {
-				draw_background();
-				draw_layer_rectangle();
+				draw_checkers_background();
+				draw_layer_rectangle(true);
 				return;
 			}
 			color = c.xyz;
@@ -266,8 +387,9 @@ void main() {
 			color = vec3(mono, mono, mono);
 			color *= u_monchrome_mask;
 		}
+		draw_layer_rectangle(true);
 	} else {
 		draw_background();
+		draw_layer_rectangle(false);
 	}
-	draw_layer_rectangle();
 }

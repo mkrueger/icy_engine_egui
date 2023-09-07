@@ -277,7 +277,7 @@ impl BufferView {
     }
 
     pub fn load_reference_image(&mut self, path: &std::path::Path) {
-        if let Ok(image)= image::open(path) {
+        if let Ok(image) = image::open(path) {
             let image = image.to_rgba8();
             self.terminal_renderer.reference_image = Some(image);
             self.terminal_renderer.show_reference_image = true;
@@ -292,7 +292,7 @@ impl BufferView {
 
     pub fn toggle_reference_image(&mut self) {
         self.terminal_renderer.show_reference_image = !self.terminal_renderer.show_reference_image;
-    }   
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]

@@ -140,14 +140,12 @@ impl TerminalRenderer {
             self.update_palette_texture(gl, buf);
         }
 
-
         if self.load_reference_image {
             if let Some(image) = &self.reference_image {
                 self.update_reference_image_texture(gl, image);
             }
             self.load_reference_image = false;
         }
-    
     }
 
     // Redraw whole terminal on caret or character blink update.
@@ -520,8 +518,8 @@ impl TerminalRenderer {
             render_buffer_size.x,
             render_buffer_size.y + fh,
         );
-
-        let scroll_offset = (buffer_view.viewport_top / buffer_view.char_size.y * fh) % fh;
+        let top_pos = buffer_view.viewport_top.floor();
+        let scroll_offset = (top_pos / buffer_view.char_size.y * fh) % fh;
 
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_position")
@@ -529,7 +527,7 @@ impl TerminalRenderer {
             0.0,
             scroll_offset - fh,
         );
-        let first_line = (buffer_view.viewport_top / buffer_view.char_size.y) as i32;
+        let first_line = (top_pos / buffer_view.char_size.y) as i32;
         let font_width = fontdim.width as f32
             + if buffer_view.get_buffer().use_letter_spacing() {
                 1.0
@@ -551,7 +549,7 @@ impl TerminalRenderer {
 
         let caret_y = caret_pos.y as f32 * fontdim.height as f32 + fontdim.height as f32
             - caret_h
-            - (buffer_view.viewport_top / buffer_view.char_size.y * fh)
+            - (top_pos / buffer_view.char_size.y * fh)
             + scroll_offset;
         let caret_w = if self.caret_blink.is_on() && buffer_view.get_caret().is_visible && has_focus
         {
@@ -604,11 +602,10 @@ impl TerminalRenderer {
         gl.uniform_1_i32(
             gl.get_uniform_location(self.terminal_shader, "u_reference_image")
                 .as_ref(),
-                REFERENCE_IMAGE_TEXTURE_SLOT as i32,
+            REFERENCE_IMAGE_TEXTURE_SLOT as i32,
         );
 
         if let Some(img) = &self.reference_image {
-            
             gl.uniform_2_f32(
                 gl.get_uniform_location(self.terminal_shader, "u_reference_image_size")
                     .as_ref(),
@@ -619,12 +616,12 @@ impl TerminalRenderer {
         gl.uniform_1_f32(
             gl.get_uniform_location(self.terminal_shader, "u_has_reference_image")
                 .as_ref(),
-                if self.show_reference_image {1.0 } else { 0.0 }
+            if self.show_reference_image { 1.0 } else { 0.0 },
         );
-        
+
         match buffer_view.get_selection() {
             Some(selection) => {
-                if selection.is_empty() {
+                if selection.is_empty() || !buffer_view.get_buffer().is_terminal_buffer {
                     gl.uniform_4_f32(
                         gl.get_uniform_location(self.terminal_shader, "u_selection")
                             .as_ref(),

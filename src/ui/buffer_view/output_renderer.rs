@@ -4,6 +4,7 @@ use glow::HasContext as _;
 use glow::Texture;
 use icy_engine::Buffer;
 use icy_engine::TextPane;
+use web_time::Instant;
 
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
@@ -26,6 +27,7 @@ pub struct OutputRenderer {
     pub render_texture: glow::Texture,
     pub render_buffer_size: Vec2,
     pub vertex_array: glow::VertexArray,
+    instant: Instant,
 }
 
 impl OutputRenderer {
@@ -51,6 +53,7 @@ impl OutputRenderer {
                 render_texture,
                 render_buffer_size,
                 vertex_array,
+                instant: Instant::now(),
             }
         }
     }
@@ -97,6 +100,7 @@ impl OutputRenderer {
     ) {
         let buffer_rect = calc.buffer_rect;
         let terminal_rect = calc.terminal_rect;
+        let top_pos = buffer_view.viewport_top.floor();
 
         gl.bind_framebuffer(glow::FRAMEBUFFER, None);
         gl.viewport(
@@ -118,13 +122,17 @@ impl OutputRenderer {
         gl.active_texture(glow::TEXTURE0);
         gl.bind_texture(glow::TEXTURE_2D, Some(output_texture));
 
+        gl.uniform_1_f32(
+            gl.get_uniform_location(self.output_shader, "u_time")
+                .as_ref(),
+            self.instant.elapsed().as_millis() as f32 / 300.0,
+        );
+
         gl.uniform_1_i32(
             gl.get_uniform_location(self.output_shader, "u_render_texture")
                 .as_ref(),
             0,
         );
-        gl.bind_texture(glow::TEXTURE_2D, Some(output_texture));
-
         let eff = match monitor_settings.background_effect {
             crate::BackgroundEffect::None => {
                 if monitor_settings.use_filter {
@@ -229,24 +237,21 @@ impl OutputRenderer {
 
         if let Some(layer) = buffer_view.edit_state.get_cur_layer() {
             if !buffer_view.get_buffer().is_terminal_buffer {
-                let border = 2.0;
-
                 if let Some(po) = layer.get_preview_offset() {
                     let layer_x = po.x as f32 * calc.char_size.x;
-                    let layer_y =
-                        po.y as f32 * calc.char_size.y - border - buffer_view.viewport_top;
-                    let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
-                    let layer_h = layer.get_height() as f32 * calc.char_size.y + border * 2.0;
-                    let x = buffer_rect.left() + layer_x - border;
+                    let layer_y = po.y as f32 * calc.char_size.y - top_pos;
+                    let layer_w = layer.get_width() as f32 * calc.char_size.x;
+                    let layer_h = layer.get_height() as f32 * calc.char_size.y;
+                    let x = buffer_rect.left() + layer_x;
                     let y = buffer_rect.top() + layer_y;
-                    let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point - border;
+                    let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point;
                     gl.uniform_4_f32(
                         gl.get_uniform_location(self.output_shader, "u_preview_layer_rectangle")
                             .as_ref(),
-                        x / terminal_rect.width(),
-                        (y - layer_h) / (terminal_rect.height() * info.pixels_per_point),
-                        (x + layer_w) / terminal_rect.width(),
-                        y / (terminal_rect.height() * info.pixels_per_point),
+                        x,
+                        y - layer_h,
+                        x + layer_w,
+                        y,
                     );
 
                     gl.uniform_3_f32(
@@ -255,7 +260,7 @@ impl OutputRenderer {
                             "u_preview_layer_rectangle_color",
                         )
                         .as_ref(),
-                        0.0,
+                        1.0,
                         1.0,
                         1.0,
                     );
@@ -275,28 +280,26 @@ impl OutputRenderer {
                             "u_preview_layer_rectangle_color",
                         )
                         .as_ref(),
-                        0.0,
+                        1.0,
                         1.0,
                         1.0,
                     );
                 }
 
-                let layer_x = layer.get_offset().x as f32 * calc.char_size.x;
-                let layer_y = layer.get_offset().y as f32 * calc.char_size.y
-                    - border
-                    - buffer_view.viewport_top;
-                let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
-                let layer_h = layer.get_height() as f32 * calc.char_size.y + border * 2.0;
-                let x = buffer_rect.left() + layer_x - border;
+                let layer_x = layer.get_base_offset().x as f32 * calc.char_size.x;
+                let layer_y = layer.get_base_offset().y as f32 * calc.char_size.y - top_pos;
+                let layer_w = layer.get_width() as f32 * calc.char_size.x;
+                let layer_h = layer.get_height() as f32 * calc.char_size.y;
+                let x = buffer_rect.left() + layer_x;
                 let y = buffer_rect.top() + layer_y;
-                let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point - border;
+                let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point;
                 gl.uniform_4_f32(
                     gl.get_uniform_location(self.output_shader, "u_layer_rectangle")
                         .as_ref(),
-                    x / terminal_rect.width(),
-                    (y - layer_h) / (terminal_rect.height() * info.pixels_per_point),
-                    (x + layer_w) / terminal_rect.width(),
-                    y / (terminal_rect.height() * info.pixels_per_point),
+                    x,
+                    y - layer_h,
+                    x + layer_w,
+                    y,
                 );
                 match layer.role {
                     icy_engine::Role::Normal | icy_engine::Role::Image => {
@@ -305,7 +308,7 @@ impl OutputRenderer {
                                 .as_ref(),
                             1.0,
                             1.0,
-                            1.0,
+                            0.0,
                         );
                     }
                     icy_engine::Role::PastePreview | icy_engine::Role::PasteImage => {
@@ -336,6 +339,50 @@ impl OutputRenderer {
                 0.0,
             );
         }
+
+        match buffer_view.get_selection() {
+            Some(selection) => {
+                if selection.is_empty() || buffer_view.get_buffer().is_terminal_buffer {
+                    gl.uniform_4_f32(
+                        gl.get_uniform_location(self.output_shader, "u_selection_rectangle")
+                            .as_ref(),
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                    );
+                } else {
+                    let border = 0.0;
+                    let layer = selection.as_rectangle();
+                    let layer_x = layer.left() as f32 * calc.char_size.x;
+                    let layer_y = layer.top() as f32 * calc.char_size.y - border - top_pos;
+                    let layer_w = layer.get_width() as f32 * calc.char_size.x + border * 2.0;
+                    let layer_h = layer.get_height() as f32 * calc.char_size.y + border * 2.0;
+                    let x = buffer_rect.left() + layer_x - border;
+                    let y = buffer_rect.top() + layer_y;
+                    let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point - border;
+                    gl.uniform_4_f32(
+                        gl.get_uniform_location(self.output_shader, "u_selection_rectangle")
+                            .as_ref(),
+                        x,
+                        y - layer_h,
+                        x + layer_w,
+                        y,
+                    );
+                }
+            }
+            None => {
+                gl.uniform_4_f32(
+                    gl.get_uniform_location(self.output_shader, "u_selection_rectangle")
+                        .as_ref(),
+                    0.0,
+                    0.0,
+                    0.0,
+                    0.0,
+                );
+            }
+        }
+
         gl.bind_vertex_array(Some(self.vertex_array));
         gl.draw_arrays(glow::TRIANGLES, 0, 6);
     }
