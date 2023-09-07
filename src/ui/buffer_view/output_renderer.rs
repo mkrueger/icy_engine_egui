@@ -248,9 +248,9 @@ impl OutputRenderer {
                     gl.uniform_4_f32(
                         gl.get_uniform_location(self.output_shader, "u_preview_layer_rectangle")
                             .as_ref(),
-                        x,
-                        y - layer_h,
-                        x + layer_w,
+                        x * info.pixels_per_point,
+                        y - layer_h * info.pixels_per_point,
+                        (x + layer_w) * info.pixels_per_point,
                         y,
                     );
 
@@ -296,9 +296,9 @@ impl OutputRenderer {
                 gl.uniform_4_f32(
                     gl.get_uniform_location(self.output_shader, "u_layer_rectangle")
                         .as_ref(),
-                    x,
-                    y - layer_h,
-                    x + layer_w,
+                    x * info.pixels_per_point,
+                    y - layer_h * info.pixels_per_point,
+                    (x + layer_w)  * info.pixels_per_point,
                     y,
                 );
                 match layer.role {
@@ -364,10 +364,10 @@ impl OutputRenderer {
                     gl.uniform_4_f32(
                         gl.get_uniform_location(self.output_shader, "u_selection_rectangle")
                             .as_ref(),
-                        x,
-                        y - layer_h,
-                        x + layer_w,
-                        y,
+                        x * info.pixels_per_point,
+                        y - layer_h  * info.pixels_per_point,
+                        (x + layer_w)  * info.pixels_per_point,
+                        y ,
                     );
                 }
             }
