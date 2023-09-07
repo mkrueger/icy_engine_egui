@@ -7,7 +7,6 @@ use glow::HasContext as _;
 use icy_engine::Buffer;
 use icy_engine::Shape;
 use icy_engine::TextPane;
-use image::DynamicImage;
 use image::EncodableLayout;
 use image::RgbaImage;
 use web_time::Instant;

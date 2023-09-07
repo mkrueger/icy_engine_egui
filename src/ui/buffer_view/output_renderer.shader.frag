@@ -220,14 +220,21 @@ void draw_selection_rect(vec2 upper_left, vec2 bottom_right, bool in_buffer_rect
     }
 }
 
-
-void draw_color_dash(vec3 rect_color) {
+bool is_inside_selection() {
 	vec2 uv   = gl_FragCoord.xy + vec2(0.5);
 	vec2 upper_left = u_selection_rectangle.xy;
 	vec2 bottom_right = u_selection_rectangle.zw;
 
 	if (upper_left.y <= uv.y && uv.y <= bottom_right.y && 
 	    upper_left.x <= uv.x && uv.x <= bottom_right.x)  {
+		return true;
+	}
+
+	return false;
+}
+
+void draw_color_dash(vec3 rect_color) {
+	if (is_inside_selection())  {
 		draw_dash();
 		return;
 	}
@@ -380,7 +387,11 @@ void main() {
 				draw_layer_rectangle(true);
 				return;
 			}
-			color = c.xyz;
+			if (is_inside_selection()) {
+				color = 0.9 * c.xyz;
+			} else {
+				color = c.xyz;
+			}
 		}
 		if (u_use_monochrome > 0.0) {
 			float mono = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
