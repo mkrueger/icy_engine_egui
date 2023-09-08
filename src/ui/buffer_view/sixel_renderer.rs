@@ -155,7 +155,14 @@ impl SixelRenderer {
         }
 
         let count: usize = buf.layers.iter().map(|l| l.sixels.len()).sum();
-        let mut sixels_updated = buf.update_sixel_threads() || count != self.sixel_cache.len();
+        let mut sixels_updated = count != self.sixel_cache.len();
+        match buf.update_sixel_threads() {
+            Ok(updated) => sixels_updated |= updated,
+            Err(err) => {
+                log::error!("Error updating sixels: {}", err);
+            }
+        }
+
         if count == 0 {
             for sx in &self.sixel_cache {
                 unsafe {

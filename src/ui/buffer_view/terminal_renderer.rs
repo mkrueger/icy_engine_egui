@@ -487,6 +487,7 @@ impl TerminalRenderer {
                 monitor_settings,
                 has_focus,
             );
+
             gl.bind_vertex_array(Some(self.vertex_array));
             gl.draw_arrays(glow::TRIANGLES, 0, 6);
             crate::check_gl_error!(gl, "render_terminal");
@@ -705,6 +706,7 @@ impl TerminalRenderer {
                 );
             }
         }
+
         crate::check_gl_error!(gl, "run_shader");
     }
 }
