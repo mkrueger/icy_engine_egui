@@ -401,6 +401,12 @@ void main() {
 		draw_layer_rectangle(true);
 	} else {
 		draw_background();
-		draw_layer_rectangle(false);
+		// correct left & bottom margin for selection
+		// It's a hack, but it works.
+		from -= vec2(1.0)/ u_resolution;
+		draw_layer_rectangle(
+			from.x <= uv.x && uv.x < to.x && 
+			from.y <= uv.y && uv.y < to.y
+		);
 	}
 }
