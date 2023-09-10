@@ -76,10 +76,14 @@ pub struct TerminalOptions {
     pub settings: MonitorSettings,
     pub stick_to_bottom: bool,
     pub scale: Option<Vec2>,
+    pub fit_width: bool,
     pub render_real_height: bool,
     pub use_terminal_height: bool,
     pub scroll_offset: Option<f32>,
     pub id: Option<egui::Id>,
+
+    pub guide: Option<Vec2>,
+    pub raster: Option<Vec2>,
 }
 
 impl Default for TerminalOptions {
@@ -90,10 +94,13 @@ impl Default for TerminalOptions {
             settings: Default::default(),
             stick_to_bottom: Default::default(),
             scale: Default::default(),
+            fit_width: false,
             render_real_height: false,
             use_terminal_height: true,
             scroll_offset: None,
             id: None,
+            guide: None,
+            raster: None,
         }
     }
 }
@@ -125,7 +132,8 @@ pub fn show_terminal_area(
 
     let r = scroll.show(
         ui,
-        |rect| {
+        options,
+        |rect, options: &TerminalOptions| {
             let size = rect.size();
 
             let font_width = font_dimensions.width as f32
@@ -137,29 +145,32 @@ pub fn show_terminal_area(
 
             let mut scale_x = size.x / font_width / buf_w;
             let mut scale_y = size.y / font_dimensions.height as f32 / buf_h;
-
-            if scale_x < scale_y {
-                scale_y = scale_x;
-            } else {
-                scale_x = scale_y;
-            }
-
             let mut scroll_remainder = 0.0;
 
-            if let Some(scale) = options.scale {
-                scale_x = scale.x;
-                scale_y = scale.y;
-
-                let h = size.y / (font_dimensions.height as f32 * scale_y);
-                buf_h = h.ceil().min(real_height);
-
-                if real_height > buf_h {
-                    // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
-                    scroll_remainder = 1.0 - h.fract();
+            if options.fit_width {
+                scale_y = scale_x;
+            } else {
+                if scale_x < scale_y {
+                    scale_y = scale_x;
+                } else {
+                    scale_x = scale_y;
                 }
 
-                forced_height = (buf_h as i32).min(real_height as i32);
-                buffer_view2.lock().redraw_view();
+                if let Some(scale) = options.scale {
+                    scale_x = scale.x;
+                    scale_y = scale.y;
+
+                    let h = size.y / (font_dimensions.height as f32 * scale_y);
+                    buf_h = h.ceil().min(real_height);
+
+                    if real_height > buf_h {
+                        // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
+                        scroll_remainder = 1.0 - h.fract();
+                    }
+
+                    forced_height = (buf_h as i32).min(real_height as i32);
+                    buffer_view2.lock().redraw_view();
+                }
             }
 
             let char_size = Vec2::new(
@@ -199,7 +210,7 @@ pub fn show_terminal_area(
                 has_focus: false,
             }
         },
-        |ui, calc| {
+        |ui, calc, options: TerminalOptions| {
             let viewport_top = calc.char_scroll_positon * calc.scale.y;
             calc.first_line = viewport_top / calc.char_size.y;
 
@@ -215,12 +226,9 @@ pub fn show_terminal_area(
             let callback = egui::PaintCallback {
                 rect: calc.terminal_rect,
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
-                    buffer_view.lock().render_contents(
-                        painter.gl(),
-                        &info,
-                        options.filter,
-                        &options.settings,
-                    );
+                    buffer_view
+                        .lock()
+                        .render_contents(painter.gl(), &info, &options);
                 })),
             };
             ui.painter().add(callback);

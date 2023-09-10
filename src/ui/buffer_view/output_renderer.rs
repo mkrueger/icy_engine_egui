@@ -9,8 +9,8 @@ use web_time::Instant;
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
 use crate::BufferView;
-use crate::MonitorSettings;
 use crate::TerminalCalc;
+use crate::TerminalOptions;
 
 pub const MONO_COLORS: [(u8, u8, u8); 5] = [
     (0xFF, 0xFF, 0xFF), // Black / White
@@ -96,8 +96,9 @@ impl OutputRenderer {
         buffer_view: &BufferView,
         output_texture: glow::Texture,
         calc: &TerminalCalc,
-        monitor_settings: &MonitorSettings,
+        options: &TerminalOptions,
     ) {
+        let monitor_settings = &options.settings;
         let buffer_rect = calc.buffer_rect;
         let terminal_rect = calc.terminal_rect;
         let top_pos = buffer_view.viewport_top.floor();
@@ -234,6 +235,52 @@ impl OutputRenderer {
             (info.screen_size_px[1] as f32 - buffer_rect.min.y * info.pixels_per_point)
                 / (terminal_rect.height() * info.pixels_per_point),
         );
+
+        let y = calc.buffer_rect.top() - calc.char_scroll_positon;
+        let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point;
+        gl.uniform_2_f32(
+            gl.get_uniform_location(self.output_shader, "u_scroll_position")
+                .as_ref(),
+            (calc.buffer_rect.left() * info.pixels_per_point).floor() + 0.5,
+            (y).floor() + 0.5,
+        );
+
+        if let Some(raster) = &options.raster {
+            gl.uniform_2_f32(
+                gl.get_uniform_location(self.output_shader, "u_raster")
+                    .as_ref(), // HACK! some raster positions need correction no idea why
+                (raster.x * calc.char_size.x).floor() * info.pixels_per_point
+                    + if (raster.x as i32) % 3 == 0 {
+                        -0.5
+                    } else {
+                        0.5
+                    },
+                (raster.y * calc.char_size.y).floor() * info.pixels_per_point,
+            );
+        } else {
+            gl.uniform_2_f32(
+                gl.get_uniform_location(self.output_shader, "u_raster")
+                    .as_ref(),
+                0.0,
+                0.0,
+            );
+        }
+
+        if let Some(guide) = &options.guide {
+            gl.uniform_2_f32(
+                gl.get_uniform_location(self.output_shader, "u_guide")
+                    .as_ref(),
+                (guide.x * calc.char_size.x).floor() * info.pixels_per_point,
+                (-guide.y * calc.char_size.y).floor(),
+            );
+        } else {
+            gl.uniform_2_f32(
+                gl.get_uniform_location(self.output_shader, "u_guide")
+                    .as_ref(),
+                0.0,
+                0.0,
+            );
+        }
 
         if let Some(layer) = buffer_view.edit_state.get_cur_layer() {
             if !buffer_view.get_buffer().is_terminal_buffer {

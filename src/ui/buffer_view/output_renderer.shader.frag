@@ -5,6 +5,10 @@ uniform vec2      u_resolution;
 uniform float     u_effect;
 uniform vec4      u_buffer_rect;
 uniform float     u_time;
+uniform vec2      u_scroll_position; // in screen px.
+
+uniform vec2      u_raster;
+uniform vec2      u_guide;
 
 uniform vec4        u_layer_rectangle;
 uniform vec3        u_layer_rectangle_color;
@@ -122,12 +126,34 @@ void draw_dash() {
 
 }
 
+vec4 draw_grid_raster(vec4 c) {
+	float checker_size = 1.0;
+    vec2 p = floor(gl_FragCoord.xy / checker_size);
+    float PatternMask = mod(p.x + mod(p.y, 2.0), 2.0);
+	if (PatternMask == 0.0) {
+		return vec4(0.2, 0.2, 0.2, 1.0);
+	} else {
+		return c;
+	} 
+}
+
+vec4 draw_guide_raster(vec4 c) {
+	float checker_size = 1.0;
+    vec2 p = floor(gl_FragCoord.xy / checker_size);
+    float PatternMask = mod(p.x + mod(p.y, 2.0), 2.0);
+	if (PatternMask == 0.0) {
+		return c;
+	} else {
+		return vec4(0.3, 0.3, 0.3, 1.0);
+	} 
+}
+
+
 void draw_background() {
 	color = vec3(0.25, 0.27, 0.29);
 }
 
-void selection_border()
-{
+void selection_border() {
 	color = 0.6 * color;
 }
 
@@ -382,10 +408,24 @@ void main() {
 			scanlines2(coord);
 		} else { 
 			vec4 c = texture(u_render_texture, coord);
+
 			if (c.w < 1.0) {
 				draw_checkers_background();
 				draw_layer_rectangle(true);
 				return;
+			}
+
+			vec2 sp = gl_FragCoord.xy - u_scroll_position;
+
+			if (u_raster.x > 0.0 && mod(sp.x, u_raster.x) == 0.0 ||
+			    u_raster.y > 0.0 && mod(sp.y, u_raster.y) == 0.0)  {
+				c = draw_grid_raster(c);
+			}
+			if (u_guide.x > 0.0 && u_guide.y != 0.0) {
+				if (sp.x == u_guide.x && sp.y > u_guide.y ||
+					sp.y == u_guide.y && sp.x < u_guide.x)  {
+					c = draw_guide_raster(c);
+				}
 			}
 			if (is_inside_selection()) {
 				color = 0.9 * c.xyz;

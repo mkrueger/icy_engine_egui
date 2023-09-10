@@ -1,6 +1,6 @@
 use egui::{Color32, Id, Pos2, Rect, Response, Sense, Ui, Vec2};
 
-use crate::TerminalCalc;
+use crate::{TerminalCalc, TerminalOptions};
 
 pub struct SmoothScroll {
     /// Current scroll position in terminal pixels (not screen pixels)
@@ -83,8 +83,9 @@ impl SmoothScroll {
     pub fn show(
         &mut self,
         ui: &mut Ui,
-        calc_contents: impl FnOnce(Rect) -> TerminalCalc,
-        add_contents: impl FnOnce(&mut Ui, &mut TerminalCalc),
+        options: TerminalOptions,
+        calc_contents: impl FnOnce(Rect, &TerminalOptions) -> TerminalCalc,
+        add_contents: impl FnOnce(&mut Ui, &mut TerminalCalc, TerminalOptions),
     ) -> (Response, TerminalCalc) {
         self.load_data(ui);
         let size = ui.available_size();
@@ -92,7 +93,7 @@ impl SmoothScroll {
         let (_, rect) = ui.allocate_space(Vec2::new(size.x, size.y));
         let mut response = ui.interact(rect, self.id, Sense::click_and_drag());
 
-        let mut calc = calc_contents(rect);
+        let mut calc = calc_contents(rect, &options);
         calc.char_scroll_positon = self.char_scroll_positon;
         if self.lock_focus {
             self.lock_focus = false;
@@ -121,7 +122,7 @@ impl SmoothScroll {
         calc.scrollbar_rect = scrollbar_rect;
         calc.has_focus |= response.has_focus();
 
-        add_contents(ui, &mut calc);
+        add_contents(ui, &mut calc, options);
 
         if calc.char_height > calc.buffer_char_height {
             self.clamp_scroll_position(&mut calc);

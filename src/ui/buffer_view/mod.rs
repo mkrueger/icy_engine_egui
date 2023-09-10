@@ -7,7 +7,7 @@ use icy_engine::{
 
 pub mod glerror;
 
-use crate::{check_gl_error, MonitorSettings, TerminalCalc};
+use crate::{check_gl_error, TerminalCalc, TerminalOptions};
 
 mod output_renderer;
 mod sixel_renderer;
@@ -188,18 +188,17 @@ impl BufferView {
         &mut self,
         gl: &glow::Context,
         info: &egui::PaintCallbackInfo,
-        scale_filter: i32,
-        monitor_settings: &MonitorSettings,
+        options: &TerminalOptions,
     ) {
         let has_focus = self.calc.has_focus;
 
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
-            self.update_contents(gl, scale_filter);
+            self.update_contents(gl, options.filter);
 
             self.output_renderer.init_output(gl);
             self.terminal_renderer
-                .render_terminal(gl, self, monitor_settings, has_focus);
+                .render_terminal(gl, self, &options.settings, has_focus);
             // draw sixels
             let render_texture = self
                 .sixel_renderer
@@ -212,7 +211,7 @@ impl BufferView {
                 self,
                 render_texture,
                 &self.calc,
-                monitor_settings,
+                options,
             );
         }
         check_gl_error!(gl, "buffer_view.render_contents");
