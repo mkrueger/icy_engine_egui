@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use egui::{Response, Vec2};
 use glow::HasContext;
 use icy_engine::{
@@ -67,7 +69,7 @@ pub struct BufferView {
     terminal_renderer: terminal_renderer::TerminalRenderer,
     sixel_renderer: sixel_renderer::SixelRenderer,
     output_renderer: output_renderer::OutputRenderer,
-
+    reference_image_path: Option<PathBuf>,
     drag_start: Option<Vec2>,
 }
 
@@ -95,6 +97,7 @@ impl BufferView {
             sixel_renderer,
             output_renderer,
             drag_start: None,
+            reference_image_path: None,
             calc,
         }
     }
@@ -275,8 +278,13 @@ impl BufferView {
         //if response.dragged() {}
     }
 
+    pub fn get_reference_image_path(&self) -> Option<PathBuf> {
+        self.reference_image_path.clone()
+    }
+
     pub fn load_reference_image(&mut self, path: &std::path::Path) {
         if let Ok(image) = image::open(path) {
+            self.reference_image_path = Some(path.to_path_buf());
             let image = image.to_rgba8();
             self.terminal_renderer.reference_image = Some(image);
             self.terminal_renderer.show_reference_image = true;
