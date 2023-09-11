@@ -85,7 +85,7 @@ impl OutputRenderer {
         );
 
         gl.clear(glow::COLOR_BUFFER_BIT);
-        gl.clear_color(0., 0., 0., 1.0);
+        gl.clear_color(0., 0., 0., 0.0);
         crate::check_gl_error!(gl, "init_output");
     }
 
