@@ -1,6 +1,8 @@
 precision highp float;
 
 uniform sampler2D u_render_texture;
+uniform sampler2D u_render_data_texture;
+
 uniform vec2      u_resolution;
 uniform float     u_effect;
 uniform vec4      u_buffer_rect;
@@ -166,6 +168,27 @@ void draw_selection_rect(vec2 upper_left, vec2 bottom_right, bool in_buffer_rect
 	vec2 bto   = u_buffer_rect.zw ;
 
 	float v = 1.0;
+
+	if (in_buffer_rect) {
+	    vec2 uv2   = gl_FragCoord.xy / u_resolution;
+		vec2 coord = (uv2 - from) / (to - from);
+		vec4 sel = texture(u_render_data_texture, coord);
+		if (sel.r == 1.0) {
+			vec2 div = u_resolution *  (to - from);
+			float f = 1.0;
+
+			// check if selection rect is not the edge
+			vec4 up = texture(u_render_data_texture, coord - vec2(0.0, f) / div);
+			vec4 down = texture(u_render_data_texture, coord + vec2(0.0, f) / div);
+			vec4 left = texture(u_render_data_texture, coord - vec2(f, 0.0) / div);
+			vec4 right = texture(u_render_data_texture, coord + vec2(f, 0.0) / div);
+			if (up.r == 1.0 && down.r == 1.0 && left.r == 1.0 && right.r == 1.0) {
+				in_buffer_rect = false;
+			}
+		}
+	}
+
+
     if (upper_left.y <= uv.y && uv.y <= bottom_right.y)  {
 		// left
 		if (upper_left.x == uv.x) {
@@ -438,7 +461,24 @@ void main() {
 			color = vec3(mono, mono, mono);
 			color *= u_monchrome_mask;
 		}
+
+		vec4 sel = texture(u_render_data_texture, coord);
+
+		// test outpupt - view selected area
+		// color = 0.8 * color + 0.2 * sel.rgb;
+		if (sel.r == 1.0) {
+			float f = 1.0;
+			vec2 div = u_resolution *  (to - from);
+			vec4 up = texture(u_render_data_texture, coord - vec2(0.0, f) / div);
+			vec4 down = texture(u_render_data_texture, coord + vec2(0.0, f) / div);
+			vec4 left = texture(u_render_data_texture, coord - vec2(f, 0.0) / div);
+			vec4 right = texture(u_render_data_texture, coord + vec2(f, 0.0) / div);
+			if (up.r == 0.0 || down.r == 0.0 || left.r == 0.0 || right.r == 0.0) {
+				draw_dash();
+			}
+		}
 		draw_layer_rectangle(true);
+
 	} else {
 		draw_background();
 		// correct left & bottom margin for selection

@@ -213,6 +213,7 @@ impl BufferView {
                 info,
                 self,
                 render_texture,
+                self.output_renderer.render_data_texture,
                 &self.calc,
                 options,
             );

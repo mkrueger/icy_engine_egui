@@ -115,6 +115,7 @@ impl OutputRenderer {
         info: &PaintCallbackInfo,
         buffer_view: &BufferView,
         output_texture: glow::Texture,
+        output_data_texture: glow::Texture,
         calc: &TerminalCalc,
         options: &TerminalOptions,
     ) {
@@ -153,6 +154,14 @@ impl OutputRenderer {
             gl.get_uniform_location(self.output_shader, "u_render_texture")
                 .as_ref(),
             0,
+        );
+
+        gl.active_texture(glow::TEXTURE0 + 2);
+        gl.bind_texture(glow::TEXTURE_2D, Some(output_data_texture));
+        gl.uniform_1_i32(
+            gl.get_uniform_location(self.output_shader, "u_render_data_texture")
+                .as_ref(),
+            2,
         );
         let eff = match monitor_settings.background_effect {
             crate::BackgroundEffect::None => {

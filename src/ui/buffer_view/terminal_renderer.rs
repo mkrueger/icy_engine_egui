@@ -6,7 +6,6 @@ use egui::Vec2;
 use glow::HasContext as _;
 use icy_engine::editor::EditState;
 use icy_engine::Buffer;
-use icy_engine::Shape;
 use icy_engine::TextPane;
 use image::EncodableLayout;
 use image::RgbaImage;
@@ -387,7 +386,7 @@ impl TerminalRenderer {
             for x in 0..buf.get_width() {
                 let ch = buf.get_char((x, first_line - scroll_back_line + y));
                 let is_selected =
-                    edit_state.get_is_selected((x, first_line - scroll_back_line + y));
+                    edit_state.get_is_mask_selected((x, first_line - scroll_back_line + y));
 
                 let mut attr = if ch.attribute.is_double_underlined() {
                     3
@@ -650,7 +649,11 @@ impl TerminalRenderer {
         gl.uniform_1_f32(
             gl.get_uniform_location(self.terminal_shader, "u_selection_attr")
                 .as_ref(),
-            1.0,
+            if buffer_view.get_buffer().is_terminal_buffer {
+                1.0
+            } else {
+                0.0
+            },
         );
 
         crate::check_gl_error!(gl, "run_shader");
