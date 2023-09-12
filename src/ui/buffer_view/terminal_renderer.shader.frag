@@ -12,7 +12,6 @@ uniform vec2        u_position;
 uniform vec2        u_terminal_size;
 uniform vec4        u_caret_rectangle;
 
-uniform vec4        u_selection;
 uniform float       u_selection_attr;
 uniform vec4        u_selection_fg;
 uniform vec4        u_selection_bg;
@@ -39,16 +38,6 @@ vec4 get_palette_color(float c) {
 
 bool check_bit(float v, int bit) {
     return (int(255.0 * v) & (1 << bit)) != 0;
-}
-
-bool is_selected(float x, float y) {
-    if (u_selection_attr > 0.0) {
-        return u_selection.y <= y && y < u_selection.w && u_selection.x <= x && x < u_selection.z;
-    }
-    return u_selection.y == y && u_selection.w == y && u_selection.x <= x && x < u_selection.z || // same line
-           u_selection.y < y && y < u_selection.w || // between start & end line
-           u_selection.y == y && u_selection.w != y && u_selection.x <= x  || // start line
-           u_selection.w == y && u_selection.y != y && x < u_selection.z;    // end line
 }
 
 void main (void) {
@@ -80,10 +69,10 @@ void main (void) {
     vec4 fg = get_palette_color(ch.y);
     vec4 bg = get_palette_color(ch.z);
 
-    if (u_selection_attr >= 0.0) {
+   // if (u_selection_attr > 0.0) {
         float x = floor(fb_pos.x);
         float y = floor(fb_pos.y);
-        if (is_selected(x, y)) {
+        if (ch_attr.b > 0.0) {
             if (u_selection_bg.w > 0.0) {
                 bg = u_selection_bg;
             } else {
@@ -93,7 +82,8 @@ void main (void) {
                 fg = u_selection_fg;
             }
         }
-    }
+  //  }
+
     if (abs(ch_attr[3] - 0.5) < 0.1) {
         fragColor = vec4(0.0);
     } else {

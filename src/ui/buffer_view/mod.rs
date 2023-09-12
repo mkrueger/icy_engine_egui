@@ -230,7 +230,7 @@ impl BufferView {
         );
         self.terminal_renderer.update_textures(
             gl,
-            edit_state.get_buffer_mut(),
+            edit_state,
             &self.calc,
             self.viewport_top,
             self.char_size,

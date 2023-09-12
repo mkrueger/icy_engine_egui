@@ -4,6 +4,7 @@ use std::cmp::max;
 use egui::epaint::ahash::HashMap;
 use egui::Vec2;
 use glow::HasContext as _;
+use icy_engine::editor::EditState;
 use icy_engine::Buffer;
 use icy_engine::Shape;
 use icy_engine::TextPane;
@@ -115,28 +116,30 @@ impl TerminalRenderer {
     pub fn update_textures(
         &mut self,
         gl: &glow::Context,
-        buf: &mut Buffer,
+        edit_state: &mut EditState,
         calc: &TerminalCalc,
         viewport_top: f32,
         char_size: Vec2,
     ) {
         self.check_blink_timers();
 
-        if self.redraw_font || buf.is_font_table_updated() {
+        if self.redraw_font || edit_state.get_buffer().is_font_table_updated() {
             self.redraw_font = false;
-            buf.set_font_table_is_updated();
-            self.update_font_texture(gl, buf);
+            edit_state.get_buffer_mut().set_font_table_is_updated();
+            self.update_font_texture(gl, edit_state.get_buffer());
         }
 
         if self.redraw_view {
             self.redraw_view = false;
-            self.update_terminal_texture(gl, buf, calc, viewport_top, char_size);
+            self.update_terminal_texture(gl, edit_state, calc, viewport_top, char_size);
         }
 
-        if self.redraw_palette || self.old_palette_color_count != buf.palette.colors.len() {
+        if self.redraw_palette
+            || self.old_palette_color_count != edit_state.get_buffer().palette.colors.len()
+        {
             self.redraw_palette = false;
-            self.old_palette_color_count = buf.palette.colors.len();
-            self.update_palette_texture(gl, buf);
+            self.old_palette_color_count = edit_state.get_buffer().palette.colors.len();
+            self.update_palette_texture(gl, edit_state.get_buffer());
         }
 
         if self.load_reference_image {
@@ -291,11 +294,12 @@ impl TerminalRenderer {
     fn update_terminal_texture(
         &self,
         gl: &glow::Context,
-        buf: &Buffer,
+        edit_state: &EditState,
         calc: &TerminalCalc,
         viewport_top: f32,
         char_size: Vec2,
     ) {
+        let buf = edit_state.get_buffer();
         let first_line = (viewport_top / char_size.y) as i32;
         let real_height = buf.get_height();
         let buf_h = calc.forced_height;
@@ -375,12 +379,15 @@ impl TerminalRenderer {
                 y += 1;
             }
         }
+
         y = 0;
         while y <= buf_h {
             let mut is_double_height = false;
 
             for x in 0..buf.get_width() {
                 let ch = buf.get_char((x, first_line - scroll_back_line + y));
+                let is_selected =
+                    edit_state.get_is_selected((x, first_line - scroll_back_line + y));
 
                 let mut attr = if ch.attribute.is_double_underlined() {
                     3
@@ -398,7 +405,7 @@ impl TerminalRenderer {
 
                 buffer_data.push(attr);
                 buffer_data.push(attr);
-                buffer_data.push(attr);
+                buffer_data.push(if is_selected { 255 } else { 0 });
                 if !ch.is_visible() {
                     buffer_data.push(128);
                 } else {
@@ -409,6 +416,8 @@ impl TerminalRenderer {
             if is_double_height {
                 for x in 0..buf.get_width() {
                     let ch = buf.get_char((x, first_line - scroll_back_line + y));
+                    let is_selected =
+                        edit_state.get_is_selected((x, first_line - scroll_back_line + y));
                     let mut attr = if ch.attribute.is_double_underlined() {
                         3
                     } else {
@@ -426,7 +435,7 @@ impl TerminalRenderer {
 
                     buffer_data.push(attr);
                     buffer_data.push(attr);
-                    buffer_data.push(attr);
+                    buffer_data.push(if is_selected { 255 } else { 0 });
                     if !ch.is_visible() {
                         buffer_data.push(128);
                     } else {
@@ -619,93 +628,28 @@ impl TerminalRenderer {
             if self.show_reference_image { 1.0 } else { 0.0 },
         );
 
-        match buffer_view.get_selection() {
-            Some(selection) => {
-                if selection.is_empty() || !buffer_view.get_buffer().is_terminal_buffer {
-                    gl.uniform_4_f32(
-                        gl.get_uniform_location(self.terminal_shader, "u_selection")
-                            .as_ref(),
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                    );
-                    gl.uniform_1_f32(
-                        gl.get_uniform_location(self.terminal_shader, "u_selection_attr")
-                            .as_ref(),
-                        -1.0,
-                    );
-                } else {
-                    gl.uniform_4_f32(
-                        gl.get_uniform_location(self.terminal_shader, "u_selection_fg")
-                            .as_ref(),
-                        monitor_settings.selection_fg.r() as f32 / 255.0,
-                        monitor_settings.selection_fg.g() as f32 / 255.0,
-                        monitor_settings.selection_fg.b() as f32 / 255.0,
-                        monitor_settings.selection_fg.a() as f32 / 255.0,
-                    );
-                    gl.uniform_4_f32(
-                        gl.get_uniform_location(self.terminal_shader, "u_selection_bg")
-                            .as_ref(),
-                        monitor_settings.selection_bg.r() as f32 / 255.0,
-                        monitor_settings.selection_bg.g() as f32 / 255.0,
-                        monitor_settings.selection_bg.b() as f32 / 255.0,
-                        monitor_settings.selection_bg.a() as f32 / 255.0,
-                    );
-                    let first_line = first_line + 1; // correct additional scrolling line
-                    if selection.anchor.y < selection.lead.y
-                        || selection.anchor.y == selection.lead.y
-                            && selection.anchor.x < selection.lead.x
-                    {
-                        gl.uniform_4_f32(
-                            gl.get_uniform_location(self.terminal_shader, "u_selection")
-                                .as_ref(),
-                            selection.anchor.x as f32,
-                            (selection.anchor.y - first_line) as f32,
-                            selection.lead.x as f32,
-                            (selection.lead.y - first_line) as f32,
-                        );
-                    } else {
-                        gl.uniform_4_f32(
-                            gl.get_uniform_location(self.terminal_shader, "u_selection")
-                                .as_ref(),
-                            selection.lead.x as f32,
-                            (selection.lead.y - first_line) as f32,
-                            selection.anchor.x as f32,
-                            (selection.anchor.y - first_line) as f32,
-                        );
-                    }
-                    if matches!(selection.shape, Shape::Rectangle) {
-                        gl.uniform_1_f32(
-                            gl.get_uniform_location(self.terminal_shader, "u_selection_attr")
-                                .as_ref(),
-                            1.0,
-                        );
-                    } else {
-                        gl.uniform_1_f32(
-                            gl.get_uniform_location(self.terminal_shader, "u_selection_attr")
-                                .as_ref(),
-                            0.0,
-                        );
-                    }
-                }
-            }
-            None => {
-                gl.uniform_4_f32(
-                    gl.get_uniform_location(self.terminal_shader, "u_selection")
-                        .as_ref(),
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                );
-                gl.uniform_1_f32(
-                    gl.get_uniform_location(self.terminal_shader, "u_selection_attr")
-                        .as_ref(),
-                    -1.0,
-                );
-            }
-        }
+        gl.uniform_4_f32(
+            gl.get_uniform_location(self.terminal_shader, "u_selection_fg")
+                .as_ref(),
+            monitor_settings.selection_fg.r() as f32 / 255.0,
+            monitor_settings.selection_fg.g() as f32 / 255.0,
+            monitor_settings.selection_fg.b() as f32 / 255.0,
+            monitor_settings.selection_fg.a() as f32 / 255.0,
+        );
+        gl.uniform_4_f32(
+            gl.get_uniform_location(self.terminal_shader, "u_selection_bg")
+                .as_ref(),
+            monitor_settings.selection_bg.r() as f32 / 255.0,
+            monitor_settings.selection_bg.g() as f32 / 255.0,
+            monitor_settings.selection_bg.b() as f32 / 255.0,
+            monitor_settings.selection_bg.a() as f32 / 255.0,
+        );
+
+        gl.uniform_1_f32(
+            gl.get_uniform_location(self.terminal_shader, "u_selection_attr")
+                .as_ref(),
+            1.0,
+        );
 
         crate::check_gl_error!(gl, "run_shader");
     }
