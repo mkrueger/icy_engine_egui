@@ -147,11 +147,11 @@ impl BufferView {
     }
 
     pub fn set_selection(&mut self, sel: impl Into<Selection>) {
-        self.edit_state.set_selection(sel.into());
+        let _ = self.edit_state.set_selection(sel.into());
     }
 
     pub fn clear_selection(&mut self) {
-        self.edit_state.clear_selection();
+        let _ = self.edit_state.clear_selection();
     }
 
     pub fn clear(&mut self) {
@@ -199,7 +199,7 @@ impl BufferView {
             gl.disable(glow::SCISSOR_TEST);
             self.update_contents(gl, options.filter);
 
-            self.output_renderer.init_output(gl);
+            self.output_renderer.bind_framebuffers(gl);
             self.terminal_renderer
                 .render_terminal(gl, self, &options.settings, has_focus);
             // draw sixels
@@ -216,6 +216,7 @@ impl BufferView {
                 &self.calc,
                 options,
             );
+            self.output_renderer.unbind_framebuffers(gl);
         }
         check_gl_error!(gl, "buffer_view.render_contents");
     }

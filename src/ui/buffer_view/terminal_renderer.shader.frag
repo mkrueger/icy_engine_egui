@@ -22,7 +22,8 @@ uniform sampler2D   u_reference_image;
 uniform float       u_has_reference_image;
 uniform vec2        u_reference_image_size;
 
-out     vec4        fragColor;
+out     vec4        color1;
+out     vec4        color2;
 
 vec4 get_char(vec2 p, float c, float page) {
     if (p.x < 0.|| p.x > 1. || p.y < 0.|| p.y > 1.) {
@@ -73,6 +74,7 @@ void main (void) {
         float x = floor(fb_pos.x);
         float y = floor(fb_pos.y);
         if (ch_attr.b > 0.0) {
+            color2 = vec4(1.0, 0.0, 0.0, 1.0);
             if (u_selection_bg.w > 0.0) {
                 bg = u_selection_bg;
             } else {
@@ -81,35 +83,37 @@ void main (void) {
             if (u_selection_fg.w > 0.0) {
                 fg = u_selection_fg;
             }
+        } else {
+            color2 = vec4(0.0, 0.0, 1.0, 1.0);
         }
   //  }
 
     if (abs(ch_attr[3] - 0.5) < 0.1) {
-        fragColor = vec4(0.0);
+        color1 = vec4(0.0);
     } else {
         if (char_data.x > 0.5 && (ch_attr[3] == 0.0 || u_character_blink > 0.0)) {
-            fragColor = fg;
+            color1 = fg;
         } else {
-            fragColor = bg;
+            color1 = bg;
         }
         // underline
         if (check_bit(ch_attr[0], 0)) {
             if (fract_fb_pos.y >= 15.0 / 16.0) {
-                fragColor = fg;
+                color1 = fg;
             }
         }
 
         // double underline
         if (check_bit(ch_attr[0], 1)) {
             if (fract_fb_pos.y >= 13.0 / 16.0 && fract_fb_pos.y < 14.0 / 16.0) {
-                fragColor = fg;
+                color1 = fg;
             }
         }
 
         // strike through
         if (check_bit(ch_attr[0], 2)) {
             if (fract_fb_pos.y >= 7.0 / 16.0 && fract_fb_pos.y < 8.0 / 16.0) {
-                fragColor = fg;
+                color1 = fg;
             }
         }
     }
@@ -119,7 +123,7 @@ void main (void) {
         view_coord = vec2(view_coord.s, 1.0 - view_coord.t);
 
         vec4 img = texture(u_reference_image, view_coord);
-        fragColor = 0.2 * img + fragColor * 0.8;
+        color1 = 0.2 * img + color1 * 0.8;
     }
 
     // paint caret
@@ -131,6 +135,6 @@ void main (void) {
         upper_left.y <= terminal_buffer_coordinates.y && 
         terminal_buffer_coordinates.x < bottom_right.x && 
         terminal_buffer_coordinates.y < bottom_right.y) {
-        fragColor = get_palette_color(ch.y);
+        color1 = get_palette_color(ch.y);
     } 
 }
