@@ -17,6 +17,7 @@ uniform vec3        u_layer_rectangle_color;
 uniform vec4        u_preview_layer_rectangle;
 uniform vec3        u_preview_layer_rectangle_color;
 uniform vec4        u_selection_rectangle;
+uniform vec3        u_selection_fill_color;
 
 uniform float gamma;
 uniform float contrast;
@@ -451,7 +452,7 @@ void main() {
 				}
 			}
 			if (is_inside_selection()) {
-				color = 0.9 * c.xyz;
+				color = 0.9 * c.xyz + 0.05 * u_selection_fill_color;
 			} else {
 				color = c.xyz;
 			}
@@ -475,6 +476,9 @@ void main() {
 			vec4 right = texture(u_render_data_texture, coord + vec2(f, 0.0) / div);
 			if (up.r == 0.0 || down.r == 0.0 || left.r == 0.0 || right.r == 0.0) {
 				draw_dash();
+			} else {
+				color = 0.9 * color.xyz;
+
 			}
 		}
 		draw_layer_rectangle(true);

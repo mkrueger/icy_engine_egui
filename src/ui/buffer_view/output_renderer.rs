@@ -446,6 +446,18 @@ impl OutputRenderer {
                         y,
                     );
                 }
+                let (r, g, b) = match selection.add_type {
+                    icy_engine::AddType::Default => (0.0, 0.0, 0.0),
+                    icy_engine::AddType::Add => (0.0, 1.0, 0.0),
+                    icy_engine::AddType::Subtract => (1.0, 0.0, 0.0),
+                };
+                gl.uniform_3_f32(
+                    gl.get_uniform_location(self.output_shader, "u_selection_fill_color")
+                        .as_ref(),
+                    r,
+                    g,
+                    b,
+                );
             }
             None => {
                 gl.uniform_4_f32(
