@@ -464,22 +464,33 @@ void main() {
 		}
 
 		vec4 sel = texture(u_render_data_texture, coord);
+		float f = 1.0;
+		vec2 div = u_resolution *  (to - from);
+		vec4 up = texture(u_render_data_texture, coord - vec2(0.0, f) / div);
+		vec4 down = texture(u_render_data_texture, coord + vec2(0.0, f) / div);
+		vec4 left = texture(u_render_data_texture, coord - vec2(f, 0.0) / div);
+		vec4 right = texture(u_render_data_texture, coord + vec2(f, 0.0) / div);
+
+		vec4 left_up = texture(u_render_data_texture, coord + vec2(-f, -f) / div);
+		vec4 left_down = texture(u_render_data_texture, coord + vec2(-f, f) / div);
+		vec4 right_up = texture(u_render_data_texture, coord + vec2(f, -f) / div);
+		vec4 right_down = texture(u_render_data_texture, coord + vec2(f, f) / div);
 
 		// test outpupt - view selected area
 		// color = 0.8 * color + 0.2 * sel.rgb;
 		if (sel.r == 1.0) {
-			float f = 1.0;
-			vec2 div = u_resolution *  (to - from);
-			vec4 up = texture(u_render_data_texture, coord - vec2(0.0, f) / div);
-			vec4 down = texture(u_render_data_texture, coord + vec2(0.0, f) / div);
-			vec4 left = texture(u_render_data_texture, coord - vec2(f, 0.0) / div);
-			vec4 right = texture(u_render_data_texture, coord + vec2(f, 0.0) / div);
-			if (up.r == 0.0 || down.r == 0.0 || left.r == 0.0 || right.r == 0.0) {
+			if (up.r == 0.0 || down.r == 0.0 || left.r == 0.0 || right.r == 0.0
+			|| left_up.r == 0.0 || left_down.r == 0.0 || right_up.r == 0.0 || right_down.r == 0.0) {
 				draw_dash();
 			} else {
 				color = 0.9 * color.xyz;
-
 			}
+		} else { 
+			// draw outer selection border
+			if (up.r == 1.0 || down.r == 1.0 || left.r == 1.0 || right.r == 1.0 
+				|| left_up.r == 1.0 || left_down.r == 1.0 || right_up.r == 1.0 || right_down.r == 1.0) {
+				selection_border();
+			} 
 		}
 		draw_layer_rectangle(true);
 
