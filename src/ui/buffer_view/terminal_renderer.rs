@@ -119,6 +119,8 @@ impl TerminalRenderer {
         calc: &TerminalCalc,
         viewport_top: f32,
         char_size: Vec2,
+        use_fg: bool,
+        use_bg: bool,
     ) {
         self.check_blink_timers();
 
@@ -130,7 +132,15 @@ impl TerminalRenderer {
 
         if self.redraw_view {
             self.redraw_view = false;
-            self.update_terminal_texture(gl, edit_state, calc, viewport_top, char_size);
+            self.update_terminal_texture(
+                gl,
+                edit_state,
+                calc,
+                viewport_top,
+                char_size,
+                use_fg,
+                use_bg,
+            );
         }
 
         if self.redraw_palette
@@ -297,6 +307,8 @@ impl TerminalRenderer {
         calc: &TerminalCalc,
         viewport_top: f32,
         char_size: Vec2,
+        use_fg: bool,
+        use_bg: bool,
     ) {
         let buf = edit_state.get_buffer();
         let first_line = (viewport_top / char_size.y) as i32;
@@ -313,7 +325,7 @@ impl TerminalRenderer {
             let mut is_double_height = false;
 
             for x in 0..buf.get_width() {
-                let ch = buf.get_char((x, first_line - scroll_back_line + y));
+                let mut ch = buf.get_char((x, first_line - scroll_back_line + y));
                 if ch.attribute.is_double_height() {
                     is_double_height = true;
                 }
@@ -322,6 +334,10 @@ impl TerminalRenderer {
                 } else {
                     buffer_data.push(ch.ch as u8);
                 }
+                if !use_fg {
+                    ch.attribute.set_foreground(7);
+                    ch.attribute.set_is_bold(false);
+                }
                 let fg = if ch.attribute.is_bold() && ch.attribute.get_foreground() < 8 {
                     conv_color(ch.attribute.get_foreground() + 8, colors)
                 } else {
@@ -329,6 +345,9 @@ impl TerminalRenderer {
                 };
                 buffer_data.push(fg);
 
+                if !use_bg {
+                    ch.attribute.set_background(0);
+                }
                 let bg = conv_color(ch.attribute.get_background(), colors);
                 buffer_data.push(bg);
                 if buf.has_fonts() {

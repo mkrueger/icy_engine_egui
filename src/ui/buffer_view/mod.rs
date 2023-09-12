@@ -66,6 +66,9 @@ pub struct BufferView {
 
     pub button_pressed: bool,
 
+    pub use_fg: bool,
+    pub use_bg: bool,
+
     terminal_renderer: terminal_renderer::TerminalRenderer,
     sixel_renderer: sixel_renderer::SixelRenderer,
     output_renderer: output_renderer::OutputRenderer,
@@ -99,6 +102,8 @@ impl BufferView {
             drag_start: None,
             reference_image_path: None,
             calc,
+            use_fg: true,
+            use_bg: true,
         }
     }
 
@@ -197,7 +202,7 @@ impl BufferView {
 
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
-            self.update_contents(gl, options.filter);
+            self.update_contents(gl, options.filter, self.use_fg, self.use_bg);
 
             self.output_renderer.bind_framebuffers(gl);
             self.terminal_renderer
@@ -222,7 +227,13 @@ impl BufferView {
         check_gl_error!(gl, "buffer_view.render_contents");
     }
 
-    pub fn update_contents(&mut self, gl: &glow::Context, scale_filter: i32) {
+    pub fn update_contents(
+        &mut self,
+        gl: &glow::Context,
+        scale_filter: i32,
+        use_fg: bool,
+        use_bg: bool,
+    ) {
         let edit_state = &mut self.edit_state;
         self.sixel_renderer.update_sixels(
             gl,
@@ -236,6 +247,8 @@ impl BufferView {
             &self.calc,
             self.viewport_top,
             self.char_size,
+            use_fg,
+            use_bg,
         );
         self.output_renderer.update_render_buffer(
             gl,
