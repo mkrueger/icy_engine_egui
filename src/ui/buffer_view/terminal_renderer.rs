@@ -548,8 +548,7 @@ impl TerminalRenderer {
             render_buffer_size.y + fh,
         );
         let top_pos = buffer_view.viewport_top.floor();
-        let scroll_offset = (top_pos / buffer_view.char_size.y * fh) % fh;
-
+        let scroll_offset = ((top_pos / buffer_view.char_size.y * fh) % fh).floor();
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_position")
                 .as_ref(),

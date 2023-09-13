@@ -121,7 +121,6 @@ impl SmoothScroll {
         scrollbar_rect.set_left(x);
         calc.scrollbar_rect = scrollbar_rect;
         calc.has_focus |= response.has_focus();
-
         add_contents(ui, &mut calc, options);
 
         if calc.char_height > calc.buffer_char_height {
@@ -145,7 +144,7 @@ impl SmoothScroll {
         // HACK around cutting the last line - I'm sure the error is somewhere else, but this works.
         max += calc.scroll_remainder * (calc.font_height - 1.0);
 
-        self.char_scroll_positon = self.char_scroll_positon.clamp(0.0, max);
+        self.char_scroll_positon = self.char_scroll_positon.clamp(0.0, max).floor();
         calc.char_scroll_positon = self.char_scroll_positon;
     }
 
