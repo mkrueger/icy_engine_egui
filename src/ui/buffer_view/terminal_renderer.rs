@@ -518,7 +518,6 @@ impl TerminalRenderer {
             );
 
             gl.bind_vertex_array(Some(self.vertex_array));
-            gl.draw_buffers(&[glow::COLOR_ATTACHMENT0, glow::COLOR_ATTACHMENT1]);
             gl.draw_arrays(glow::TRIANGLES, 0, 6);
             crate::check_gl_error!(gl, "render_terminal");
         }
@@ -534,8 +533,6 @@ impl TerminalRenderer {
     ) {
         let fontdim = buffer_view.get_buffer().get_font_dimensions();
         let fh = fontdim.height as f32;
-        gl.bind_frag_data_location(self.terminal_shader, 0, "color1");
-        gl.bind_frag_data_location(self.terminal_shader, 1, "color2");
         gl.use_program(Some(self.terminal_shader));
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_resolution")

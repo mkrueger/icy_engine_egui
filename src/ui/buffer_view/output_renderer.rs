@@ -76,12 +76,6 @@ impl OutputRenderer {
     pub(crate) unsafe fn bind_framebuffers(&self, gl: &glow::Context) {
         gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer));
         gl.bind_texture(glow::TEXTURE_2D, Some(self.render_texture));
-        gl.viewport(
-            0,
-            0,
-            self.render_buffer_size.x as i32,
-            self.render_buffer_size.y as i32,
-        );
         gl.framebuffer_texture_2d(
             glow::FRAMEBUFFER,
             glow::COLOR_ATTACHMENT0,
@@ -98,6 +92,14 @@ impl OutputRenderer {
             Some(self.render_data_texture),
             0,
         );
+
+        gl.viewport(
+            0,
+            0,
+            self.render_buffer_size.x as i32,
+            self.render_buffer_size.y as i32,
+        );
+        gl.draw_buffers(&[glow::COLOR_ATTACHMENT0, glow::COLOR_ATTACHMENT1]);
 
         gl.clear(glow::COLOR_BUFFER_BIT);
         gl.clear_color(0., 0., 0., 0.0);
