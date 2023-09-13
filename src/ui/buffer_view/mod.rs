@@ -217,12 +217,11 @@ impl BufferView {
                 gl,
                 info,
                 self,
-                render_texture,
+render_texture,
                 self.output_renderer.render_data_texture,
-                &self.calc,
+                                &self.calc,
                 options,
             );
-            self.output_renderer.unbind_framebuffers(gl);
         }
         check_gl_error!(gl, "buffer_view.render_contents");
     }

@@ -11,6 +11,8 @@ use image::EncodableLayout;
 use image::RgbaImage;
 use web_time::Instant;
 
+use crate::buffer_view::output_renderer::DATA_TEXTURE_SLOT;
+use crate::buffer_view::output_renderer::OUTPUT_TEXTURE_SLOT;
 use crate::prepare_shader;
 use crate::MonitorSettings;
 use crate::TerminalCalc;
@@ -516,6 +518,7 @@ impl TerminalRenderer {
             );
 
             gl.bind_vertex_array(Some(self.vertex_array));
+            gl.draw_buffers(&[glow::COLOR_ATTACHMENT0, glow::COLOR_ATTACHMENT1]);
             gl.draw_arrays(glow::TRIANGLES, 0, 6);
             crate::check_gl_error!(gl, "render_terminal");
         }
