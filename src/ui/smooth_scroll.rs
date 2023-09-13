@@ -111,7 +111,7 @@ impl SmoothScroll {
         self.last_char_height = calc.char_height;
 
         if let Some(sp) = self.scroll_offset {
-            self.char_scroll_positon = sp;
+            self.char_scroll_positon = sp.floor();
         }
         self.clamp_scroll_position(&mut calc);
 
