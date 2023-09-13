@@ -143,7 +143,9 @@ impl OutputRenderer {
         gl.use_program(Some(self.output_shader));
         gl.active_texture(glow::TEXTURE0);
         gl.bind_texture(glow::TEXTURE_2D, Some(output_texture));
-        gl.active_texture(glow::TEXTURE0); // apple workaround
+
+        gl.active_texture(glow::TEXTURE0 + 1); 
+        gl.bind_texture(glow::TEXTURE_2D, Some(output_data_texture));
 
         gl.uniform_1_f32(
             gl.get_uniform_location(self.output_shader, "u_time")
@@ -157,13 +159,10 @@ impl OutputRenderer {
             0,
         );
 
-        gl.active_texture(glow::TEXTURE0 + 2);
-        gl.bind_texture(glow::TEXTURE_2D, Some(output_data_texture));
-        gl.active_texture(glow::TEXTURE0 + 2); // apple workaround
         gl.uniform_1_i32(
             gl.get_uniform_location(self.output_shader, "u_render_data_texture")
                 .as_ref(),
-            2,
+            1,
         );
         let eff = match monitor_settings.background_effect {
             crate::BackgroundEffect::None => {
