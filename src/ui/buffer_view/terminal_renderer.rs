@@ -11,8 +11,6 @@ use image::EncodableLayout;
 use image::RgbaImage;
 use web_time::Instant;
 
-use crate::buffer_view::output_renderer::DATA_TEXTURE_SLOT;
-use crate::buffer_view::output_renderer::OUTPUT_TEXTURE_SLOT;
 use crate::prepare_shader;
 use crate::MonitorSettings;
 use crate::TerminalCalc;
@@ -619,7 +617,7 @@ impl TerminalRenderer {
         gl.uniform_1_i32(
             gl.get_uniform_location(self.terminal_shader, "u_palette")
                 .as_ref(),
-                PALETTE_TEXTURE_SLOT as i32,
+            PALETTE_TEXTURE_SLOT as i32,
         );
         gl.uniform_1_i32(
             gl.get_uniform_location(self.terminal_shader, "u_terminal_buffer")
@@ -627,13 +625,12 @@ impl TerminalRenderer {
             BUFFER_TEXTURE_SLOT as i32,
         );
 
-     
         if let Some(img) = &self.reference_image {
             gl.uniform_1_i32(
                 gl.get_uniform_location(self.terminal_shader, "u_reference_image")
                     .as_ref(),
                 REFERENCE_IMAGE_TEXTURE_SLOT as i32,
-            );    
+            );
             gl.uniform_2_f32(
                 gl.get_uniform_location(self.terminal_shader, "u_reference_image_size")
                     .as_ref(),
@@ -641,7 +638,7 @@ impl TerminalRenderer {
                 img.height() as f32,
             );
         }
-        
+
         gl.uniform_1_f32(
             gl.get_uniform_location(self.terminal_shader, "u_has_reference_image")
                 .as_ref(),

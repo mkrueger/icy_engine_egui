@@ -19,8 +19,8 @@ pub const MONO_COLORS: [(u8, u8, u8); 5] = [
     (0x00, 0xD5, 0x6D), // Apple ][
     (0x72, 0x9F, 0xCF), // Futuristic
 ];
-pub const OUTPUT_TEXTURE_SLOT:u32 = 0;
-pub const DATA_TEXTURE_SLOT:u32 = 2;
+pub const OUTPUT_TEXTURE_SLOT: u32 = 0;
+pub const DATA_TEXTURE_SLOT: u32 = 2;
 
 pub struct OutputRenderer {
     output_shader: glow::Program,
@@ -135,13 +135,13 @@ impl OutputRenderer {
             (terminal_rect.width() * info.pixels_per_point) as i32,
             (terminal_rect.height() * info.pixels_per_point) as i32,
         );
-        
+
         gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
         gl.use_program(Some(self.output_shader));
         gl.active_texture(glow::TEXTURE0 + OUTPUT_TEXTURE_SLOT);
         gl.bind_texture(glow::TEXTURE_2D, Some(output_texture));
 
-        gl.active_texture(glow::TEXTURE0 + DATA_TEXTURE_SLOT); 
+        gl.active_texture(glow::TEXTURE0 + DATA_TEXTURE_SLOT);
         gl.bind_texture(glow::TEXTURE_2D, Some(output_data_texture));
 
         gl.uniform_1_f32(
@@ -153,13 +153,13 @@ impl OutputRenderer {
         gl.uniform_1_i32(
             gl.get_uniform_location(self.output_shader, "u_render_texture")
                 .as_ref(),
-                OUTPUT_TEXTURE_SLOT as i32,
+            OUTPUT_TEXTURE_SLOT as i32,
         );
 
         gl.uniform_1_i32(
             gl.get_uniform_location(self.output_shader, "u_render_data_texture")
                 .as_ref(),
-                DATA_TEXTURE_SLOT as i32,
+            DATA_TEXTURE_SLOT as i32,
         );
         let eff = match monitor_settings.background_effect {
             crate::BackgroundEffect::None => {

@@ -217,9 +217,9 @@ impl BufferView {
                 gl,
                 info,
                 self,
-render_texture,
+                render_texture,
                 self.output_renderer.render_data_texture,
-                                &self.calc,
+                &self.calc,
                 options,
             );
         }
