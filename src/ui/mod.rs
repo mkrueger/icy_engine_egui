@@ -32,6 +32,7 @@ pub struct TerminalCalc {
     pub scrollbar_rect: egui::Rect,
     pub char_scroll_positon: f32,
     pub forced_height: i32,
+    pub real_height: i32,
 
     /// remainder for scaled mode
     pub scroll_remainder: f32,
@@ -58,6 +59,7 @@ impl Default for TerminalCalc {
             scroll_remainder: Default::default(),
             set_scroll_position_set_by_user: Default::default(),
             has_focus: Default::default(),
+            real_height: 0,
         }
     }
 }
@@ -112,11 +114,16 @@ pub fn show_terminal_area(
 ) -> (Response, TerminalCalc) {
     let mut forced_height = buffer_view.lock().get_buffer().get_height();
     let mut buf_h = forced_height as f32;
-    let real_height = buffer_view.lock().get_buffer().get_height() as f32;
+    let real_height = if options.use_terminal_height {
+        buffer_view
+            .lock()
+            .get_buffer()
+            .get_line_count()
+            .max(forced_height)
+    } else {
+        forced_height
+    };
     let buf_w = buffer_view.lock().get_buffer().get_width() as f32;
-    if !options.use_terminal_height {
-        buf_h = real_height;
-    }
 
     let font_dimensions = buffer_view.lock().get_buffer().get_font_dimensions();
     let buffer_view2: Arc<egui::mutex::Mutex<BufferView>> = buffer_view.clone();
@@ -161,9 +168,9 @@ pub fn show_terminal_area(
                     scale_y = scale.y;
 
                     let h = size.y / (font_dimensions.height as f32 * scale_y);
-                    buf_h = h.ceil().min(real_height);
+                    buf_h = h.ceil().min(real_height as f32);
 
-                    if real_height > buf_h {
+                    if real_height as f32 > buf_h {
                         // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
                         scroll_remainder = 1.0 - h.fract();
                     }
@@ -190,7 +197,7 @@ pub fn show_terminal_area(
 
             // Set the scrolling height.
             TerminalCalc {
-                char_height: real_height,
+                char_height: real_height as f32,
                 buffer_char_height: buf_h,
                 scale: Vec2::new(scale_x, scale_y),
                 char_size: Vec2::new(
@@ -206,7 +213,7 @@ pub fn show_terminal_area(
                 set_scroll_position_set_by_user: false,
                 forced_height,
                 scroll_remainder,
-
+                real_height,
                 has_focus: false,
             }
         },

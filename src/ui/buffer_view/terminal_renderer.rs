@@ -312,12 +312,12 @@ impl TerminalRenderer {
     ) {
         let buf = edit_state.get_buffer();
         let first_line = (viewport_top / char_size.y) as i32;
-        let real_height = buf.get_height();
+        let real_height = calc.real_height;
         let buf_h = calc.forced_height;
 
         let max_lines = max(0, real_height - buf_h) as i32;
         let scroll_back_line = max(0, max_lines - first_line);
-        let first_line = 0.max(buf.get_height().saturating_sub(calc.forced_height));
+        let first_line = 0.max(real_height.saturating_sub(calc.forced_height));
         let mut buffer_data = Vec::with_capacity((2 * buf.get_width() * 4 * buf_h) as usize);
         let colors = buf.palette.colors.len() as u32 - 1;
         let mut y: i32 = 0;
