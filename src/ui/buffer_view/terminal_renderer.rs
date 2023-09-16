@@ -144,10 +144,10 @@ impl TerminalRenderer {
         }
 
         if self.redraw_palette
-            || self.old_palette_color_count != edit_state.get_buffer().palette.colors.len()
+            || self.old_palette_color_count != edit_state.get_buffer().palette.len()
         {
             self.redraw_palette = false;
-            self.old_palette_color_count = edit_state.get_buffer().palette.colors.len();
+            self.old_palette_color_count = edit_state.get_buffer().palette.len();
             self.update_palette_texture(gl, edit_state.get_buffer());
         }
 
@@ -276,8 +276,8 @@ impl TerminalRenderer {
 
     fn update_palette_texture(&self, gl: &glow::Context, buf: &Buffer) {
         let mut palette_data = Vec::new();
-        for i in 0..buf.palette.colors.len() {
-            let (r, g, b) = buf.palette.colors[i].get_rgb();
+        for i in 0..buf.palette.len() {
+            let (r, g, b) = buf.palette.get_rgb(i);
             palette_data.push(r);
             palette_data.push(g);
             palette_data.push(b);
@@ -289,7 +289,7 @@ impl TerminalRenderer {
                 glow::TEXTURE_2D,
                 0,
                 glow::RGBA as i32,
-                i32::try_from(buf.palette.colors.len()).unwrap(),
+                i32::try_from(buf.palette.len()).unwrap(),
                 1,
                 0,
                 glow::RGBA,
@@ -319,7 +319,7 @@ impl TerminalRenderer {
         let scroll_back_line = max(0, max_lines - first_line);
         let first_line = 0.max(real_height.saturating_sub(calc.forced_height));
         let mut buffer_data = Vec::with_capacity((2 * buf.get_width() * 4 * buf_h) as usize);
-        let colors = buf.palette.colors.len() as u32 - 1;
+        let colors = buf.palette.len() as u32 - 1;
         let mut y: i32 = 0;
         while y <= buf_h {
             let mut is_double_height = false;

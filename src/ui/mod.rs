@@ -175,7 +175,7 @@ pub fn show_terminal_area(
                         scroll_remainder = 1.0 - h.fract();
                     }
 
-                    forced_height = (buf_h as i32).min(real_height as i32);
+                    forced_height = (buf_h as i32).min(real_height);
                     buffer_view2.lock().redraw_view();
                 }
             }
