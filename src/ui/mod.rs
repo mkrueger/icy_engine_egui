@@ -259,7 +259,7 @@ pub fn show_terminal_area(
                     let rect = Rect::from_min_size(
                         Pos2::new(
                             calc.buffer_rect.left() - galley.size().x - 4.0,
-                            calc.buffer_rect.top() + y as f32 * calc.char_size.y,
+                            calc.buffer_rect.top() + y as f32 * calc.char_size.y - (calc.char_scroll_positon % calc.font_height) * calc.scale.y,
                         ),
                         Vec2::new(galley.size().x, calc.char_height),
                     );
