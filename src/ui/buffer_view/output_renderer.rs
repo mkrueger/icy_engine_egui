@@ -310,7 +310,7 @@ impl OutputRenderer {
         }
 
         if let Some(layer) = buffer_view.edit_state.get_cur_layer() {
-            if !buffer_view.get_buffer().is_terminal_buffer {
+            if options.show_layer_borders {
                 if let Some(po) = layer.get_preview_offset() {
                     let layer_x = po.x as f32 * calc.char_size.x;
                     let layer_y = po.y as f32 * calc.char_size.y - top_pos;

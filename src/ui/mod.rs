@@ -84,6 +84,8 @@ pub struct TerminalOptions {
     pub scroll_offset: Option<f32>,
     pub id: Option<egui::Id>,
 
+    pub show_layer_borders: bool,
+
     pub guide: Option<Vec2>,
     pub raster: Option<Vec2>,
 }
@@ -99,6 +101,7 @@ impl Default for TerminalOptions {
             fit_width: false,
             render_real_height: false,
             use_terminal_height: true,
+            show_layer_borders: false,
             scroll_offset: None,
             id: None,
             guide: None,
