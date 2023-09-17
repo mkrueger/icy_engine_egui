@@ -4,7 +4,7 @@ use std::sync::Arc;
 pub use buffer_view::*;
 
 pub mod smooth_scroll;
-use egui::{Pos2, Rect, Response, Vec2};
+use egui::{FontFamily, FontId, Pos2, Rect, Response, Vec2, WidgetText};
 use icy_engine::TextPane;
 pub use smooth_scroll::*;
 
@@ -85,6 +85,7 @@ pub struct TerminalOptions {
     pub id: Option<egui::Id>,
 
     pub show_layer_borders: bool,
+    pub show_line_numbers: bool,
 
     pub guide: Option<Vec2>,
     pub raster: Option<Vec2>,
@@ -102,6 +103,7 @@ impl Default for TerminalOptions {
             render_real_height: false,
             use_terminal_height: true,
             show_layer_borders: false,
+            show_line_numbers: false,
             scroll_offset: None,
             id: None,
             guide: None,
@@ -139,7 +141,13 @@ pub fn show_terminal_area(
     if let Some(id) = options.id {
         scroll = scroll.with_id(id);
     }
-
+    let caret_pos = buffer_view
+        .lock()
+        .get_edit_state()
+        .get_caret()
+        .get_position();
+    let selected_rect = buffer_view.lock().get_edit_state().get_selection();
+    let show_line_numbers = options.show_line_numbers;
     let r = scroll.show(
         ui,
         options,
@@ -242,6 +250,71 @@ pub fn show_terminal_area(
                 })),
             };
             ui.painter().add(callback);
+
+            if show_line_numbers {
+                for y in 0..calc.forced_height {
+                    let font_id = FontId::new(12.0 * calc.scale.y, FontFamily::Proportional);
+                    let text: WidgetText = format!("{}", 1 + y + calc.first_line as i32).into();
+                    let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
+                    let rect = Rect::from_min_size(
+                        Pos2::new(
+                            calc.buffer_rect.left() - galley.size().x - 4.0,
+                            calc.buffer_rect.top() + y as f32 * calc.char_size.y,
+                        ),
+                        Vec2::new(galley.size().x, calc.char_height),
+                    );
+                    let is_selected = if let Some(sel) = selected_rect {
+                        sel.min().y <= y + calc.first_line as i32
+                            && y + (calc.first_line as i32) < sel.max().y
+                    } else {
+                        caret_pos.y == y + calc.first_line as i32
+                    };
+                    let color = if is_selected {
+                        ui.visuals().strong_text_color()
+                    } else {
+                        ui.visuals().text_color()
+                    };
+                    ui.painter().galley_with_color(
+                        egui::Align2::RIGHT_TOP
+                            .align_size_within_rect(galley.size(), rect)
+                            .min,
+                        galley.galley,
+                        color,
+                    );
+                }
+
+                for x in 0..buf_w as i32 {
+                    let font_id = FontId::new(12.0 * calc.scale.y, FontFamily::Proportional);
+                    let text: WidgetText = format!("{}", (1 + x) % 10).into();
+                    let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
+                    let rect = Rect::from_min_size(
+                        Pos2::new(
+                            calc.buffer_rect.left() - galley.size().x - 4.0
+                                + x as f32 * calc.char_size.x
+                                + calc.char_size.x,
+                            calc.buffer_rect.top() - calc.char_size.y,
+                        ),
+                        Vec2::new(galley.size().x, calc.char_height),
+                    );
+                    let is_selected = if let Some(sel) = selected_rect {
+                        sel.min().x <= x && x < sel.max().x
+                    } else {
+                        caret_pos.x == x
+                    };
+                    let color = if is_selected {
+                        ui.visuals().strong_text_color()
+                    } else {
+                        ui.visuals().text_color()
+                    };
+                    ui.painter().galley_with_color(
+                        egui::Align2::RIGHT_TOP
+                            .align_size_within_rect(galley.size(), rect)
+                            .min,
+                        galley.galley,
+                        color,
+                    );
+                }
+            }
         },
     );
     r
