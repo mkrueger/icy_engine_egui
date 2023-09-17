@@ -145,8 +145,10 @@ impl TerminalRenderer {
 
         if self.redraw_palette
             || self.old_palette_color_count != edit_state.get_buffer().palette.len()
+            || edit_state.is_palette_dirty
         {
             self.redraw_palette = false;
+            edit_state.is_palette_dirty = false;
             self.old_palette_color_count = edit_state.get_buffer().palette.len();
             self.update_palette_texture(gl, edit_state.get_buffer());
         }
