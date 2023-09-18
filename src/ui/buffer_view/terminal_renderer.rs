@@ -408,6 +408,9 @@ impl TerminalRenderer {
                 let ch = buf.get_char((x, first_line - scroll_back_line + y));
                 let is_selected =
                     edit_state.get_is_mask_selected((x, first_line - scroll_back_line + y));
+                let is_tool_overlay = edit_state
+                    .get_tool_overlay_mask()
+                    .get_is_selected((x, first_line - scroll_back_line + y));
 
                 let mut attr = if ch.attribute.is_double_underlined() {
                     3
@@ -425,7 +428,14 @@ impl TerminalRenderer {
 
                 buffer_data.push(attr);
                 buffer_data.push(attr);
-                buffer_data.push(if is_selected { 255 } else { 0 });
+                let mut preview_flag = 0;
+                if is_selected {
+                    preview_flag |= 1;
+                }
+                if is_tool_overlay {
+                    preview_flag |= 2;
+                }
+                buffer_data.push(preview_flag);
                 if !ch.is_visible() {
                     buffer_data.push(128);
                 } else {
@@ -438,6 +448,9 @@ impl TerminalRenderer {
                     let ch = buf.get_char((x, first_line - scroll_back_line + y));
                     let is_selected =
                         edit_state.get_is_selected((x, first_line - scroll_back_line + y));
+                    let is_tool_overlay = edit_state
+                        .get_tool_overlay_mask()
+                        .get_is_selected((x, first_line - scroll_back_line + y));
                     let mut attr = if ch.attribute.is_double_underlined() {
                         3
                     } else {
@@ -455,7 +468,14 @@ impl TerminalRenderer {
 
                     buffer_data.push(attr);
                     buffer_data.push(attr);
-                    buffer_data.push(if is_selected { 255 } else { 0 });
+                    let mut preview_flag = 0;
+                    if is_selected {
+                        preview_flag |= 1;
+                    }
+                    if is_tool_overlay {
+                        preview_flag |= 2;
+                    }
+                    buffer_data.push(preview_flag);
                     if !ch.is_visible() {
                         buffer_data.push(128);
                     } else {

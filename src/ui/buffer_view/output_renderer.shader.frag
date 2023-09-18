@@ -492,8 +492,14 @@ void main() {
 				selection_border();
 			} 
 		}
-		draw_layer_rectangle(true);
 
+		if (sel.g == 1.0) {
+			if (up.g == 0.0 || down.g == 0.0 || left.g == 0.0 || right.g == 0.0
+			|| left_up.g == 0.0 || left_down.g == 0.0 || right_up.g == 0.0 || right_down.g == 0.0) {
+				color = 0.2 * color.xyz + 0.8 * vec3(1.0, 1.0, 0.0);
+			}
+		}
+		draw_layer_rectangle(true);
 	} else {
 		draw_background();
 		// correct left & bottom margin for selection

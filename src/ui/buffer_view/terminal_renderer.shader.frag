@@ -70,8 +70,13 @@ void main (void) {
     vec4 fg = get_palette_color(ch.y);
     vec4 bg = get_palette_color(ch.z);
 
-    if (ch_attr.b > 0.0) {
-        color2 = vec4(1.0, 0.0, 0.0, 1.0);
+    int flag = int(ch_attr.b * 255);
+    float r = 0.0;
+    float g = 0.0;
+    float b = 0.0;
+    
+    if ((flag & 1) == 1) {
+        r = 1.0;
         if (u_selection_attr > 0.0) {
             if (u_selection_bg.w > 0.0) {
                 bg = u_selection_bg;
@@ -82,9 +87,12 @@ void main (void) {
                 fg = u_selection_fg;
             }
         }
-    } else {
-        color2 = vec4(0.0, 0.0, 1.0, 1.0);
     }
+    if ((flag & 2) == 2) {
+        g = 1.0;
+    }
+
+    color2 = vec4(r, g, b, 1.0);
 
     if (abs(ch_attr[3] - 0.5) < 0.1) {
         color1 = vec4(0.0);
