@@ -259,7 +259,8 @@ pub fn show_terminal_area(
                     let rect = Rect::from_min_size(
                         Pos2::new(
                             calc.buffer_rect.left() - galley.size().x - 4.0,
-                            calc.buffer_rect.top() + y as f32 * calc.char_size.y - (calc.char_scroll_positon % calc.font_height) * calc.scale.y,
+                            calc.buffer_rect.top() + y as f32 * calc.char_size.y
+                                - (calc.char_scroll_positon % calc.font_height) * calc.scale.y,
                         ),
                         Vec2::new(galley.size().x, calc.char_height),
                     );
@@ -276,6 +277,22 @@ pub fn show_terminal_area(
                     };
                     ui.painter().galley_with_color(
                         egui::Align2::RIGHT_TOP
+                            .align_size_within_rect(galley.size(), rect)
+                            .min,
+                        galley.galley.clone(),
+                        color,
+                    );
+
+                    let rect = Rect::from_min_size(
+                        Pos2::new(
+                            calc.buffer_rect.right() + 4.0,
+                            calc.buffer_rect.top() + y as f32 * calc.char_size.y
+                                - (calc.char_scroll_positon % calc.font_height) * calc.scale.y,
+                        ),
+                        Vec2::new(galley.size().x, calc.char_height),
+                    );
+                    ui.painter().galley_with_color(
+                        egui::Align2::LEFT_TOP
                             .align_size_within_rect(galley.size(), rect)
                             .min,
                         galley.galley,
@@ -306,6 +323,23 @@ pub fn show_terminal_area(
                     } else {
                         ui.visuals().text_color()
                     };
+                    ui.painter().galley_with_color(
+                        egui::Align2::RIGHT_TOP
+                            .align_size_within_rect(galley.size(), rect)
+                            .min,
+                        galley.galley.clone(),
+                        color,
+                    );
+                    let rect = Rect::from_min_size(
+                        Pos2::new(
+                            calc.buffer_rect.left() - galley.size().x - 4.0
+                                + x as f32 * calc.char_size.x
+                                + calc.char_size.x,
+                            calc.buffer_rect.bottom() + 4.0,
+                        ),
+                        Vec2::new(galley.size().x, calc.char_height),
+                    );
+
                     ui.painter().galley_with_color(
                         egui::Align2::RIGHT_TOP
                             .align_size_within_rect(galley.size(), rect)
