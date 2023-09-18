@@ -321,7 +321,7 @@ impl TerminalRenderer {
         let scroll_back_line = max(0, max_lines - first_line);
         let first_line = 0.max(real_height.saturating_sub(calc.forced_height));
         let mut buffer_data = Vec::with_capacity((2 * buf.get_width() * 4 * buf_h) as usize);
-        let colors =  buf.palette.len().max(1) as u32 - 1;
+        let colors = buf.palette.len().max(1) as u32 - 1;
         let mut y: i32 = 0;
         while y <= buf_h {
             let mut is_double_height = false;

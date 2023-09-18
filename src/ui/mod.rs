@@ -164,31 +164,31 @@ pub fn show_terminal_area(
             let mut scale_x = size.x / font_width / buf_w;
             let mut scale_y = size.y / font_dimensions.height as f32 / buf_h;
             let mut scroll_remainder = 0.0;
-
+            let mut forced_scale = options.scale.clone();
             if options.fit_width {
+                forced_scale = Some(Vec2::new(scale_x, scale_x));
+            }
+
+            if scale_x < scale_y {
                 scale_y = scale_x;
             } else {
-                if scale_x < scale_y {
-                    scale_y = scale_x;
-                } else {
-                    scale_x = scale_y;
+                scale_x = scale_y;
+            }
+
+            if let Some(scale) = forced_scale {
+                scale_x = scale.x;
+                scale_y = scale.y;
+
+                let h = size.y / (font_dimensions.height as f32 * scale_y);
+                buf_h = h.ceil().min(real_height as f32);
+
+                if real_height as f32 > buf_h {
+                    // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
+                    scroll_remainder = 1.0 - h.fract();
                 }
 
-                if let Some(scale) = options.scale {
-                    scale_x = scale.x;
-                    scale_y = scale.y;
-
-                    let h = size.y / (font_dimensions.height as f32 * scale_y);
-                    buf_h = h.ceil().min(real_height as f32);
-
-                    if real_height as f32 > buf_h {
-                        // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
-                        scroll_remainder = 1.0 - h.fract();
-                    }
-
-                    forced_height = (buf_h as i32).min(real_height);
-                    buffer_view2.lock().redraw_view();
-                }
+                forced_height = (buf_h as i32).min(real_height);
+                buffer_view2.lock().redraw_view();
             }
 
             let char_size = Vec2::new(
