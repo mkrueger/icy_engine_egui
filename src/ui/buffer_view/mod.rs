@@ -51,6 +51,11 @@ impl Blink {
             false
         }
     }
+
+    fn reset(&mut self, cur_ms: u128) {
+        self.is_on = true;
+        self.last_blink = cur_ms;
+    }
 }
 
 pub struct BufferView {
@@ -68,6 +73,8 @@ pub struct BufferView {
 
     pub use_fg: bool,
     pub use_bg: bool,
+
+    pub interactive: bool,
 
     terminal_renderer: terminal_renderer::TerminalRenderer,
     sixel_renderer: sixel_renderer::SixelRenderer,
@@ -104,6 +111,7 @@ impl BufferView {
             calc,
             use_fg: true,
             use_bg: true,
+            interactive: true,
         }
     }
 
@@ -275,6 +283,10 @@ impl BufferView {
         self.edit_state.set_buffer(buf);
         self.redraw_font();
         self.redraw_palette();
+    }
+
+    pub fn reset_caret_blink(&mut self) {
+        self.terminal_renderer.reset_caret_blink();
     }
 
     pub fn handle_dragging(&mut self, response: Response, calc: TerminalCalc) {

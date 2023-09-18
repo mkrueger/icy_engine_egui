@@ -95,14 +95,6 @@ impl SmoothScroll {
 
         let mut calc = calc_contents(rect, &options);
         calc.char_scroll_positon = self.char_scroll_positon;
-        if self.lock_focus {
-            self.lock_focus = false;
-            ui.memory_mut(|m| {
-                m.request_focus(self.id);
-                m.lock_focus(self.id, true);
-            });
-            calc.has_focus = true;
-        }
 
         if self.stick_to_bottom && (calc.char_height - self.last_char_height).abs() > 0.1 {
             self.char_scroll_positon =
@@ -132,6 +124,12 @@ impl SmoothScroll {
         calc.set_scroll_position_set_by_user = self.set_scroll_positon;
 
         self.clamp_scroll_position(&mut calc);
+
+        if response.has_focus() {
+            ui.memory_mut(|mem| mem.lock_focus(self.id, self.lock_focus));
+            calc.has_focus = true;
+        }
+
         if response.clicked() {
             response.request_focus();
         }

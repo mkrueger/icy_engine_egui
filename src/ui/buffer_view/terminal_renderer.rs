@@ -163,9 +163,7 @@ impl TerminalRenderer {
 
     // Redraw whole terminal on caret or character blink update.
     fn check_blink_timers(&mut self) {
-        let start: Instant = Instant::now();
-        let since_the_epoch = start.duration_since(self.start_time.to_owned());
-        let cur_ms = since_the_epoch.as_millis();
+        let cur_ms = self.start_time.elapsed().as_millis();
         if self.caret_blink.update(cur_ms) || self.character_blink.update(cur_ms) {
             self.redraw_terminal();
         }
@@ -695,6 +693,11 @@ impl TerminalRenderer {
         );
 
         crate::check_gl_error!(gl, "run_shader");
+    }
+
+    pub(crate) fn reset_caret_blink(&mut self) {
+        let cur_ms = self.start_time.elapsed().as_millis();
+        self.caret_blink.reset(cur_ms);
     }
 }
 

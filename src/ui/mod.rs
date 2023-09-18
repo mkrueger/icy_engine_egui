@@ -73,7 +73,6 @@ impl TerminalCalc {
 }
 
 pub struct TerminalOptions {
-    pub focus_lock: bool,
     pub filter: i32,
     pub settings: MonitorSettings,
     pub stick_to_bottom: bool,
@@ -94,7 +93,6 @@ pub struct TerminalOptions {
 impl Default for TerminalOptions {
     fn default() -> Self {
         Self {
-            focus_lock: Default::default(),
             filter: glow::NEAREST as i32,
             settings: Default::default(),
             stick_to_bottom: Default::default(),
@@ -134,7 +132,6 @@ pub fn show_terminal_area(
     let buffer_view2: Arc<egui::mutex::Mutex<BufferView>> = buffer_view.clone();
 
     let mut scroll = SmoothScroll::new()
-        .with_lock_focus(options.focus_lock)
         .with_stick_to_bottom(options.stick_to_bottom)
         .with_scroll_offset(options.scroll_offset);
 
