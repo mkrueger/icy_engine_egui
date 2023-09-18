@@ -9,6 +9,8 @@ uniform vec2        u_resolution;
 uniform vec2        u_output_resolution;
 
 uniform vec2        u_position;
+uniform vec2        u_scroll_pos;
+
 uniform vec2        u_terminal_size;
 uniform vec4        u_caret_rectangle;
 
@@ -125,9 +127,8 @@ void main (void) {
     }
 
     if (u_has_reference_image > 0.5) {
-        vec2 view_coord = gl_FragCoord.xy / u_reference_image_size;
+        vec2 view_coord = (gl_FragCoord.xy - u_scroll_pos) / u_resolution;
         view_coord = vec2(view_coord.s, 1.0 - view_coord.t);
-
         vec4 img = texture(u_reference_image, view_coord);
         color1 = 0.2 * img + color1 * 0.8;
     }

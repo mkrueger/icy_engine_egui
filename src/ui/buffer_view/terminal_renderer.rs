@@ -574,6 +574,14 @@ impl TerminalRenderer {
             0.0,
             scroll_offset - fh,
         );
+
+        gl.uniform_2_f32(
+            gl.get_uniform_location(self.terminal_shader, "u_scroll_pos")
+                .as_ref(),
+            0.0,
+            (buffer_view.viewport_top / c_height) * fh,
+        );
+
         let font_width = fontdim.width as f32
             + if buffer_view.get_buffer().use_letter_spacing() {
                 1.0
