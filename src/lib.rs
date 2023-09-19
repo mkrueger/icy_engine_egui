@@ -25,10 +25,12 @@ pub struct MonitorSettings {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MarkerSettings {
+    pub border_color: Color32,
+
     pub reference_image_alpha: f32,
 
-    pub grid_alpha: f32,
-    pub grid_color: Color32,
+    pub raster_alpha: f32,
+    pub raster_color: Color32,
 
     pub guide_alpha: f32,
     pub guide_color: Color32,
@@ -38,10 +40,12 @@ impl Default for MarkerSettings {
     fn default() -> Self {
         Self {
             reference_image_alpha: 0.2,
-            grid_alpha: 0.2,
-            grid_color: Color32::from_rgb(0xAB, 0xAB, 0xAB),
+            raster_alpha: 0.2,
+            raster_color: Color32::from_rgb(0xAB, 0xAB, 0xAB),
             guide_alpha: 0.2,
             guide_color: Color32::from_rgb(0xAB, 0xAB, 0xAB),
+
+            border_color: Color32::from_rgb(64, 69, 74),
         }
     }
 }

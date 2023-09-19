@@ -9,8 +9,15 @@ uniform vec4      u_buffer_rect;
 uniform float     u_time;
 uniform vec2      u_scroll_position; // in screen px.
 
+uniform vec3      u_border_color;
+
 uniform vec2      u_raster;
+uniform float     u_raster_alpha;
+uniform vec3      u_raster_color;
+
 uniform vec2      u_guide;
+uniform float     u_guide_alpha;
+uniform vec3      u_guide_color;
 
 uniform vec4        u_layer_rectangle;
 uniform vec3        u_layer_rectangle_color;
@@ -133,8 +140,9 @@ vec4 draw_grid_raster(vec4 c) {
 	float checker_size = 1.0;
     vec2 p = floor(gl_FragCoord.xy / checker_size);
     float PatternMask = mod(p.x + mod(p.y, 2.0), 2.0);
+
 	if (PatternMask == 0.0) {
-		return vec4(0.2, 0.2, 0.2, 1.0);
+		return u_raster_alpha * vec4(u_raster_color, 1.0) + (1.0 - u_raster_alpha) * c;
 	} else {
 		return c;
 	} 
@@ -147,13 +155,12 @@ vec4 draw_guide_raster(vec4 c) {
 	if (PatternMask == 0.0) {
 		return c;
 	} else {
-		return vec4(0.3, 0.3, 0.3, 1.0);
+		return u_guide_alpha * vec4(u_guide_color, 1.0) + (1.0 - u_guide_alpha) * c;
 	} 
 }
 
-
 void draw_background() {
-	color = vec3(0.25, 0.27, 0.29);
+	color = u_border_color;
 }
 
 void selection_border() {

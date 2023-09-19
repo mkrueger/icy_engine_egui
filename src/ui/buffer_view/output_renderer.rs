@@ -308,6 +308,40 @@ impl OutputRenderer {
             );
         }
 
+        gl.uniform_1_f32(
+            gl.get_uniform_location(self.output_shader, "u_raster_alpha")
+                .as_ref(),
+                options.marker_settings.raster_alpha,
+        );
+        gl.uniform_3_f32(
+            gl.get_uniform_location(self.output_shader, "u_raster_color")
+                .as_ref(),
+            options.marker_settings.raster_color.r() as f32 / 255.0,
+            options.marker_settings.raster_color.g() as f32 / 255.0,
+            options.marker_settings.raster_color.b() as f32 / 255.0,
+        );
+
+        gl.uniform_1_f32(
+            gl.get_uniform_location(self.output_shader, "u_guide_alpha")
+                .as_ref(),
+                options.marker_settings.guide_alpha,
+        );
+        gl.uniform_3_f32(
+            gl.get_uniform_location(self.output_shader, "u_guide_color")
+                .as_ref(),
+            options.marker_settings.guide_color.r() as f32 / 255.0,
+            options.marker_settings.guide_color.g() as f32 / 255.0,
+            options.marker_settings.guide_color.b() as f32 / 255.0,
+        );
+
+        gl.uniform_3_f32(
+            gl.get_uniform_location(self.output_shader, "u_border_color")
+                .as_ref(),
+            options.marker_settings.border_color.r() as f32 / 255.0,
+            options.marker_settings.border_color.g() as f32 / 255.0,
+            options.marker_settings.border_color.b() as f32 / 255.0,
+        );
+
         if let Some(layer) = buffer_view.edit_state.get_cur_layer() {
             if options.show_layer_borders {
                 if let Some(po) = layer.get_preview_offset() {
