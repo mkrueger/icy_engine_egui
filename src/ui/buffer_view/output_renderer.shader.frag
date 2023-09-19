@@ -464,11 +464,6 @@ void main() {
 				color = c.xyz;
 			}
 		}
-		if (u_use_monochrome > 0.0) {
-			float mono = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
-			color = vec3(mono, mono, mono);
-			color *= u_monchrome_mask;
-		}
 
 		vec4 sel = texture(u_render_data_texture, coord);
 		float f = 1.0;
@@ -507,6 +502,12 @@ void main() {
 			}
 		}
 		draw_layer_rectangle(true);
+
+		if (u_use_monochrome > 0.0) {
+			float mono = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+			color = vec3(mono, mono, mono);
+			color *= u_monchrome_mask;
+		}
 	} else {
 		draw_background();
 		// correct left & bottom margin for selection

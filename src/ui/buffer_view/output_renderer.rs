@@ -160,15 +160,10 @@ impl OutputRenderer {
                 .as_ref(),
             DATA_TEXTURE_SLOT as i32,
         );
-        let eff = match monitor_settings.background_effect {
-            crate::BackgroundEffect::None => {
-                if monitor_settings.use_filter {
-                    1.0
-                } else {
-                    0.0
-                }
-            }
-            crate::BackgroundEffect::Checkers => 2.0,
+        let eff = if monitor_settings.use_filter {
+            1.0
+        } else {
+            0.0
         };
         gl.uniform_1_f32(
             gl.get_uniform_location(self.output_shader, "u_effect")
