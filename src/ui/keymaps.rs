@@ -128,7 +128,18 @@ pub static C64_KEY_MAP: &[(u32, &[u8])] = &[
     (Key::X as u32 | CTRL_MOD, &[0x98]),
     (Key::Y as u32 | CTRL_MOD, &[0x99]),
     (Key::Z as u32 | CTRL_MOD, &[0x9A]),
-    (Key::Num1 as u32 | SHIFT_MOD, &[0xA1]),
+
+    (Key::Num1 as u32 | SHIFT_MOD, &[0x21]),
+    (Key::Num2 as u32 | SHIFT_MOD, &[0x22]),
+    (Key::Num3 as u32 | SHIFT_MOD, &[0x23]),
+    (Key::Num4 as u32 | SHIFT_MOD, &[0x24]),
+    (Key::Num5 as u32 | SHIFT_MOD, &[0x25]),
+    (Key::Num6 as u32 | SHIFT_MOD, &[0x26]),
+    (Key::Num7 as u32 | SHIFT_MOD, &[0x27]),
+    (Key::Num8 as u32 | SHIFT_MOD, &[0x28]),
+    (Key::Num9 as u32 | SHIFT_MOD, &[0x29]),
+
+   /* (Key::Num1 as u32 | SHIFT_MOD, &[0xA1]),
     (Key::Num2 as u32 | SHIFT_MOD, &[0xA2]),
     (Key::Num3 as u32 | SHIFT_MOD, &[0xA3]),
     (Key::Num4 as u32 | SHIFT_MOD, &[0xA4]),
@@ -136,7 +147,7 @@ pub static C64_KEY_MAP: &[(u32, &[u8])] = &[
     (Key::Num6 as u32 | SHIFT_MOD, &[0xA6]),
     (Key::Num7 as u32 | SHIFT_MOD, &[0xA7]),
     (Key::Num8 as u32 | SHIFT_MOD, &[0xA8]),
-    (Key::Num9 as u32 | SHIFT_MOD, &[0xA9]),
+    (Key::Num9 as u32 | SHIFT_MOD, &[0xA9]),*/
     (Key::Num1 as u32 | CTRL_MOD, &[144]),
     (Key::Num2 as u32 | CTRL_MOD, &[5]),
     (Key::Num3 as u32 | CTRL_MOD, &[28]),
