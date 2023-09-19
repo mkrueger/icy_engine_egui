@@ -14,7 +14,7 @@ pub use keymaps::*;
 pub mod settings;
 pub use settings::*;
 
-use crate::{MonitorSettings, MarkerSettings};
+use crate::{MarkerSettings, MonitorSettings};
 
 #[derive(Clone, Copy)]
 pub struct TerminalCalc {
@@ -94,6 +94,7 @@ pub struct TerminalOptions {
     pub show_layer_borders: bool,
     pub show_line_numbers: bool,
 
+    pub terminal_size: Option<Vec2>,
     pub guide: Option<Vec2>,
     pub raster: Option<Vec2>,
 }
@@ -115,6 +116,7 @@ impl Default for TerminalOptions {
             id: None,
             guide: None,
             raster: None,
+            terminal_size: None,
         }
     }
 }
@@ -237,8 +239,8 @@ pub fn show_terminal_area(
         |ui, calc, options: TerminalOptions| {
             let viewport_top = calc.char_scroll_positon * calc.scale.y;
             calc.first_line = viewport_top / calc.char_size.y;
-            
-/*
+
+            /*
             {
                 let buffer_view = &mut buffer_view.lock();
                 buffer_view.char_size = calc.char_size;

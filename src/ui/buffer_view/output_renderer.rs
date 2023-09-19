@@ -306,7 +306,7 @@ impl OutputRenderer {
         gl.uniform_1_f32(
             gl.get_uniform_location(self.output_shader, "u_raster_alpha")
                 .as_ref(),
-                options.marker_settings.raster_alpha,
+            options.marker_settings.raster_alpha,
         );
         gl.uniform_3_f32(
             gl.get_uniform_location(self.output_shader, "u_raster_color")
@@ -319,7 +319,7 @@ impl OutputRenderer {
         gl.uniform_1_f32(
             gl.get_uniform_location(self.output_shader, "u_guide_alpha")
                 .as_ref(),
-                options.marker_settings.guide_alpha,
+            options.marker_settings.guide_alpha,
         );
         gl.uniform_3_f32(
             gl.get_uniform_location(self.output_shader, "u_guide_color")
@@ -389,7 +389,8 @@ impl OutputRenderer {
                 }
 
                 let layer_x = layer.get_base_offset().x as f32 * buffer_view.calc.char_size.x;
-                let layer_y = layer.get_base_offset().y as f32 * buffer_view.calc.char_size.y - top_pos;
+                let layer_y =
+                    layer.get_base_offset().y as f32 * buffer_view.calc.char_size.y - top_pos;
                 let layer_w = layer.get_width() as f32 * buffer_view.calc.char_size.x;
                 let layer_h = layer.get_height() as f32 * buffer_view.calc.char_size.y;
                 let x = buffer_rect.left() + layer_x;
@@ -457,9 +458,12 @@ impl OutputRenderer {
                     let border = 0.0;
                     let layer = selection.as_rectangle();
                     let layer_x = layer.left() as f32 * buffer_view.calc.char_size.x;
-                    let layer_y = layer.top() as f32 * buffer_view.calc.char_size.y - border - top_pos;
-                    let layer_w = layer.get_width() as f32 * buffer_view.calc.char_size.x + border * 2.0;
-                    let layer_h = layer.get_height() as f32 * buffer_view.calc.char_size.y + border * 2.0;
+                    let layer_y =
+                        layer.top() as f32 * buffer_view.calc.char_size.y - border - top_pos;
+                    let layer_w =
+                        layer.get_width() as f32 * buffer_view.calc.char_size.x + border * 2.0;
+                    let layer_h =
+                        layer.get_height() as f32 * buffer_view.calc.char_size.y + border * 2.0;
                     let x = buffer_rect.left() + layer_x - border;
                     let y = buffer_rect.top() + layer_y;
                     let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point - border;

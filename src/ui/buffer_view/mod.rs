@@ -242,13 +242,8 @@ impl BufferView {
             &self.calc,
             scale_filter,
         );
-        self.terminal_renderer.update_textures(
-            gl,
-            edit_state,
-            &self.calc,
-            use_fg,
-            use_bg,
-        );
+        self.terminal_renderer
+            .update_textures(gl, edit_state, &self.calc, use_fg, use_bg);
         self.output_renderer.update_render_buffer(
             gl,
             edit_state.get_buffer_mut(),

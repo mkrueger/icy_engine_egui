@@ -1,6 +1,6 @@
 pub mod ui;
 use egui::Color32;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 pub use ui::*;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -34,7 +34,7 @@ pub struct MarkerSettings {
 
     pub guide_alpha: f32,
     pub guide_color: Color32,
-} 
+}
 
 impl Default for MarkerSettings {
     fn default() -> Self {
@@ -49,7 +49,6 @@ impl Default for MarkerSettings {
         }
     }
 }
-
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum BackgroundEffect {
@@ -80,11 +79,11 @@ impl Default for MonitorSettings {
     }
 }
 
-use rust_embed::RustEmbed;
 use i18n_embed::{
     fluent::{fluent_language_loader, FluentLanguageLoader},
     DesktopLanguageRequester,
 };
+use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
 #[folder = "i18n"] // path to the compiled localization resources

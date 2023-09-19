@@ -14,7 +14,10 @@ lazy_static! {
     ];
 }
 
-pub fn show_monitor_settings(ui: &mut egui::Ui, old_settings: &MonitorSettings) -> Option<MonitorSettings> {
+pub fn show_monitor_settings(
+    ui: &mut egui::Ui,
+    old_settings: &MonitorSettings,
+) -> Option<MonitorSettings> {
     let mut result = None;
 
     let mut monitor_settings = old_settings.clone();

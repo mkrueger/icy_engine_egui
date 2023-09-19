@@ -10,9 +10,9 @@ use image::EncodableLayout;
 use image::RgbaImage;
 use web_time::Instant;
 
-use crate::TerminalOptions;
 use crate::prepare_shader;
 use crate::TerminalCalc;
+use crate::TerminalOptions;
 
 use super::Blink;
 use super::BufferView;
@@ -129,13 +129,7 @@ impl TerminalRenderer {
 
         if self.redraw_view {
             self.redraw_view = false;
-            self.update_terminal_texture(
-                gl,
-                edit_state,
-                calc,
-                use_fg,
-                use_bg,
-            );
+            self.update_terminal_texture(gl, edit_state, calc, use_fg, use_bg);
         }
 
         if self.redraw_palette
@@ -669,10 +663,8 @@ impl TerminalRenderer {
         gl.uniform_1_f32(
             gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha")
                 .as_ref(),
-                terminal_options.marker_settings.reference_image_alpha,
+            terminal_options.marker_settings.reference_image_alpha,
         );
-
-        
 
         gl.uniform_4_f32(
             gl.get_uniform_location(self.terminal_shader, "u_selection_fg")
