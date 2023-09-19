@@ -1,8 +1,9 @@
 pub mod ui;
 use egui::Color32;
+use serde::{Serialize, Deserialize};
 pub use ui::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MonitorSettings {
     pub use_filter: bool,
 
@@ -22,7 +23,31 @@ pub struct MonitorSettings {
     pub selection_bg: Color32,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MarkerSettings {
+    pub reference_image_alpha: f32,
+
+    pub grid_alpha: f32,
+    pub grid_color: Color32,
+
+    pub guide_alpha: f32,
+    pub guide_color: Color32,
+} 
+
+impl Default for MarkerSettings {
+    fn default() -> Self {
+        Self {
+            reference_image_alpha: 0.2,
+            grid_alpha: 0.2,
+            grid_color: Color32::from_rgb(0xAB, 0xAB, 0xAB),
+            guide_alpha: 0.2,
+            guide_color: Color32::from_rgb(0xAB, 0xAB, 0xAB),
+        }
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum BackgroundEffect {
     None,
     Checkers,
@@ -50,3 +75,21 @@ impl Default for MonitorSettings {
         }
     }
 }
+
+use rust_embed::RustEmbed;
+use i18n_embed::{
+    fluent::{fluent_language_loader, FluentLanguageLoader},
+    DesktopLanguageRequester,
+};
+
+#[derive(RustEmbed)]
+#[folder = "i18n"] // path to the compiled localization resources
+struct Localizations;
+
+use once_cell::sync::Lazy;
+static LANGUAGE_LOADER: Lazy<FluentLanguageLoader> = Lazy::new(|| {
+    let loader = fluent_language_loader!();
+    let requested_languages = DesktopLanguageRequester::requested_languages();
+    let _result = i18n_embed::select(&loader, &Localizations, &requested_languages);
+    loader
+});

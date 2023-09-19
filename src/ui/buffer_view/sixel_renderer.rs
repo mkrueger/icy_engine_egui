@@ -110,7 +110,7 @@ impl SixelRenderer {
             let x = sixel.pos.x as f32 * w;
             let y = sixel.pos.y as f32
                 * buffer_view.get_buffer().get_font_dimensions().height as f32
-                - (buffer_view.viewport_top / buffer_view.char_size.y * fh);
+                - (buffer_view.calc.viewport_top() / buffer_view.calc.char_size.y * fh);
 
             let w = sixel.size.width as f32;
             let h = sixel.size.height as f32;

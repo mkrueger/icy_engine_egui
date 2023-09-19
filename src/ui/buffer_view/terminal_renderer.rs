@@ -2,7 +2,6 @@
 use std::cmp::max;
 
 use egui::epaint::ahash::HashMap;
-use egui::Vec2;
 use glow::HasContext as _;
 use icy_engine::editor::EditState;
 use icy_engine::Buffer;
@@ -11,8 +10,8 @@ use image::EncodableLayout;
 use image::RgbaImage;
 use web_time::Instant;
 
+use crate::TerminalOptions;
 use crate::prepare_shader;
-use crate::MonitorSettings;
 use crate::TerminalCalc;
 
 use super::Blink;
@@ -117,8 +116,6 @@ impl TerminalRenderer {
         gl: &glow::Context,
         edit_state: &mut EditState,
         calc: &TerminalCalc,
-        viewport_top: f32,
-        char_size: Vec2,
         use_fg: bool,
         use_bg: bool,
     ) {
@@ -136,8 +133,6 @@ impl TerminalRenderer {
                 gl,
                 edit_state,
                 calc,
-                viewport_top,
-                char_size,
                 use_fg,
                 use_bg,
             );
@@ -305,13 +300,11 @@ impl TerminalRenderer {
         gl: &glow::Context,
         edit_state: &EditState,
         calc: &TerminalCalc,
-        viewport_top: f32,
-        char_size: Vec2,
         use_fg: bool,
         use_bg: bool,
     ) {
         let buf = edit_state.get_buffer();
-        let first_line = (viewport_top / char_size.y) as i32;
+        let first_line = (calc.viewport_top() / calc.char_size.y) as i32;
         let real_height = calc.real_height;
         let buf_h = calc.forced_height;
 
@@ -511,7 +504,7 @@ impl TerminalRenderer {
         &self,
         gl: &glow::Context,
         view_state: &BufferView,
-        monitor_settings: &MonitorSettings,
+        terminal_options: &TerminalOptions,
         has_focus: bool,
     ) {
         unsafe {
@@ -531,7 +524,7 @@ impl TerminalRenderer {
                 gl,
                 view_state,
                 view_state.output_renderer.render_buffer_size,
-                monitor_settings,
+                terminal_options,
                 has_focus,
             );
 
@@ -546,7 +539,7 @@ impl TerminalRenderer {
         gl: &glow::Context,
         buffer_view: &BufferView,
         render_buffer_size: egui::Vec2,
-        monitor_settings: &MonitorSettings,
+        terminal_options: &TerminalOptions,
         has_focus: bool,
     ) {
         let fontdim = buffer_view.get_buffer().get_font_dimensions();
@@ -565,9 +558,10 @@ impl TerminalRenderer {
             render_buffer_size.x,
             render_buffer_size.y + fh,
         );
-        let top_pos = buffer_view.viewport_top.floor();
-        let c_height = buffer_view.char_size.y;
-        let scroll_offset = (((buffer_view.viewport_top / c_height) * fh) % fh).floor();
+        let viewport_top = buffer_view.calc.viewport_top();
+        let top_pos = viewport_top.floor();
+        let c_height = buffer_view.calc.char_size.y;
+        let scroll_offset = (((viewport_top / c_height) * fh) % fh).floor();
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_position")
                 .as_ref(),
@@ -579,7 +573,7 @@ impl TerminalRenderer {
             gl.get_uniform_location(self.terminal_shader, "u_scroll_pos")
                 .as_ref(),
             0.0,
-            (buffer_view.viewport_top / c_height) * fh,
+            (viewport_top / c_height) * fh,
         );
 
         let font_width = fontdim.width as f32
@@ -603,7 +597,7 @@ impl TerminalRenderer {
 
         let caret_y = caret_pos.y as f32 * fontdim.height as f32 + fontdim.height as f32
             - caret_h
-            - (top_pos / buffer_view.char_size.y * fh)
+            - (top_pos / buffer_view.calc.char_size.y * fh)
             + scroll_offset;
         let caret_w = if self.caret_blink.is_on() && buffer_view.get_caret().is_visible && has_focus
         {
@@ -672,22 +666,29 @@ impl TerminalRenderer {
                 .as_ref(),
             if self.show_reference_image { 1.0 } else { 0.0 },
         );
+        gl.uniform_1_f32(
+            gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha")
+                .as_ref(),
+                terminal_options.marker_settings.reference_image_alpha,
+        );
+
+        
 
         gl.uniform_4_f32(
             gl.get_uniform_location(self.terminal_shader, "u_selection_fg")
                 .as_ref(),
-            monitor_settings.selection_fg.r() as f32 / 255.0,
-            monitor_settings.selection_fg.g() as f32 / 255.0,
-            monitor_settings.selection_fg.b() as f32 / 255.0,
-            monitor_settings.selection_fg.a() as f32 / 255.0,
+            terminal_options.monitor_settings.selection_fg.r() as f32 / 255.0,
+            terminal_options.monitor_settings.selection_fg.g() as f32 / 255.0,
+            terminal_options.monitor_settings.selection_fg.b() as f32 / 255.0,
+            terminal_options.monitor_settings.selection_fg.a() as f32 / 255.0,
         );
         gl.uniform_4_f32(
             gl.get_uniform_location(self.terminal_shader, "u_selection_bg")
                 .as_ref(),
-            monitor_settings.selection_bg.r() as f32 / 255.0,
-            monitor_settings.selection_bg.g() as f32 / 255.0,
-            monitor_settings.selection_bg.b() as f32 / 255.0,
-            monitor_settings.selection_bg.a() as f32 / 255.0,
+            terminal_options.monitor_settings.selection_bg.r() as f32 / 255.0,
+            terminal_options.monitor_settings.selection_bg.g() as f32 / 255.0,
+            terminal_options.monitor_settings.selection_bg.b() as f32 / 255.0,
+            terminal_options.monitor_settings.selection_bg.a() as f32 / 255.0,
         );
 
         gl.uniform_1_f32(

@@ -11,7 +11,10 @@ pub use smooth_scroll::*;
 pub mod keymaps;
 pub use keymaps::*;
 
-use crate::MonitorSettings;
+pub mod settings;
+pub use settings::*;
+
+use crate::{MonitorSettings, MarkerSettings};
 
 #[derive(Clone, Copy)]
 pub struct TerminalCalc {
@@ -70,11 +73,16 @@ impl TerminalCalc {
         (click_pos.to_vec2() - self.buffer_rect.left_top().to_vec2()) / self.char_size
             + Vec2::new(0.0, self.first_line)
     }
+
+    pub fn viewport_top(&self) -> f32 {
+        self.char_scroll_positon * self.scale.y
+    }
 }
 
 pub struct TerminalOptions {
     pub filter: i32,
-    pub settings: MonitorSettings,
+    pub monitor_settings: MonitorSettings,
+    pub marker_settings: MarkerSettings,
     pub stick_to_bottom: bool,
     pub scale: Option<Vec2>,
     pub fit_width: bool,
@@ -94,7 +102,8 @@ impl Default for TerminalOptions {
     fn default() -> Self {
         Self {
             filter: glow::NEAREST as i32,
-            settings: Default::default(),
+            monitor_settings: Default::default(),
+            marker_settings: Default::default(),
             stick_to_bottom: Default::default(),
             scale: Default::default(),
             fit_width: false,
@@ -161,7 +170,7 @@ pub fn show_terminal_area(
             let mut scale_x = size.x / font_width / buf_w;
             let mut scale_y = size.y / font_dimensions.height as f32 / buf_h;
             let mut scroll_remainder = 0.0;
-            let mut forced_scale = options.scale.clone();
+            let mut forced_scale = options.scale;
             if options.fit_width {
                 forced_scale = Some(Vec2::new(scale_x, scale_x));
             }
@@ -228,7 +237,8 @@ pub fn show_terminal_area(
         |ui, calc, options: TerminalOptions| {
             let viewport_top = calc.char_scroll_positon * calc.scale.y;
             calc.first_line = viewport_top / calc.char_size.y;
-
+            
+/*
             {
                 let buffer_view = &mut buffer_view.lock();
                 buffer_view.char_size = calc.char_size;
@@ -236,7 +246,7 @@ pub fn show_terminal_area(
                     buffer_view.viewport_top = viewport_top;
                     buffer_view.redraw_view();
                 }
-            }
+            }*/
             buffer_view.lock().calc = *calc;
             let callback = egui::PaintCallback {
                 rect: calc.terminal_rect,

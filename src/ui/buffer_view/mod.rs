@@ -63,9 +63,6 @@ pub struct BufferView {
 
     pub scale: f32,
     pub buffer_input_mode: BufferInputMode,
-    pub viewport_top: f32,
-
-    pub char_size: Vec2,
 
     pub calc: TerminalCalc,
 
@@ -101,8 +98,6 @@ impl BufferView {
             scale: 1.0,
             buffer_input_mode: BufferInputMode::CP437,
             button_pressed: false,
-            viewport_top: 0.,
-            char_size: Vec2::ZERO,
             terminal_renderer,
             sixel_renderer,
             output_renderer,
@@ -214,7 +209,7 @@ impl BufferView {
 
             self.output_renderer.bind_framebuffers(gl);
             self.terminal_renderer
-                .render_terminal(gl, self, &options.settings, has_focus);
+                .render_terminal(gl, self, options, has_focus);
             // draw sixels
             let render_texture = self
                 .sixel_renderer
@@ -227,7 +222,6 @@ impl BufferView {
                 self,
                 render_texture,
                 self.output_renderer.render_data_texture,
-                &self.calc,
                 options,
             );
         }
@@ -252,8 +246,6 @@ impl BufferView {
             gl,
             edit_state,
             &self.calc,
-            self.viewport_top,
-            self.char_size,
             use_fg,
             use_bg,
         );
