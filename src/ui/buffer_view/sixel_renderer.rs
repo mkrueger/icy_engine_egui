@@ -1,5 +1,6 @@
 use egui::Vec2;
 use glow::HasContext as _;
+use glow::NativeTexture;
 use icy_engine::Buffer;
 use icy_engine::Position;
 use icy_engine::TextPane;
@@ -44,14 +45,15 @@ impl SixelRenderer {
         &self,
         gl: &glow::Context,
         buffer_view: &BufferView,
+        render_buffer_size: Vec2,
+        mut render_texture: NativeTexture,
         output_renderer: &OutputRenderer,
     ) -> glow::Texture {
-        let mut render_texture = output_renderer.render_texture;
         let mut sixel_render_texture = self.sixel_render_texture;
-        gl.bind_framebuffer(glow::FRAMEBUFFER, Some(output_renderer.framebuffer));
+        /*  gl.bind_framebuffer(glow::FRAMEBUFFER, Some(output_renderer.framebuffer));
         if gl.check_framebuffer_status(glow::FRAMEBUFFER) != glow::FRAMEBUFFER_COMPLETE {
             log::error!("Framebuffer is not complete");
-        }
+        }*/
 
         for sixel in &self.sixel_cache {
             gl.framebuffer_texture_2d(
@@ -120,10 +122,10 @@ impl SixelRenderer {
             gl.uniform_4_f32(
                 gl.get_uniform_location(self.sixel_shader, "u_sixel_rectangle")
                     .as_ref(),
-                x / output_renderer.render_buffer_size.x,
-                y / (output_renderer.render_buffer_size.y),
-                (x + w) / output_renderer.render_buffer_size.x,
-                (y + h) / (output_renderer.render_buffer_size.y),
+                x / render_buffer_size.x,
+                y / (render_buffer_size.y),
+                (x + w) / render_buffer_size.x,
+                (y + h) / (render_buffer_size.y),
             );
 
             gl.bind_vertex_array(Some(output_renderer.vertex_array));

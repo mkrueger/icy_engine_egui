@@ -2,6 +2,7 @@
 use std::cmp::max;
 
 use egui::epaint::ahash::HashMap;
+use egui::Vec2;
 use glow::HasContext as _;
 use icy_engine::editor::EditState;
 use icy_engine::Buffer;
@@ -160,19 +161,17 @@ impl TerminalRenderer {
 
     fn update_font_texture(&mut self, gl: &glow::Context, buf: &Buffer) {
         let size = buf.get_font(0).unwrap().size;
-
         let w_ext = if buf.use_letter_spacing() { 1 } else { 0 };
-
         let w = size.width;
         let h = size.height;
 
         let mut font_data = Vec::new();
         let chars_in_line = 16;
-        let line_width = (w + w_ext) * chars_in_line * 4;
+        let width = (w + w_ext) * chars_in_line;
         let height = h * 256 / chars_in_line;
+        let line_width = width * 4;
         self.font_lookup_table.clear();
         font_data.resize((line_width * height) as usize * buf.font_count(), 0);
-
         for (cur_font_num, font) in buf.font_iter().enumerate() {
             self.font_lookup_table.insert(*font.0, cur_font_num);
             let fontpage_start = cur_font_num as i32 * (line_width * height);
@@ -208,6 +207,7 @@ impl TerminalRenderer {
                         }
                         if buf.use_letter_spacing()
                             && (0xC0..=0xDF).contains(&ch)
+                            && !(0xB0..=0xBF).contains(&ch)
                             && (scan_line & 1) != 0
                         {
                             // unroll
@@ -221,20 +221,23 @@ impl TerminalRenderer {
                         }
                     } else {
                         log::error!("error in font {} can't get line {y}", font.0);
-                        font_data.extend(vec![0xFF; (w as usize) * 4]);
+                        font_data.extend(vec![0xFF; ((w + w_ext) as usize) * 4]);
                     }
                 }
             }
         }
+        println!("update font texture {width}x{height}");
 
         unsafe {
-            gl.active_texture(glow::TEXTURE0 + FONT_TEXTURE_SLOT);
+            gl.delete_texture(self.font_texture);
+            self.font_texture = create_font_texture(gl);
+
             gl.bind_texture(glow::TEXTURE_2D_ARRAY, Some(self.font_texture));
             gl.tex_image_3d(
                 glow::TEXTURE_2D_ARRAY,
                 0,
                 glow::RGBA as i32,
-                line_width / 4,
+                width,
                 height,
                 buf.font_count() as i32,
                 0,
@@ -499,6 +502,7 @@ impl TerminalRenderer {
         &self,
         gl: &glow::Context,
         view_state: &BufferView,
+        render_buffer_size: Vec2,
         terminal_options: &TerminalOptions,
         has_focus: bool,
     ) {
@@ -519,7 +523,7 @@ impl TerminalRenderer {
             self.run_shader(
                 gl,
                 view_state,
-                view_state.output_renderer.render_buffer_size,
+                render_buffer_size,
                 terminal_options,
                 has_focus,
             );

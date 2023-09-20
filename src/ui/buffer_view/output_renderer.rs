@@ -2,14 +2,12 @@ use egui::PaintCallbackInfo;
 use egui::Vec2;
 use glow::HasContext as _;
 use glow::Texture;
-use icy_engine::Buffer;
 use icy_engine::TextPane;
 use web_time::Instant;
 
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
 use crate::BufferView;
-use crate::TerminalCalc;
 use crate::TerminalOptions;
 
 pub const MONO_COLORS: [(u8, u8, u8); 5] = [
@@ -24,39 +22,22 @@ pub const DATA_TEXTURE_SLOT: u32 = 2;
 
 pub struct OutputRenderer {
     output_shader: glow::Program,
-
-    pub framebuffer: glow::Framebuffer,
-    pub render_texture: glow::Texture,
-    pub render_data_texture: glow::Texture,
-    pub render_buffer_size: Vec2,
+    framebuffer: glow::Framebuffer,
     pub vertex_array: glow::VertexArray,
     instant: Instant,
 }
 
 impl OutputRenderer {
-    pub fn new(gl: &glow::Context, buf: &Buffer, calc: &TerminalCalc, filter: i32) -> Self {
+    pub fn new(gl: &glow::Context) -> Self {
         unsafe {
-            let w = buf.get_font_dimensions().width as f32
-                + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
-
-            let render_buffer_size = Vec2::new(
-                w * buf.get_width() as f32,
-                buf.get_font_dimensions().height as f32 * calc.forced_height as f32,
-            );
-
             let output_shader = compile_output_shader(gl);
             let framebuffer = gl.create_framebuffer().unwrap();
-            let (render_texture, render_data_texture) =
-                create_screen_render_texture(gl, render_buffer_size, filter);
             let vertex_array = gl
                 .create_vertex_array()
                 .expect("Cannot create vertex array");
             Self {
                 output_shader,
                 framebuffer,
-                render_texture,
-                render_data_texture,
-                render_buffer_size,
                 vertex_array,
                 instant: Instant::now(),
             }
@@ -67,45 +48,56 @@ impl OutputRenderer {
         unsafe {
             gl.delete_program(self.output_shader);
             gl.delete_vertex_array(self.vertex_array);
-            gl.delete_texture(self.render_texture);
-            gl.delete_texture(self.render_data_texture);
             gl.delete_framebuffer(self.framebuffer);
         }
     }
 
-    pub(crate) unsafe fn bind_framebuffers(&self, gl: &glow::Context) {
+    pub(crate) unsafe fn bind_framebuffers(
+        &mut self,
+        gl: &glow::Context,
+        render_buffer_size: Vec2,
+        filter: i32,
+    ) -> (Texture, Texture) {
+        let (render_texture, render_data_texture) =
+            create_screen_render_texture(gl, render_buffer_size, filter);
         gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer));
-        gl.bind_texture(glow::TEXTURE_2D, Some(self.render_texture));
-        gl.framebuffer_texture_2d(
+        crate::check_gl_error!(gl, "bind framebuffer");
+
+        gl.bind_texture(glow::TEXTURE_2D, Some(render_texture));
+        gl.framebuffer_texture(
             glow::FRAMEBUFFER,
             glow::COLOR_ATTACHMENT0,
-            glow::TEXTURE_2D,
-            Some(self.render_texture),
+            Some(render_texture),
             0,
         );
+        crate::check_gl_error!(gl, "bind render_texture");
 
-        gl.bind_texture(glow::TEXTURE_2D, Some(self.render_data_texture));
-        gl.framebuffer_texture_2d(
+        gl.bind_texture(glow::TEXTURE_2D, Some(render_data_texture));
+        gl.framebuffer_texture(
             glow::FRAMEBUFFER,
             glow::COLOR_ATTACHMENT1,
-            glow::TEXTURE_2D,
-            Some(self.render_data_texture),
+            Some(render_data_texture),
             0,
         );
 
+        gl.draw_buffers(&[glow::COLOR_ATTACHMENT0, glow::COLOR_ATTACHMENT1]);
+        if gl.check_framebuffer_status(glow::FRAMEBUFFER) != glow::FRAMEBUFFER_COMPLETE {
+            log::error!("Framebuffer is not complete after draw_buffer");
+        }
+        crate::check_gl_error!(gl, "bind render_data_texture");
         gl.viewport(
             0,
             0,
-            self.render_buffer_size.x as i32,
-            self.render_buffer_size.y as i32,
+            render_buffer_size.x as i32,
+            render_buffer_size.y as i32,
         );
-        gl.draw_buffers(&[glow::COLOR_ATTACHMENT0, glow::COLOR_ATTACHMENT1]);
         if gl.check_framebuffer_status(glow::FRAMEBUFFER) != glow::FRAMEBUFFER_COMPLETE {
-            log::error!("Framebuffer is not complete");
+            log::error!("Framebuffer is not complete after viewport");
         }
         gl.clear(glow::COLOR_BUFFER_BIT);
         gl.clear_color(0., 0., 0., 0.0);
         crate::check_gl_error!(gl, "init_output");
+        (render_texture, render_data_texture)
     }
 
     pub unsafe fn render_to_screen(
@@ -508,88 +500,8 @@ impl OutputRenderer {
 
         gl.bind_vertex_array(Some(self.vertex_array));
         gl.draw_arrays(glow::TRIANGLES, 0, 6);
-    }
-
-    pub(crate) fn update_render_buffer(
-        &mut self,
-        gl: &glow::Context,
-        buf: &Buffer,
-        calc: &TerminalCalc,
-        scale_filter: i32,
-    ) {
-        let w = buf.get_font_dimensions().width as f32
-            + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
-
-        let render_buffer_size = Vec2::new(
-            w * buf.get_width() as f32,
-            buf.get_font_dimensions().height as f32 * calc.forced_height as f32,
-        );
-        if render_buffer_size == self.render_buffer_size {
-            return;
-        }
-        unsafe {
-            use glow::HasContext as _;
-            gl.bind_framebuffer(glow::FRAMEBUFFER, Some(self.framebuffer));
-            gl.delete_texture(self.render_texture);
-            gl.delete_texture(self.render_data_texture);
-
-            let render_texture = gl.create_texture().unwrap();
-            gl.bind_texture(glow::TEXTURE_2D, Some(render_texture));
-            gl.tex_image_2d(
-                glow::TEXTURE_2D,
-                0,
-                glow::RGBA as i32,
-                render_buffer_size.x as i32,
-                render_buffer_size.y as i32,
-                0,
-                glow::RGBA,
-                glow::UNSIGNED_BYTE,
-                None,
-            );
-            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, scale_filter);
-            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, scale_filter);
-            gl.tex_parameter_i32(
-                glow::TEXTURE_2D,
-                glow::TEXTURE_WRAP_S,
-                glow::CLAMP_TO_EDGE as i32,
-            );
-            gl.tex_parameter_i32(
-                glow::TEXTURE_2D,
-                glow::TEXTURE_WRAP_T,
-                glow::CLAMP_TO_EDGE as i32,
-            );
-
-            let render_data_texture = gl.create_texture().unwrap();
-            gl.bind_texture(glow::TEXTURE_2D, Some(render_data_texture));
-            gl.tex_image_2d(
-                glow::TEXTURE_2D,
-                0,
-                glow::RGBA as i32,
-                render_buffer_size.x as i32,
-                render_buffer_size.y as i32,
-                0,
-                glow::RGBA,
-                glow::UNSIGNED_BYTE,
-                None,
-            );
-            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, scale_filter);
-            gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, scale_filter);
-            gl.tex_parameter_i32(
-                glow::TEXTURE_2D,
-                glow::TEXTURE_WRAP_S,
-                glow::CLAMP_TO_EDGE as i32,
-            );
-            gl.tex_parameter_i32(
-                glow::TEXTURE_2D,
-                glow::TEXTURE_WRAP_T,
-                glow::CLAMP_TO_EDGE as i32,
-            );
-
-            gl.bind_framebuffer(glow::FRAMEBUFFER, None);
-            self.render_texture = render_texture;
-            self.render_data_texture = render_data_texture;
-            self.render_buffer_size = render_buffer_size;
-        }
+        gl.delete_texture(input_texture);
+        gl.delete_texture(input_data_texture);
     }
 }
 
@@ -669,6 +581,7 @@ unsafe fn create_screen_render_texture(
         glow::TEXTURE_WRAP_T,
         glow::CLAMP_TO_EDGE as i32,
     );
+
     let render_data_texture = gl.create_texture().unwrap();
     gl.bind_texture(glow::TEXTURE_2D, Some(render_data_texture));
     gl.tex_image_2d(

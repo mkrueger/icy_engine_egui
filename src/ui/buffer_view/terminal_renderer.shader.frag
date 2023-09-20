@@ -145,4 +145,5 @@ void main (void) {
         terminal_buffer_coordinates.y < bottom_right.y) {
         color1 = get_palette_color(ch.y);
     } 
+   // color1= texture(u_fonts, vec3(view_coord, 0.0));
 }

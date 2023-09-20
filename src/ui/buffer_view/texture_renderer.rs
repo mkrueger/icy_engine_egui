@@ -1,39 +1,26 @@
 use egui::Vec2;
 use glow::HasContext;
-use icy_engine::Buffer;
-use icy_engine::TextPane;
 
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
-use crate::TerminalCalc;
 use crate::TerminalOptions;
 
 use super::output_renderer::MONO_COLORS;
 
 pub struct TextureRenderer {
     output_shader: glow::Program,
-    render_buffer_size: Vec2,
     vertex_array: glow::VertexArray,
 }
 
 impl TextureRenderer {
-    pub fn new(gl: &glow::Context, buf: &Buffer, calc: &TerminalCalc) -> Self {
+    pub fn new(gl: &glow::Context) -> Self {
         unsafe {
-            let w = buf.get_font_dimensions().width as f32
-                + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
-
-            let render_buffer_size = Vec2::new(
-                w * buf.get_width() as f32,
-                buf.get_font_dimensions().height as f32 * calc.forced_height as f32,
-            );
-
             let output_shader = compile_output_shader(gl);
             let vertex_array = gl
                 .create_vertex_array()
                 .expect("Cannot create vertex array");
             Self {
                 output_shader,
-                render_buffer_size,
                 vertex_array,
             }
         }
@@ -50,6 +37,7 @@ impl TextureRenderer {
         &self,
         gl: &glow::Context,
         input_texture: glow::Texture,
+        render_buffer_size: Vec2,
         options: &TerminalOptions,
     ) -> (Vec2, Vec<u8>) {
         gl.disable(glow::SCISSOR_TEST);
@@ -58,7 +46,7 @@ impl TextureRenderer {
         let framebuffer = gl.create_framebuffer().unwrap();
         gl.bind_framebuffer(glow::FRAMEBUFFER, Some(framebuffer));
 
-        let output_texture = self.create_output_texture(gl);
+        let output_texture = self.create_output_texture(gl, render_buffer_size);
         crate::check_gl_error!(gl, "render_to_buffer_startup_bind_framebuffer");
         gl.framebuffer_texture(
             glow::FRAMEBUFFER,
@@ -74,8 +62,8 @@ impl TextureRenderer {
         gl.viewport(
             0,
             0,
-            self.render_buffer_size.x as i32,
-            self.render_buffer_size.y as i32,
+            render_buffer_size.x as i32,
+            render_buffer_size.y as i32,
         );
         crate::check_gl_error!(gl, "render_to_buffer_startup_set_viewport");
         gl.clear(glow::COLOR_BUFFER_BIT);
@@ -169,22 +157,21 @@ impl TextureRenderer {
         gl.uniform_2_f32(
             gl.get_uniform_location(self.output_shader, "u_resolution")
                 .as_ref(),
-            self.render_buffer_size.x,
-            self.render_buffer_size.y,
+            render_buffer_size.x,
+            render_buffer_size.y,
         );
 
         gl.bind_vertex_array(Some(self.vertex_array));
         gl.draw_arrays(glow::TRIANGLES, 0, 6);
         crate::check_gl_error!(gl, "render_to_buffer_draw_arrays");
 
-        let mut pixels =
-            vec![0; (self.render_buffer_size.x * self.render_buffer_size.y * 4.0) as usize];
+        let mut pixels = vec![0; (render_buffer_size.x * render_buffer_size.y * 4.0) as usize];
 
         gl.read_pixels(
             0,
             0,
-            self.render_buffer_size.x as i32,
-            self.render_buffer_size.y as i32,
+            render_buffer_size.x as i32,
+            render_buffer_size.y as i32,
             glow::RGBA,
             glow::UNSIGNED_BYTE,
             glow::PixelPackData::Slice(&mut pixels),
@@ -201,14 +188,16 @@ impl TextureRenderer {
 
         gl.delete_framebuffer(framebuffer);
         gl.delete_texture(output_texture);
+        gl.delete_texture(input_texture);
         crate::check_gl_error!(gl, "render_to_buffer_read_pixels");
-        for x in &pixels[0..8] {
-            println!("{}", *x);
-        }
-        (self.render_buffer_size, pixels)
+        (render_buffer_size, pixels)
     }
 
-    unsafe fn create_output_texture(&self, gl: &glow::Context) -> glow::Texture {
+    unsafe fn create_output_texture(
+        &self,
+        gl: &glow::Context,
+        render_buffer_size: Vec2,
+    ) -> glow::Texture {
         let result = gl.create_texture().unwrap();
         gl.bind_texture(glow::TEXTURE_2D, Some(result));
 
@@ -216,8 +205,8 @@ impl TextureRenderer {
             glow::TEXTURE_2D,
             0,
             glow::RGBA as i32,
-            self.render_buffer_size.x as i32,
-            self.render_buffer_size.y as i32,
+            render_buffer_size.x as i32,
+            render_buffer_size.y as i32,
             0,
             glow::RGBA,
             glow::UNSIGNED_BYTE,
