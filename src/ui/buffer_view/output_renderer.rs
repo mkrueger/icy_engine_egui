@@ -19,7 +19,7 @@ pub const MONO_COLORS: [(u8, u8, u8); 5] = [
     (0x00, 0xD5, 0x6D), // Apple ][
     (0x72, 0x9F, 0xCF), // Futuristic
 ];
-pub const OUTPUT_TEXTURE_SLOT: u32 = 0;
+pub const INPUT_TEXTURE_SLOT: u32 = 0;
 pub const DATA_TEXTURE_SLOT: u32 = 2;
 
 pub struct OutputRenderer {
@@ -100,7 +100,9 @@ impl OutputRenderer {
             self.render_buffer_size.y as i32,
         );
         gl.draw_buffers(&[glow::COLOR_ATTACHMENT0, glow::COLOR_ATTACHMENT1]);
-
+        if gl.check_framebuffer_status(glow::FRAMEBUFFER) != glow::FRAMEBUFFER_COMPLETE {
+            log::error!("Framebuffer is not complete");
+        }
         gl.clear(glow::COLOR_BUFFER_BIT);
         gl.clear_color(0., 0., 0., 0.0);
         crate::check_gl_error!(gl, "init_output");
@@ -111,8 +113,8 @@ impl OutputRenderer {
         gl: &glow::Context,
         info: &PaintCallbackInfo,
         buffer_view: &BufferView,
-        output_texture: glow::Texture,
-        output_data_texture: glow::Texture,
+        input_texture: glow::Texture,
+        input_data_texture: glow::Texture,
         options: &TerminalOptions,
     ) {
         let monitor_settings = &options.monitor_settings;
@@ -127,6 +129,9 @@ impl OutputRenderer {
             (terminal_rect.width() * info.pixels_per_point) as i32,
             (terminal_rect.height() * info.pixels_per_point) as i32,
         );
+        if gl.check_framebuffer_status(glow::FRAMEBUFFER) != glow::FRAMEBUFFER_COMPLETE {
+            log::error!("Framebuffer is not complete");
+        }
 
         gl.scissor(
             (terminal_rect.left() * info.pixels_per_point) as i32,
@@ -137,11 +142,11 @@ impl OutputRenderer {
 
         gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
         gl.use_program(Some(self.output_shader));
-        gl.active_texture(glow::TEXTURE0 + OUTPUT_TEXTURE_SLOT);
-        gl.bind_texture(glow::TEXTURE_2D, Some(output_texture));
+        gl.active_texture(glow::TEXTURE0 + INPUT_TEXTURE_SLOT);
+        gl.bind_texture(glow::TEXTURE_2D, Some(input_texture));
 
         gl.active_texture(glow::TEXTURE0 + DATA_TEXTURE_SLOT);
-        gl.bind_texture(glow::TEXTURE_2D, Some(output_data_texture));
+        gl.bind_texture(glow::TEXTURE_2D, Some(input_data_texture));
 
         gl.uniform_1_f32(
             gl.get_uniform_location(self.output_shader, "u_time")
@@ -152,7 +157,7 @@ impl OutputRenderer {
         gl.uniform_1_i32(
             gl.get_uniform_location(self.output_shader, "u_render_texture")
                 .as_ref(),
-            OUTPUT_TEXTURE_SLOT as i32,
+            INPUT_TEXTURE_SLOT as i32,
         );
 
         gl.uniform_1_i32(

@@ -16,7 +16,7 @@ pub use settings::*;
 
 use crate::{MarkerSettings, MonitorSettings};
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct TerminalCalc {
     /// The height of the buffer in chars
     pub char_height: f32,
@@ -43,6 +43,8 @@ pub struct TerminalCalc {
     pub set_scroll_position_set_by_user: bool,
 
     pub has_focus: bool,
+
+    pub screen_shot: Option<Vec<u8>>,
 }
 
 impl Default for TerminalCalc {
@@ -63,6 +65,7 @@ impl Default for TerminalCalc {
             set_scroll_position_set_by_user: Default::default(),
             has_focus: Default::default(),
             real_height: 0,
+            screen_shot: None,
         }
     }
 }
@@ -79,6 +82,7 @@ impl TerminalCalc {
     }
 }
 
+#[derive(Clone)]
 pub struct TerminalOptions {
     pub filter: i32,
     pub monitor_settings: MonitorSettings,
@@ -156,9 +160,9 @@ pub fn show_terminal_area(
         .get_position();
     let selected_rect = buffer_view.lock().get_edit_state().get_selection();
     let show_line_numbers = options.show_line_numbers;
-    let r = scroll.show(
+    let (response, calc) = scroll.show(
         ui,
-        options,
+        &options,
         |rect, options: &TerminalOptions| {
             let size = rect.size();
 
@@ -234,9 +238,10 @@ pub fn show_terminal_area(
                 scroll_remainder,
                 real_height,
                 has_focus: false,
+                screen_shot: None,
             }
         },
-        |ui, calc, options: TerminalOptions| {
+        |ui, calc, options: &TerminalOptions| {
             let viewport_top = calc.char_scroll_positon * calc.scale.y;
             calc.first_line = viewport_top / calc.char_size.y;
 
@@ -249,7 +254,8 @@ pub fn show_terminal_area(
                     buffer_view.redraw_view();
                 }
             }*/
-            buffer_view.lock().calc = *calc;
+            buffer_view.lock().calc = calc.clone();
+            let options = options.clone();
             let callback = egui::PaintCallback {
                 rect: calc.terminal_rect,
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
@@ -360,5 +366,6 @@ pub fn show_terminal_area(
             }
         },
     );
-    r
+
+    (response, calc)
 }

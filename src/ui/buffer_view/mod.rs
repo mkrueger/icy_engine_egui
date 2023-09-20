@@ -9,11 +9,14 @@ use icy_engine::{
 
 pub mod glerror;
 
-use crate::{check_gl_error, TerminalCalc, TerminalOptions};
+use crate::{
+    buffer_view::texture_renderer::TextureRenderer, check_gl_error, TerminalCalc, TerminalOptions,
+};
 
 mod output_renderer;
 mod sixel_renderer;
 mod terminal_renderer;
+mod texture_renderer;
 
 #[derive(Clone, Copy)]
 pub enum BufferInputMode {
@@ -78,6 +81,8 @@ pub struct BufferView {
     output_renderer: output_renderer::OutputRenderer,
     reference_image_path: Option<PathBuf>,
     drag_start: Option<Vec2>,
+
+    pub screenshot: Vec<u8>,
 }
 
 impl BufferView {
@@ -107,6 +112,7 @@ impl BufferView {
             use_fg: true,
             use_bg: true,
             interactive: true,
+            screenshot: Vec::new(),
         }
     }
 
@@ -202,7 +208,6 @@ impl BufferView {
         options: &TerminalOptions,
     ) {
         let has_focus = self.calc.has_focus;
-
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
             self.update_contents(gl, options.filter, self.use_fg, self.use_bg);
@@ -224,8 +229,35 @@ impl BufferView {
                 self.output_renderer.render_data_texture,
                 options,
             );
+            check_gl_error!(gl, "buffer_view.render_contents");
         }
-        check_gl_error!(gl, "buffer_view.render_contents");
+    }
+
+    pub fn render_buffer(
+        &mut self,
+        gl: &glow::Context,
+        options: &TerminalOptions,
+    ) -> (Vec2, Vec<u8>) {
+        let has_focus = self.calc.has_focus;
+        unsafe {
+            gl.disable(glow::SCISSOR_TEST);
+            self.update_contents(gl, options.filter, self.use_fg, self.use_bg);
+
+            let texture_renderer = TextureRenderer::new(gl, self.get_buffer(), &self.calc);
+            self.output_renderer.bind_framebuffers(gl);
+            self.terminal_renderer
+                .render_terminal(gl, self, options, has_focus);
+            // draw sixels
+            let render_texture = self
+                .sixel_renderer
+                .render_sixels(gl, self, &self.output_renderer);
+            gl.enable(glow::SCISSOR_TEST);
+
+            let result = texture_renderer.render_to_buffer(gl, render_texture, options);
+            texture_renderer.destroy(gl);
+            check_gl_error!(gl, "buffer_view.render_contents");
+            result
+        }
     }
 
     pub fn update_contents(

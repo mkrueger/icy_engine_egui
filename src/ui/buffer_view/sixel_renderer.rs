@@ -49,6 +49,9 @@ impl SixelRenderer {
         let mut render_texture = output_renderer.render_texture;
         let mut sixel_render_texture = self.sixel_render_texture;
         gl.bind_framebuffer(glow::FRAMEBUFFER, Some(output_renderer.framebuffer));
+        if gl.check_framebuffer_status(glow::FRAMEBUFFER) != glow::FRAMEBUFFER_COMPLETE {
+            log::error!("Framebuffer is not complete");
+        }
 
         for sixel in &self.sixel_cache {
             gl.framebuffer_texture_2d(
