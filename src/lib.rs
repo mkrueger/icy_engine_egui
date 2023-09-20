@@ -1,3 +1,4 @@
+pub mod animations;
 pub mod ui;
 use egui::Color32;
 use serde::{Deserialize, Serialize};

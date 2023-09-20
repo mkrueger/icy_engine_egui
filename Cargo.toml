@@ -28,3 +28,5 @@ i18n-embed-fl = "0.7.0"
 rust-embed = "8.0.0"
 once_cell = "1.16.0"
 serde = { version = "1", features = ["derive"] }
+mlua = { version = "0.9.1", features = ["lua54", "vendored"] }
+regex = "1.9.5"
