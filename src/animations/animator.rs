@@ -31,7 +31,7 @@ impl Default for Animator {
         Self {
             scene: Default::default(),
             frames: Default::default(),
-            current_monitor_settings: Default::default(),
+            current_monitor_settings: MonitorSettings::neutral(),
             buffers: Default::default(),
             cur_frame: Default::default(),
             is_loop: Default::default(),
@@ -430,6 +430,24 @@ impl Animator {
                 lua.create_function_mut(move |lua, buffer: Value<'_>| {
                     if let Value::UserData(data) = &buffer {
                         lua.globals().set("cur_frame", a.lock().frames.len() + 2)?;
+                        let monitor_type: usize = lua.globals().get("monitor_type")?;
+                        a.lock().current_monitor_settings.monitor_type = monitor_type;
+
+                        a.lock().current_monitor_settings.gamma =
+                            lua.globals().get("monitor_gamma")?;
+                        a.lock().current_monitor_settings.contrast =
+                            lua.globals().get("monitor_contrast")?;
+                        a.lock().current_monitor_settings.saturation =
+                            lua.globals().get("monitor_saturation")?;
+                        a.lock().current_monitor_settings.brightness =
+                            lua.globals().get("monitor_brightness")?;
+                        a.lock().current_monitor_settings.blur =
+                            lua.globals().get("monitor_blur")?;
+                        a.lock().current_monitor_settings.curvature =
+                            lua.globals().get("monitor_curvature")?;
+                        a.lock().current_monitor_settings.scanlines =
+                            lua.globals().get("monitor_scanlines")?;
+
                         a.lock().lua_next_frame(&data.borrow::<LuaBuffer>()?.buffer)
                     } else {
                         Err(mlua::Error::RuntimeError(format!(
@@ -440,7 +458,25 @@ impl Animator {
                 })?,
             )
             .unwrap();
+
         globals.set("cur_frame", 1)?;
+        {
+            let lock = animator.lock();
+            globals.set("monitor_type", lock.current_monitor_settings.monitor_type)?;
+            globals.set("monitor_gamma", lock.current_monitor_settings.gamma)?;
+            globals.set("monitor_contrast", lock.current_monitor_settings.contrast)?;
+            globals.set(
+                "monitor_saturation",
+                lock.current_monitor_settings.saturation,
+            )?;
+            globals.set(
+                "monitor_brightness",
+                lock.current_monitor_settings.brightness,
+            )?;
+            globals.set("monitor_blur", lock.current_monitor_settings.blur)?;
+            globals.set("monitor_curvature", lock.current_monitor_settings.curvature)?;
+            globals.set("monitor_scanlines", lock.current_monitor_settings.scanlines)?;
+        }
 
         lua.load(txt).exec()?;
         Ok(animator)
@@ -458,6 +494,7 @@ impl Animator {
     }
     pub fn set_cur_frame(&mut self, cur_frame: usize) {
         self.cur_frame = cur_frame;
+        self.speed = self.frames[self.cur_frame].2;
     }
 
     pub fn get_is_loop(&self) -> bool {
@@ -525,6 +562,7 @@ impl Animator {
                 self.speed = DEFAULT_SPEEED;
                 self.cur_frame = 0;
             } else {
+                self.cur_frame -= 1;
                 self.is_playing = false;
             }
             return;

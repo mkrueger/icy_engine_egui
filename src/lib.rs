@@ -80,6 +80,26 @@ impl Default for MonitorSettings {
     }
 }
 
+impl MonitorSettings {
+    pub fn neutral() -> Self {
+        Self {
+            use_filter: true,
+            monitor_type: 0,
+            gamma: 50.,
+            contrast: 50.,
+            saturation: 50.,
+            brightness: 29.,
+            light: 50.,
+            blur: 0.,
+            curvature: 0.,
+            scanlines: 0.,
+            background_effect: BackgroundEffect::None,
+            selection_fg: Color32::from_rgb(0xAB, 0x00, 0xAB),
+            selection_bg: Color32::from_rgb(0xAB, 0xAB, 0xAB),
+        }
+    }
+}
+
 use i18n_embed::{
     fluent::{fluent_language_loader, FluentLanguageLoader},
     DesktopLanguageRequester,
