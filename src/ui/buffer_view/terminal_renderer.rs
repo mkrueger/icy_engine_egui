@@ -242,6 +242,7 @@ impl TerminalRenderer {
                 glow::UNSIGNED_BYTE,
                 Some(&font_data),
             );
+            crate::check_gl_error!(gl, "update_font_texture");
         }
     }
 
@@ -513,6 +514,7 @@ impl TerminalRenderer {
 
             gl.active_texture(glow::TEXTURE0 + REFERENCE_IMAGE_TEXTURE_SLOT);
             gl.bind_texture(glow::TEXTURE_2D, Some(self.reference_image_texture));
+            crate::check_gl_error!(gl, "render_terminal_bind_textures");
 
             self.run_shader(
                 gl,
@@ -524,7 +526,7 @@ impl TerminalRenderer {
 
             gl.bind_vertex_array(Some(self.vertex_array));
             gl.draw_arrays(glow::TRIANGLES, 0, 6);
-            crate::check_gl_error!(gl, "render_terminal");
+            crate::check_gl_error!(gl, "render_terminal_end");
         }
     }
 

@@ -81,7 +81,7 @@ pub struct BufferView {
     output_renderer: output_renderer::OutputRenderer,
     reference_image_path: Option<PathBuf>,
     drag_start: Option<Vec2>,
-
+    destroyed: bool,
     pub screenshot: Vec<u8>,
 }
 
@@ -113,6 +113,7 @@ impl BufferView {
             use_bg: true,
             interactive: true,
             screenshot: Vec::new(),
+            destroyed: false,
         }
     }
 
@@ -207,6 +208,9 @@ impl BufferView {
         info: &egui::PaintCallbackInfo,
         options: &TerminalOptions,
     ) {
+        if self.destroyed {
+            return;
+        }
         let has_focus = self.calc.has_focus;
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
@@ -238,6 +242,10 @@ impl BufferView {
         gl: &glow::Context,
         options: &TerminalOptions,
     ) -> (Vec2, Vec<u8>) {
+        if self.destroyed {
+            return (Vec2::ZERO, Vec::new());
+        }
+
         let has_focus = self.calc.has_focus;
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
@@ -260,7 +268,7 @@ impl BufferView {
         }
     }
 
-    pub fn update_contents(
+    fn update_contents(
         &mut self,
         gl: &glow::Context,
         scale_filter: i32,
@@ -286,7 +294,8 @@ impl BufferView {
         check_gl_error!(gl, "buffer_view.update_contents");
     }
 
-    pub fn destroy(&self, gl: &glow::Context) {
+    pub fn destroy(&mut self, gl: &glow::Context) {
+        self.destroyed = true;
         self.terminal_renderer.destroy(gl);
         self.output_renderer.destroy(gl);
         self.sixel_renderer.destroy(gl);
@@ -328,6 +337,9 @@ impl BufferView {
     }
 
     pub fn load_reference_image(&mut self, path: &std::path::Path) {
+        if self.destroyed {
+            return;
+        }
         if let Ok(image) = image::open(path) {
             self.reference_image_path = Some(path.to_path_buf());
             let image = image.to_rgba8();
