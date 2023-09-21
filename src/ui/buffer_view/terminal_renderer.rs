@@ -226,7 +226,6 @@ impl TerminalRenderer {
                 }
             }
         }
-        println!("update font texture {width}x{height}");
 
         unsafe {
             gl.delete_texture(self.font_texture);

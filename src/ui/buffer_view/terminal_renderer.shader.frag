@@ -34,6 +34,7 @@ vec4 get_char(vec2 p, float c, float page) {
     }
     vec2 v = p / 16.0 + fract(vec2(c, floor(c / 16.0)) / 16.0);
     return textureGrad(u_fonts, vec3(v, page), dFdx(p / 16.0), dFdy(p / 16.0));
+  //  return texture(u_fonts, vec3(v, page));
 }
 
 vec4 get_palette_color(float c) {

@@ -77,6 +77,12 @@ impl TerminalCalc {
             + Vec2::new(0.0, self.first_line)
     }
 
+    pub fn calc_click_pos_half_block(&self, click_pos: Pos2) -> Vec2 {
+        (click_pos.to_vec2() - self.buffer_rect.left_top().to_vec2())
+            / Vec2::new(self.char_size.x, self.char_size.y / 2.0)
+            + Vec2::new(0.0, self.first_line * 2.0)
+    }
+
     pub fn viewport_top(&self) -> f32 {
         self.char_scroll_positon * self.scale.y
     }

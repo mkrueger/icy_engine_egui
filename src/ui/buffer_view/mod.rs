@@ -211,6 +211,7 @@ impl BufferView {
         if self.destroyed {
             return;
         }
+
         let has_focus = self.calc.has_focus;
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
