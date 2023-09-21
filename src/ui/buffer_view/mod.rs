@@ -82,6 +82,7 @@ pub struct BufferView {
     reference_image_path: Option<PathBuf>,
     drag_start: Option<Vec2>,
     destroyed: bool,
+    log_once: bool,
     pub screenshot: Vec<u8>,
 }
 
@@ -114,6 +115,7 @@ impl BufferView {
             interactive: true,
             screenshot: Vec::new(),
             destroyed: false,
+            log_once: true
         }
     }
 
@@ -209,6 +211,14 @@ impl BufferView {
         options: &TerminalOptions,
     ) {
         if self.destroyed {
+            return;
+        }
+
+        if self.get_buffer().get_width() <= 0 || self.get_buffer().get_height() <= 0 {
+            if self.log_once {
+                self.log_once = false;
+                log::error!("invalid buffer size {}", self.get_buffer().get_size());
+            }
             return;
         }
 
