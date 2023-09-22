@@ -97,7 +97,7 @@ impl BufferView {
     pub fn from_buffer(gl: &glow::Context, buf: Buffer, filter: i32) -> Self {
         let terminal_renderer = terminal_renderer::TerminalRenderer::new(gl);
         let calc = TerminalCalc::default();
-        let sixel_renderer = sixel_renderer::SixelRenderer::new(gl, &buf, &calc, filter);
+        let sixel_renderer = sixel_renderer::SixelRenderer::new(gl);
         let output_renderer = output_renderer::OutputRenderer::new(gl);
         Self {
             edit_state: EditState::from_buffer(buf),
@@ -225,7 +225,7 @@ impl BufferView {
         let has_focus = self.calc.has_focus;
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
-            self.update_contents(gl, options.filter, self.use_fg, self.use_bg);
+            self.update_contents(gl, self.use_fg, self.use_bg);
 
             let w = self.get_buffer().get_font_dimensions().width as f32
                 + if self.get_buffer().use_letter_spacing() {
@@ -251,9 +251,13 @@ impl BufferView {
                 has_focus,
             );
             // draw sixels
-            /*   let render_texture = self
-            .sixel_renderer
-            .render_sixels(gl, self, render_buffer_size, render_texture, &self.output_renderer);*/
+            let render_texture = self.sixel_renderer.render_sixels(
+                gl,
+                self,
+                render_buffer_size,
+                render_texture,
+                &self.output_renderer,
+            );
             gl.enable(glow::SCISSOR_TEST);
 
             self.output_renderer.render_to_screen(
@@ -281,7 +285,7 @@ impl BufferView {
         unsafe {
             gl.disable(glow::SCISSOR_TEST);
 
-            self.update_contents(gl, options.filter, self.use_fg, self.use_bg);
+            self.update_contents(gl, self.use_fg, self.use_bg);
 
             let w = self.get_buffer().get_font_dimensions().width as f32
                 + if self.get_buffer().use_letter_spacing() {
@@ -327,20 +331,10 @@ impl BufferView {
         }
     }
 
-    fn update_contents(
-        &mut self,
-        gl: &glow::Context,
-        scale_filter: i32,
-        use_fg: bool,
-        use_bg: bool,
-    ) {
+    fn update_contents(&mut self, gl: &glow::Context, use_fg: bool, use_bg: bool) {
         let edit_state = &mut self.edit_state;
-        self.sixel_renderer.update_sixels(
-            gl,
-            edit_state.get_buffer_mut(),
-            &self.calc,
-            scale_filter,
-        );
+        self.sixel_renderer
+            .update_sixels(gl, edit_state.get_buffer_mut(), &self.calc);
         self.terminal_renderer
             .update_textures(gl, edit_state, &self.calc, use_fg, use_bg);
 

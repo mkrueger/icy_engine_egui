@@ -14,20 +14,17 @@ use super::BufferView;
 pub struct SixelRenderer {
     sixel_cache: Vec<SixelCacheEntry>,
     sixel_shader: glow::Program,
-    sixel_render_texture: glow::Texture,
     render_buffer_size: Vec2,
 }
 
 impl SixelRenderer {
-    pub fn new(gl: &glow::Context, buf: &Buffer, calc: &TerminalCalc, filter: i32) -> Self {
+    pub fn new(gl: &glow::Context) -> Self {
         unsafe {
             let sixel_shader = compile_shader(gl);
-            let sixel_render_texture = create_sixel_render_texture(gl, buf, calc, filter);
 
             Self {
                 sixel_cache: Vec::new(),
                 sixel_shader,
-                sixel_render_texture,
                 render_buffer_size: Vec2::ZERO,
             }
         }
@@ -36,7 +33,6 @@ impl SixelRenderer {
     pub fn destroy(&self, gl: &glow::Context) {
         unsafe {
             gl.delete_program(self.sixel_shader);
-            gl.delete_texture(self.sixel_render_texture);
         }
     }
 
@@ -48,11 +44,12 @@ impl SixelRenderer {
         mut render_texture: NativeTexture,
         output_renderer: &OutputRenderer,
     ) -> glow::Texture {
-        let mut sixel_render_texture = self.sixel_render_texture;
-        /*  gl.bind_framebuffer(glow::FRAMEBUFFER, Some(output_renderer.framebuffer));
+        let mut sixel_render_texture =
+            create_sixel_render_texture(gl, render_buffer_size, glow::NEAREST as i32);
+        gl.bind_framebuffer(glow::FRAMEBUFFER, Some(output_renderer.framebuffer));
         if gl.check_framebuffer_status(glow::FRAMEBUFFER) != glow::FRAMEBUFFER_COMPLETE {
             log::error!("Framebuffer is not complete");
-        }*/
+        }
 
         for sixel in &self.sixel_cache {
             gl.framebuffer_texture_2d(
@@ -133,18 +130,12 @@ impl SixelRenderer {
             std::mem::swap(&mut render_texture, &mut sixel_render_texture);
         }
         crate::check_gl_error!(gl, "render_sixels");
-
+        gl.delete_texture(sixel_render_texture);
         render_texture
     }
 
     #[allow(clippy::explicit_counter_loop)]
-    pub fn update_sixels(
-        &mut self,
-        gl: &glow::Context,
-        buf: &mut Buffer,
-        calc: &TerminalCalc,
-        scale_filter: i32,
-    ) {
+    pub fn update_sixels(&mut self, gl: &glow::Context, buf: &mut Buffer, calc: &TerminalCalc) {
         let w = buf.get_font_dimensions().width as f32
             + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
 
@@ -154,9 +145,6 @@ impl SixelRenderer {
         );
         if render_buffer_size != self.render_buffer_size {
             self.render_buffer_size = render_buffer_size;
-            unsafe {
-                self.create_sixel_render_texture(gl, render_buffer_size, scale_filter);
-            }
         }
 
         let count: usize = buf.layers.iter().map(|l| l.sixels.len()).sum();
@@ -255,35 +243,6 @@ impl SixelRenderer {
         }
         crate::check_gl_error!(gl, "update_sixels");
     }
-
-    pub(crate) unsafe fn create_sixel_render_texture(
-        &mut self,
-        gl: &glow::Context,
-        render_buffer_size: Vec2,
-        scale_filter: i32,
-    ) {
-        gl.delete_texture(self.sixel_render_texture);
-
-        let sixel_render_texture = gl.create_texture().unwrap();
-
-        gl.bind_texture(glow::TEXTURE_2D, Some(sixel_render_texture));
-        gl.tex_image_2d(
-            glow::TEXTURE_2D,
-            0,
-            glow::RGBA as i32,
-            render_buffer_size.x as i32,
-            render_buffer_size.y as i32,
-            0,
-            glow::RGBA,
-            glow::UNSIGNED_BYTE,
-            None,
-        );
-        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, scale_filter);
-        gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, scale_filter);
-        crate::check_gl_error!(gl, "create_sixel_render_texture 1");
-
-        self.sixel_render_texture = sixel_render_texture;
-    }
 }
 
 pub struct SixelCacheEntry {
@@ -295,20 +254,12 @@ pub struct SixelCacheEntry {
     pub texture: glow::Texture,
 }
 
-unsafe fn create_sixel_render_texture(
+pub(crate) unsafe fn create_sixel_render_texture(
     gl: &glow::Context,
-    buf: &Buffer,
-    calc: &TerminalCalc,
-    filter: i32,
-) -> glow::Texture {
+    render_buffer_size: Vec2,
+    scale_filter: i32,
+) -> NativeTexture {
     let sixel_render_texture = gl.create_texture().unwrap();
-    let w =
-        buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
-
-    let render_buffer_size = Vec2::new(
-        w * calc.forced_width as f32,
-        buf.get_font_dimensions().height as f32 * calc.forced_height as f32,
-    );
 
     gl.bind_texture(glow::TEXTURE_2D, Some(sixel_render_texture));
     gl.tex_image_2d(
@@ -322,24 +273,12 @@ unsafe fn create_sixel_render_texture(
         glow::UNSIGNED_BYTE,
         None,
     );
-    gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, filter);
-    gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, filter);
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D,
-        glow::TEXTURE_WRAP_S,
-        glow::CLAMP_TO_EDGE as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D,
-        glow::TEXTURE_WRAP_T,
-        glow::CLAMP_TO_EDGE as i32,
-    );
-    crate::check_gl_error!(gl, "create_sixel_render_texture");
+    gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, scale_filter);
+    gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, scale_filter);
+    crate::check_gl_error!(gl, "create_sixel_render_texture 1");
 
-    gl.bind_framebuffer(glow::FRAMEBUFFER, None);
     sixel_render_texture
 }
-
 unsafe fn compile_shader(gl: &glow::Context) -> glow::Program {
     let sixel_shader = gl.create_program().expect("Cannot create program");
     let (vertex_shader_source, fragment_shader_source) = (

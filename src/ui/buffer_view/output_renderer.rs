@@ -22,7 +22,7 @@ pub const DATA_TEXTURE_SLOT: u32 = 2;
 
 pub struct OutputRenderer {
     output_shader: glow::Program,
-    framebuffer: glow::Framebuffer,
+    pub framebuffer: glow::Framebuffer,
     pub vertex_array: glow::VertexArray,
     instant: Instant,
 }
