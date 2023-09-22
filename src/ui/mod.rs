@@ -273,8 +273,9 @@ pub fn show_terminal_area(
             ui.painter().add(callback);
 
             if show_line_numbers {
+                let font_size = 12.0 * calc.font_height / 16.0  * calc.scale.y;
                 for y in 0..calc.forced_height {
-                    let font_id = FontId::new(12.0 * calc.scale.y, FontFamily::Proportional);
+                    let font_id = FontId::new(font_size, FontFamily::Proportional);
                     let text: WidgetText = format!("{}", 1 + y + calc.first_line as i32).into();
                     let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
                     let rect = Rect::from_min_size(
@@ -322,7 +323,7 @@ pub fn show_terminal_area(
                 }
 
                 for x in 0..buf_w as i32 {
-                    let font_id = FontId::new(12.0 * calc.scale.y, FontFamily::Proportional);
+                    let font_id = FontId::new(font_size, FontFamily::Proportional);
                     let text: WidgetText = format!("{}", (1 + x) % 10).into();
                     let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
                     let rect = Rect::from_min_size(
