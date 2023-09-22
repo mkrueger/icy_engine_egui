@@ -273,7 +273,9 @@ pub fn show_terminal_area(
             ui.painter().add(callback);
 
             if show_line_numbers {
-                let font_size = 12.0 * calc.font_height / 16.0  * calc.scale.y;
+                let font_size = 12.0 * calc.font_height / 16.0 * calc.scale.y;
+                ui.set_clip_rect(calc.terminal_rect);
+                let painter = ui.painter();
                 for y in 0..calc.forced_height {
                     let font_id = FontId::new(font_size, FontFamily::Proportional);
                     let text: WidgetText = format!("{}", 1 + y + calc.first_line as i32).into();
@@ -297,7 +299,7 @@ pub fn show_terminal_area(
                     } else {
                         ui.visuals().text_color()
                     };
-                    ui.painter().galley_with_color(
+                    painter.galley_with_color(
                         egui::Align2::RIGHT_TOP
                             .align_size_within_rect(galley.size(), rect)
                             .min,
@@ -313,7 +315,7 @@ pub fn show_terminal_area(
                         ),
                         Vec2::new(galley.size().x, calc.char_height),
                     );
-                    ui.painter().galley_with_color(
+                    painter.galley_with_color(
                         egui::Align2::LEFT_TOP
                             .align_size_within_rect(galley.size(), rect)
                             .min,
@@ -345,7 +347,7 @@ pub fn show_terminal_area(
                     } else {
                         ui.visuals().text_color()
                     };
-                    ui.painter().galley_with_color(
+                    painter.galley_with_color(
                         egui::Align2::RIGHT_TOP
                             .align_size_within_rect(galley.size(), rect)
                             .min,
@@ -362,7 +364,7 @@ pub fn show_terminal_area(
                         Vec2::new(galley.size().x, calc.char_height),
                     );
 
-                    ui.painter().galley_with_color(
+                    painter.galley_with_color(
                         egui::Align2::RIGHT_TOP
                             .align_size_within_rect(galley.size(), rect)
                             .min,

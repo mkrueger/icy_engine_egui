@@ -115,7 +115,7 @@ impl BufferView {
             interactive: true,
             screenshot: Vec::new(),
             destroyed: false,
-            log_once: true
+            log_once: true,
         }
     }
 
