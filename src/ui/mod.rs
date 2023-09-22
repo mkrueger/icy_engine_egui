@@ -20,25 +20,33 @@ use crate::{MarkerSettings, MonitorSettings};
 pub struct TerminalCalc {
     /// The height of the buffer in chars
     pub char_height: f32,
+    pub char_width: f32,
 
     /// The height of the visible area in chars
     pub buffer_char_height: f32,
+    pub buffer_char_width: f32,
 
     /// Size of a single terminal pixel in screen pixels
     pub scale: Vec2,
 
     pub char_size: Vec2,
+    pub font_width: f32,
     pub font_height: f32,
+    pub first_column: f32,
     pub first_line: f32,
     pub terminal_rect: egui::Rect,
     pub buffer_rect: egui::Rect,
-    pub scrollbar_rect: egui::Rect,
-    pub char_scroll_positon: f32,
+    pub vert_scrollbar_rect: egui::Rect,
+    pub horiz_scrollbar_rect: egui::Rect,
+    pub char_scroll_positon: Vec2,
+    pub forced_width: i32,
     pub forced_height: i32,
+    pub real_width: i32,
     pub real_height: i32,
 
     /// remainder for scaled mode
-    pub scroll_remainder: f32,
+    pub scroll_remainder_x: f32,
+    pub scroll_remainder_y: f32,
 
     pub set_scroll_position_set_by_user: bool,
 
@@ -51,19 +59,27 @@ impl Default for TerminalCalc {
     fn default() -> Self {
         Self {
             char_height: Default::default(),
+            char_width: Default::default(),
             buffer_char_height: Default::default(),
+            buffer_char_width: Default::default(),
             scale: Default::default(),
             char_size: Default::default(),
+            font_width: Default::default(),
             font_height: Default::default(),
+            first_column: Default::default(),
             first_line: Default::default(),
             terminal_rect: egui::Rect::NOTHING,
             buffer_rect: egui::Rect::NOTHING,
-            scrollbar_rect: egui::Rect::NOTHING,
+            vert_scrollbar_rect: egui::Rect::NOTHING,
+            horiz_scrollbar_rect: egui::Rect::NOTHING,
             char_scroll_positon: Default::default(),
+            forced_width: Default::default(),
             forced_height: Default::default(),
-            scroll_remainder: Default::default(),
+            scroll_remainder_x: Default::default(),
+            scroll_remainder_y: Default::default(),
             set_scroll_position_set_by_user: Default::default(),
             has_focus: Default::default(),
+            real_width: 0,
             real_height: 0,
             screen_shot: None,
         }
@@ -74,17 +90,17 @@ impl TerminalCalc {
     /// Returns the char position of the cursor in the buffer
     pub fn calc_click_pos(&self, click_pos: Pos2) -> Vec2 {
         (click_pos.to_vec2() - self.buffer_rect.left_top().to_vec2()) / self.char_size
-            + Vec2::new(0.0, self.first_line)
+            + Vec2::new(self.first_column, self.first_line)
     }
 
     pub fn calc_click_pos_half_block(&self, click_pos: Pos2) -> Vec2 {
         (click_pos.to_vec2() - self.buffer_rect.left_top().to_vec2())
             / Vec2::new(self.char_size.x, self.char_size.y / 2.0)
-            + Vec2::new(0.0, self.first_line * 2.0)
+            + Vec2::new(self.first_column, self.first_line * 2.0)
     }
 
-    pub fn viewport_top(&self) -> f32 {
-        self.char_scroll_positon * self.scale.y
+    pub fn viewport_top(&self) -> Vec2 {
+        self.char_scroll_positon * self.scale
     }
 }
 
@@ -98,7 +114,8 @@ pub struct TerminalOptions {
     pub fit_width: bool,
     pub render_real_height: bool,
     pub use_terminal_height: bool,
-    pub scroll_offset: Option<f32>,
+    pub scroll_offset_x: Option<f32>,
+    pub scroll_offset_y: Option<f32>,
     pub id: Option<egui::Id>,
 
     pub show_layer_borders: bool,
@@ -122,7 +139,8 @@ impl Default for TerminalOptions {
             use_terminal_height: true,
             show_layer_borders: false,
             show_line_numbers: false,
-            scroll_offset: None,
+            scroll_offset_x: None,
+            scroll_offset_y: None,
             id: None,
             guide: None,
             raster: None,
@@ -137,6 +155,7 @@ pub fn show_terminal_area(
     options: TerminalOptions,
 ) -> (Response, TerminalCalc) {
     let mut forced_height = buffer_view.lock().get_buffer().get_height();
+    let mut forced_width = buffer_view.lock().get_buffer().get_width();
     let mut buf_h = forced_height as f32;
     let real_height = if options.use_terminal_height {
         buffer_view
@@ -147,14 +166,16 @@ pub fn show_terminal_area(
     } else {
         forced_height
     };
-    let buf_w = buffer_view.lock().get_buffer().get_width() as f32;
+    let real_width = forced_width;
+    let mut buf_w = real_width as f32;
 
     let font_dimensions = buffer_view.lock().get_buffer().get_font_dimensions();
     let buffer_view2: Arc<egui::mutex::Mutex<BufferView>> = buffer_view.clone();
 
     let mut scroll = SmoothScroll::new()
         .with_stick_to_bottom(options.stick_to_bottom)
-        .with_scroll_offset(options.scroll_offset);
+        .with_scroll_y_offset(options.scroll_offset_y)
+        .with_scroll_x_offset(options.scroll_offset_x);
 
     if let Some(id) = options.id {
         scroll = scroll.with_id(id);
@@ -181,7 +202,8 @@ pub fn show_terminal_area(
 
             let mut scale_x = size.x / font_width / buf_w;
             let mut scale_y = size.y / font_dimensions.height as f32 / buf_h;
-            let mut scroll_remainder = 0.0;
+            let mut scroll_remainder_x = 0.0;
+            let mut scroll_remainder_y = 0.0;
             let mut forced_scale = options.scale;
             if options.fit_width {
                 forced_scale = Some(Vec2::new(scale_x, scale_x));
@@ -199,13 +221,22 @@ pub fn show_terminal_area(
 
                 let h = size.y / (font_dimensions.height as f32 * scale_y);
                 buf_h = h.ceil().min(real_height as f32);
-
                 if real_height as f32 > buf_h {
                     // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
-                    scroll_remainder = 1.0 - h.fract();
+                    scroll_remainder_y = 1.0 - h.fract();
                 }
 
                 forced_height = (buf_h as i32).min(real_height);
+
+                let w = size.x / (font_dimensions.width as f32 * scale_x);
+                buf_w = w.ceil().min(real_width as f32);
+                if real_width as f32 > buf_w {
+                    // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
+                    scroll_remainder_x = 1.0 - w.fract();
+                }
+
+                forced_width = (buf_w as i32).min(real_width);
+
                 buffer_view2.lock().redraw_view();
             }
 
@@ -218,7 +249,7 @@ pub fn show_terminal_area(
             let rect_h = buf_h * char_size.y;
             let buffer_rect = Rect::from_min_size(
                 Pos2::new(
-                    (rect.left() + (rect.width() - rect_w) / 2.).floor(),
+                    (rect.left() + (rect.width() - rect_w).max(0.0) / 2.).floor(),
                     rect.top() + ((rect.height() - rect_h) / 2.).max(0.0).floor(),
                 ),
                 Vec2::new(rect_w.floor(), rect_h.floor()),
@@ -227,29 +258,39 @@ pub fn show_terminal_area(
             // Set the scrolling height.
             TerminalCalc {
                 char_height: real_height as f32,
+                char_width: real_width as f32,
+                buffer_char_width: buf_w,
                 buffer_char_height: buf_h,
                 scale: Vec2::new(scale_x, scale_y),
                 char_size: Vec2::new(
                     font_width * scale_x,
                     font_dimensions.height as f32 * scale_y,
                 ),
+                font_width: font_dimensions.width as f32,
                 font_height: font_dimensions.height as f32,
+                first_column: 0.,
                 first_line: 0.,
                 terminal_rect: rect,
                 buffer_rect,
-                scrollbar_rect: Rect::NOTHING,
-                char_scroll_positon: 0.,
+                vert_scrollbar_rect: Rect::NOTHING,
+                horiz_scrollbar_rect: Rect::NOTHING,
+                char_scroll_positon: Vec2::ZERO,
                 set_scroll_position_set_by_user: false,
+                forced_width,
                 forced_height,
-                scroll_remainder,
+                scroll_remainder_y,
+                scroll_remainder_x,
+                real_width,
                 real_height,
                 has_focus: false,
                 screen_shot: None,
             }
         },
         |ui, calc, options: &TerminalOptions| {
-            let viewport_top = calc.char_scroll_positon * calc.scale.y;
-            calc.first_line = viewport_top / calc.char_size.y;
+            let viewport_top_y = calc.char_scroll_positon.y * calc.scale.y;
+            calc.first_line = viewport_top_y / calc.char_size.y;
+            let viewport_top_x = calc.char_scroll_positon.x * calc.scale.x;
+            calc.first_column = viewport_top_x / calc.char_size.x;
 
             /*
             {
@@ -282,9 +323,12 @@ pub fn show_terminal_area(
                     let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
                     let rect = Rect::from_min_size(
                         Pos2::new(
-                            calc.buffer_rect.left() - galley.size().x - 4.0,
+                            calc.buffer_rect.left()
+                                - galley.size().x
+                                - 4.0
+                                - (calc.char_scroll_positon.x % calc.font_height) * calc.scale.y,
                             calc.buffer_rect.top() + y as f32 * calc.char_size.y
-                                - (calc.char_scroll_positon % calc.font_height) * calc.scale.y,
+                                - (calc.char_scroll_positon.y % calc.font_height) * calc.scale.y,
                         ),
                         Vec2::new(galley.size().x, calc.char_height),
                     );
@@ -309,9 +353,12 @@ pub fn show_terminal_area(
 
                     let rect = Rect::from_min_size(
                         Pos2::new(
-                            calc.buffer_rect.right() + 4.0,
+                            calc.buffer_rect.left()
+                                + calc.buffer_char_width * calc.char_size.x
+                                + 4.0
+                                - (calc.char_scroll_positon.x % calc.font_width) * calc.scale.x,
                             calc.buffer_rect.top() + y as f32 * calc.char_size.y
-                                - (calc.char_scroll_positon % calc.font_height) * calc.scale.y,
+                                - (calc.char_scroll_positon.y % calc.font_height) * calc.scale.y,
                         ),
                         Vec2::new(galley.size().x, calc.char_height),
                     );
@@ -323,7 +370,7 @@ pub fn show_terminal_area(
                         color,
                     );
                 }
-
+                let buf_w = calc.buffer_char_width;
                 for x in 0..buf_w as i32 {
                     let font_id = FontId::new(font_size, FontFamily::Proportional);
                     let text: WidgetText = format!("{}", (1 + x) % 10).into();

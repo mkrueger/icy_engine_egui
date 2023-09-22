@@ -242,7 +242,6 @@ impl OutputRenderer {
             terminal_rect.width() * info.pixels_per_point,
             terminal_rect.height() * info.pixels_per_point,
         );
-
         gl.uniform_4_f32(
             gl.get_uniform_location(self.output_shader, "u_buffer_rect")
                 .as_ref(),
@@ -254,7 +253,7 @@ impl OutputRenderer {
                 / (terminal_rect.height() * info.pixels_per_point),
         );
 
-        let y = buffer_view.calc.buffer_rect.top() - buffer_view.calc.char_scroll_positon;
+        let y = buffer_view.calc.buffer_rect.top() - buffer_view.calc.char_scroll_positon.y;
         let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point;
         gl.uniform_2_f32(
             gl.get_uniform_location(self.output_shader, "u_scroll_position")
@@ -337,8 +336,8 @@ impl OutputRenderer {
         if let Some(layer) = buffer_view.edit_state.get_cur_layer() {
             if options.show_layer_borders {
                 if let Some(po) = layer.get_preview_offset() {
-                    let layer_x = po.x as f32 * buffer_view.calc.char_size.x;
-                    let layer_y = po.y as f32 * buffer_view.calc.char_size.y - top_pos;
+                    let layer_x = po.x as f32 * buffer_view.calc.char_size.x - top_pos.x;
+                    let layer_y = po.y as f32 * buffer_view.calc.char_size.y - top_pos.y;
                     let layer_w = layer.get_width() as f32 * buffer_view.calc.char_size.x;
                     let layer_h = layer.get_height() as f32 * buffer_view.calc.char_size.y;
                     let x = buffer_rect.left() + layer_x;
@@ -385,9 +384,10 @@ impl OutputRenderer {
                     );
                 }
 
-                let layer_x = layer.get_base_offset().x as f32 * buffer_view.calc.char_size.x;
+                let layer_x =
+                    layer.get_base_offset().x as f32 * buffer_view.calc.char_size.x - top_pos.x;
                 let layer_y =
-                    layer.get_base_offset().y as f32 * buffer_view.calc.char_size.y - top_pos;
+                    layer.get_base_offset().y as f32 * buffer_view.calc.char_size.y - top_pos.y;
                 let layer_w = layer.get_width() as f32 * buffer_view.calc.char_size.x;
                 let layer_h = layer.get_height() as f32 * buffer_view.calc.char_size.y;
                 let x = buffer_rect.left() + layer_x;
@@ -452,18 +452,14 @@ impl OutputRenderer {
                         0.0,
                     );
                 } else {
-                    let border = 0.0;
                     let layer = selection.as_rectangle();
-                    let layer_x = layer.left() as f32 * buffer_view.calc.char_size.x;
-                    let layer_y =
-                        layer.top() as f32 * buffer_view.calc.char_size.y - border - top_pos;
-                    let layer_w =
-                        layer.get_width() as f32 * buffer_view.calc.char_size.x + border * 2.0;
-                    let layer_h =
-                        layer.get_height() as f32 * buffer_view.calc.char_size.y + border * 2.0;
-                    let x = buffer_rect.left() + layer_x - border;
+                    let layer_x = layer.left() as f32 * buffer_view.calc.char_size.x - top_pos.x;
+                    let layer_y = layer.top() as f32 * buffer_view.calc.char_size.y - top_pos.y;
+                    let layer_w = layer.get_width() as f32 * buffer_view.calc.char_size.x;
+                    let layer_h = layer.get_height() as f32 * buffer_view.calc.char_size.y;
+                    let x = buffer_rect.left() + layer_x;
                     let y = buffer_rect.top() + layer_y;
-                    let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point - border;
+                    let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point;
                     gl.uniform_4_f32(
                         gl.get_uniform_location(self.output_shader, "u_selection_rectangle")
                             .as_ref(),

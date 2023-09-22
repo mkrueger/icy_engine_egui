@@ -3,7 +3,6 @@ use glow::HasContext as _;
 use glow::NativeTexture;
 use icy_engine::Buffer;
 use icy_engine::Position;
-use icy_engine::TextPane;
 
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
@@ -112,10 +111,11 @@ impl SixelRenderer {
                     0.0
                 };
 
-            let x = sixel.pos.x as f32 * w;
+            let x = sixel.pos.x as f32 * w
+                - (buffer_view.calc.viewport_top().x / buffer_view.calc.char_size.x * w);
             let y = sixel.pos.y as f32
                 * buffer_view.get_buffer().get_font_dimensions().height as f32
-                - (buffer_view.calc.viewport_top() / buffer_view.calc.char_size.y * fh);
+                - (buffer_view.calc.viewport_top().y / buffer_view.calc.char_size.y * fh);
 
             let w = sixel.size.width as f32;
             let h = sixel.size.height as f32;
@@ -149,7 +149,7 @@ impl SixelRenderer {
             + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
 
         let render_buffer_size = Vec2::new(
-            w * buf.get_width() as f32,
+            w * calc.forced_width as f32,
             buf.get_font_dimensions().height as f32 * calc.forced_height as f32,
         );
         if render_buffer_size != self.render_buffer_size {
@@ -306,7 +306,7 @@ unsafe fn create_sixel_render_texture(
         buf.get_font_dimensions().width as f32 + if buf.use_letter_spacing() { 1.0 } else { 0.0 };
 
     let render_buffer_size = Vec2::new(
-        w * buf.get_width() as f32,
+        w * calc.forced_width as f32,
         buf.get_font_dimensions().height as f32 * calc.forced_height as f32,
     );
 

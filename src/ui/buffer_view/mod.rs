@@ -235,7 +235,7 @@ impl BufferView {
                 };
 
             let render_buffer_size = Vec2::new(
-                w * self.get_buffer().get_width() as f32,
+                w * self.calc.forced_width as f32,
                 self.get_buffer().get_font_dimensions().height as f32
                     * self.calc.forced_height as f32,
             );
@@ -291,7 +291,7 @@ impl BufferView {
                 };
 
             let render_buffer_size = Vec2::new(
-                w * self.get_buffer().get_width() as f32,
+                w * self.calc.forced_width as f32,
                 self.get_buffer().get_font_dimensions().height as f32
                     * self.calc.forced_height as f32,
             );

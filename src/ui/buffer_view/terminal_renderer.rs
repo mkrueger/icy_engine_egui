@@ -301,21 +301,23 @@ impl TerminalRenderer {
         use_bg: bool,
     ) {
         let buf = edit_state.get_buffer();
-        let first_line = (calc.viewport_top() / calc.char_size.y) as i32;
+        let first_column = (calc.viewport_top().x / calc.char_size.x) as i32;
+        let first_row = (calc.viewport_top().y / calc.char_size.y) as i32;
         let real_height = calc.real_height;
+        let buf_w = calc.forced_width;
         let buf_h = calc.forced_height;
 
         let max_lines = max(0, real_height - buf_h) as i32;
-        let scroll_back_line = max(0, max_lines - first_line);
+        let scroll_back_line = max(0, max_lines - first_row);
         let first_line = 0.max(real_height.saturating_sub(calc.forced_height));
-        let mut buffer_data = Vec::with_capacity((2 * buf.get_width() * 4 * buf_h) as usize);
+        let mut buffer_data = Vec::with_capacity((2 * (buf_w + 1) * 4 * buf_h) as usize);
         let colors = buf.palette.len().max(1) as u32 - 1;
         let mut y: i32 = 0;
         while y <= buf_h {
             let mut is_double_height = false;
 
-            for x in 0..buf.get_width() {
-                let mut ch = buf.get_char((x, first_line - scroll_back_line + y));
+            for x in 0..=buf_w {
+                let mut ch = buf.get_char((first_column + x, first_line - scroll_back_line + y));
                 if ch.attribute.is_double_height() {
                     is_double_height = true;
                 }
@@ -352,8 +354,8 @@ impl TerminalRenderer {
             }
 
             if is_double_height {
-                for x in 0..buf.get_width() {
-                    let ch = buf.get_char((x, first_line - scroll_back_line + y));
+                for x in 0..=buf_w {
+                    let ch = buf.get_char((first_column + x, first_line - scroll_back_line + y));
 
                     if ch.attribute.is_double_height() {
                         buffer_data.push(ch.ch as u8);
@@ -392,7 +394,7 @@ impl TerminalRenderer {
         while y <= buf_h {
             let mut is_double_height = false;
 
-            for x in 0..buf.get_width() {
+            for x in 0..=buf_w {
                 let ch = buf.get_char((x, first_line - scroll_back_line + y));
                 let is_selected =
                     edit_state.get_is_mask_selected((x, first_line - scroll_back_line + y));
@@ -432,7 +434,7 @@ impl TerminalRenderer {
             }
 
             if is_double_height {
-                for x in 0..buf.get_width() {
+                for x in 0..=buf_w {
                     let ch = buf.get_char((x, first_line - scroll_back_line + y));
                     let is_selected =
                         edit_state.get_is_selected((x, first_line - scroll_back_line + y));
@@ -485,7 +487,7 @@ impl TerminalRenderer {
                 glow::TEXTURE_2D_ARRAY,
                 0,
                 glow::RGBA as i32,
-                buf.get_width(),
+                buf_w + 1,
                 buf_h + 1,
                 2,
                 0,
@@ -542,7 +544,14 @@ impl TerminalRenderer {
         has_focus: bool,
     ) {
         let fontdim = buffer_view.get_buffer().get_font_dimensions();
-        let fh = fontdim.height as f32;
+        let font_height = fontdim.height as f32;
+        let font_width = fontdim.width as f32
+            + if buffer_view.get_buffer().use_letter_spacing() {
+                1.0
+            } else {
+                0.0
+            };
+
         gl.use_program(Some(self.terminal_shader));
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_resolution")
@@ -554,39 +563,36 @@ impl TerminalRenderer {
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_output_resolution")
                 .as_ref(),
-            render_buffer_size.x,
-            render_buffer_size.y + fh,
+            render_buffer_size.x + font_width,
+            render_buffer_size.y + font_height,
         );
         let viewport_top = buffer_view.calc.viewport_top();
         let top_pos = viewport_top.floor();
+        let c_width = buffer_view.calc.char_size.x;
         let c_height = buffer_view.calc.char_size.y;
-        let scroll_offset = (((viewport_top / c_height) * fh) % fh).floor();
+        let scroll_offset_x = -(((viewport_top.x / c_width) * font_width) % font_width).floor();
+        let scroll_offset_y = (((viewport_top.y / c_height) * font_height) % font_height).floor();
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_position")
                 .as_ref(),
-            0.0,
-            scroll_offset - fh,
+            scroll_offset_x,
+            scroll_offset_y - font_height,
         );
 
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_scroll_pos")
                 .as_ref(),
-            0.0,
-            (viewport_top / c_height) * fh,
+            (viewport_top.x / c_width) * font_height,
+            (viewport_top.y / c_height) * font_height,
         );
 
-        let font_width = fontdim.width as f32
-            + if buffer_view.get_buffer().use_letter_spacing() {
-                1.0
-            } else {
-                0.0
-            };
         let mut caret_pos = buffer_view.get_caret().get_position();
         if let Some(layer) = buffer_view.edit_state.get_cur_layer() {
             caret_pos += layer.get_offset();
         }
 
-        let caret_x = caret_pos.x as f32 * font_width;
+        let caret_x = caret_pos.x as f32 * font_width
+            - (top_pos.x / buffer_view.calc.char_size.x * font_width);
 
         let caret_h = if buffer_view.get_caret().insert_mode {
             fontdim.height as f32 / 2.0
@@ -596,8 +602,8 @@ impl TerminalRenderer {
 
         let caret_y = caret_pos.y as f32 * fontdim.height as f32 + fontdim.height as f32
             - caret_h
-            - (top_pos / buffer_view.calc.char_size.y * fh)
-            + scroll_offset;
+            - (top_pos.y / buffer_view.calc.char_size.y * font_height)
+            + scroll_offset_y;
         let caret_w = if self.caret_blink.is_on() && buffer_view.get_caret().is_visible && has_focus
         {
             font_width
@@ -607,10 +613,10 @@ impl TerminalRenderer {
         gl.uniform_4_f32(
             gl.get_uniform_location(self.terminal_shader, "u_caret_rectangle")
                 .as_ref(),
-            caret_x / render_buffer_size.x,
-            caret_y / (render_buffer_size.y + fh),
-            (caret_x + caret_w) / render_buffer_size.x,
-            (caret_y + caret_h) / (render_buffer_size.y + fh),
+            caret_x / (render_buffer_size.x + font_width),
+            caret_y / (render_buffer_size.y + font_height),
+            (caret_x + caret_w) / (render_buffer_size.x + font_width),
+            (caret_y + caret_h) / (render_buffer_size.y + font_height),
         );
 
         gl.uniform_1_f32(
@@ -622,11 +628,10 @@ impl TerminalRenderer {
                 0.0
             },
         );
-
         gl.uniform_2_f32(
             gl.get_uniform_location(self.terminal_shader, "u_terminal_size")
                 .as_ref(),
-            buffer_view.get_buffer().get_width() as f32 - 0.0001,
+            buffer_view.calc.forced_width as f32 - 0.0001,
             buffer_view.calc.forced_height as f32 - 0.0001,
         );
 
