@@ -87,14 +87,14 @@ pub struct BufferView {
 }
 
 impl BufferView {
-    pub fn new(gl: &glow::Context, filter: i32) -> Self {
+    pub fn new(gl: &glow::Context) -> Self {
         let mut buf = Buffer::create((80, 25));
         buf.is_terminal_buffer = true;
 
-        BufferView::from_buffer(gl, buf, filter)
+        BufferView::from_buffer(gl, buf)
     }
 
-    pub fn from_buffer(gl: &glow::Context, buf: Buffer, filter: i32) -> Self {
+    pub fn from_buffer(gl: &glow::Context, buf: Buffer) -> Self {
         let terminal_renderer = terminal_renderer::TerminalRenderer::new(gl);
         let calc = TerminalCalc::default();
         let sixel_renderer = sixel_renderer::SixelRenderer::new(gl);

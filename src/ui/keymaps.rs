@@ -9,11 +9,13 @@ pub static ANSI_KEY_MAP: &[(u32, &[u8])] = &[
     (Key::Escape as u32, &[0x1B]),
     (Key::Home as u32, b"\x1b[H"),
     (Key::Insert as u32, b"\x1b[@"),
+    (Key::Insert as u32 | SHIFT_MOD, b" "),
     (Key::Backspace as u32, &[8]),
     (Key::Enter as u32, &[b'\r']),
     (Key::Tab as u32, &[9]),
     (Key::Tab as u32 | SHIFT_MOD, b"\x1b[Z"),
     (Key::Delete as u32, &[127]),
+    (Key::Delete as u32 | SHIFT_MOD, &[127]),
     (Key::Insert as u32, b"\x1b[@"),
     (Key::End as u32, b"\x1b[K"),
     (Key::PageUp as u32, b"\x1b[V"),
@@ -70,6 +72,10 @@ pub static ANSI_KEY_MAP: &[(u32, &[u8])] = &[
     (Key::Num5 as u32 | CTRL_MOD, &[0x1D]),
     (Key::Num6 as u32 | CTRL_MOD, &[0x1E]),
     (Key::Num7 as u32 | CTRL_MOD, &[0x1F]),
+    //    (Key::Backslash as u32 | CTRL_MOD, &[0x1C]),
+    //    (Key::OpenBacket as u32 | CTRL_MOD, &[0x1B]),
+    //    (Key::CloseBacket as u32 | CTRL_MOD, &[0x1D]),
+    (Key::Minus as u32 | CTRL_MOD, &[0x1F]),
 ];
 
 pub static C64_KEY_MAP: &[(u32, &[u8])] = &[
