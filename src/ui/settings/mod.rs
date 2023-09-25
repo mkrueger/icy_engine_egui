@@ -2,15 +2,15 @@ use egui::RichText;
 use i18n_embed_fl::fl;
 use lazy_static::lazy_static;
 
-use crate::MonitorSettings;
+use crate::{MonitorSettings, ui::LANGUAGE_LOADER};
 lazy_static! {
     static ref MONITOR_NAMES: [String; 6] = [
-        fl!(crate::LANGUAGE_LOADER, "settings-monitor-color"),
-        fl!(crate::LANGUAGE_LOADER, "settings-monitor-grayscale"),
-        fl!(crate::LANGUAGE_LOADER, "settings-monitor-amber"),
-        fl!(crate::LANGUAGE_LOADER, "settings-monitor-green"),
-        fl!(crate::LANGUAGE_LOADER, "settings-monitor-apple2"),
-        fl!(crate::LANGUAGE_LOADER, "settings-monitor-futuristic"),
+        fl!(LANGUAGE_LOADER, "settings-monitor-color"),
+        fl!(LANGUAGE_LOADER, "settings-monitor-grayscale"),
+        fl!(LANGUAGE_LOADER, "settings-monitor-amber"),
+        fl!(LANGUAGE_LOADER, "settings-monitor-green"),
+        fl!(LANGUAGE_LOADER, "settings-monitor-apple2"),
+        fl!(LANGUAGE_LOADER, "settings-monitor-futuristic"),
     ];
 }
 
@@ -23,7 +23,7 @@ pub fn show_monitor_settings(
     let mut monitor_settings = old_settings.clone();
 
     let cur_color = monitor_settings.monitor_type;
-    egui::ComboBox::from_label(fl!(crate::LANGUAGE_LOADER, "settings-monitor-type"))
+    egui::ComboBox::from_label(fl!(LANGUAGE_LOADER, "settings-monitor-type"))
         .width(150.)
         .selected_text(&MONITOR_NAMES[cur_color])
         .show_ui(ui, |ui| {
@@ -41,7 +41,7 @@ pub fn show_monitor_settings(
     ui.checkbox(
         &mut monitor_settings.use_filter,
         fl!(
-            crate::LANGUAGE_LOADER,
+            LANGUAGE_LOADER,
             "settings-monitor-use-crt-filter-checkbox"
         ),
     );
@@ -50,19 +50,19 @@ pub fn show_monitor_settings(
         ui.vertical_centered_justified(|ui| {
             ui.add(
                 egui::Slider::new(&mut monitor_settings.brightness, 0.0..=100.0)
-                    .text(fl!(crate::LANGUAGE_LOADER, "settings-monitor-brightness")),
+                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-brightness")),
             );
             ui.add(
                 egui::Slider::new(&mut monitor_settings.contrast, 0.0..=100.0)
-                    .text(fl!(crate::LANGUAGE_LOADER, "settings-monitor-contrast")),
+                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-contrast")),
             );
             ui.add(
                 egui::Slider::new(&mut monitor_settings.saturation, 0.0..=100.0)
-                    .text(fl!(crate::LANGUAGE_LOADER, "settings-monitor-saturation")),
+                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-saturation")),
             );
             ui.add(
                 egui::Slider::new(&mut monitor_settings.gamma, 0.0..=100.0)
-                    .text(fl!(crate::LANGUAGE_LOADER, "settings-monitor-gamma")),
+                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-gamma")),
             );
             /*  ui.add_enabled(
                 use_filter,
@@ -74,15 +74,15 @@ pub fn show_monitor_settings(
             );*/
             ui.add(
                 egui::Slider::new(&mut monitor_settings.blur, 0.0..=100.0)
-                    .text(fl!(crate::LANGUAGE_LOADER, "settings-monitor-blur")),
+                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-blur")),
             );
             ui.add(
                 egui::Slider::new(&mut monitor_settings.curvature, 0.0..=100.0)
-                    .text(fl!(crate::LANGUAGE_LOADER, "settings-monitor-curve")),
+                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-curve")),
             );
             ui.add(
                 egui::Slider::new(&mut monitor_settings.scanlines, 0.0..=100.0)
-                    .text(fl!(crate::LANGUAGE_LOADER, "settings-monitor-scanlines")),
+                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-scanlines")),
             );
         });
     });

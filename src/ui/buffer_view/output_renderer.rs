@@ -304,12 +304,12 @@ impl OutputRenderer {
                 .as_ref(),
             options.marker_settings.raster_alpha,
         );
+
+        let (r, g, b) =options.marker_settings.raster_color.get_rgb_f32();
+
         gl.uniform_3_f32(
             gl.get_uniform_location(self.output_shader, "u_raster_color")
-                .as_ref(),
-            options.marker_settings.raster_color.r() as f32 / 255.0,
-            options.marker_settings.raster_color.g() as f32 / 255.0,
-            options.marker_settings.raster_color.b() as f32 / 255.0,
+                .as_ref(),r,g,b
         );
 
         gl.uniform_1_f32(
@@ -317,20 +317,20 @@ impl OutputRenderer {
                 .as_ref(),
             options.marker_settings.guide_alpha,
         );
+
+        let (r, g, b) = options.marker_settings.guide_color.get_rgb_f32();
+
         gl.uniform_3_f32(
             gl.get_uniform_location(self.output_shader, "u_guide_color")
                 .as_ref(),
-            options.marker_settings.guide_color.r() as f32 / 255.0,
-            options.marker_settings.guide_color.g() as f32 / 255.0,
-            options.marker_settings.guide_color.b() as f32 / 255.0,
+                r,g,b,
         );
+        let (r, g, b) = options.marker_settings.border_color.get_rgb_f32();
 
         gl.uniform_3_f32(
             gl.get_uniform_location(self.output_shader, "u_border_color")
                 .as_ref(),
-            options.marker_settings.border_color.r() as f32 / 255.0,
-            options.marker_settings.border_color.g() as f32 / 255.0,
-            options.marker_settings.border_color.b() as f32 / 255.0,
+                r, g, b
         );
 
         if let Some(layer) = buffer_view.edit_state.get_cur_layer() {

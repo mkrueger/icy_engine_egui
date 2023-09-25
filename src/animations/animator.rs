@@ -1,15 +1,17 @@
 use std::{
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 
-use eframe::epaint::mutex::Mutex;
 use icy_engine::{AttributedChar, Buffer, BufferParser, Caret, Position, TextPane};
 use mlua::{Lua, UserData, Value};
 use regex::Regex;
 use web_time::Instant;
 
-use crate::{BufferView, MonitorSettings};
+#[cfg(feature = "ui")]
+use crate::BufferView;
+
+use crate::MonitorSettings;
 
 pub struct Animator {
     pub scene: Option<Buffer>,
@@ -488,26 +490,26 @@ impl Animator {
                 "next_frame",
                 lua.create_function_mut(move |lua, buffer: Value<'_>| {
                     if let Value::UserData(data) = &buffer {
-                        lua.globals().set("cur_frame", a.lock().frames.len() + 2)?;
+                        lua.globals().set("cur_frame", a.lock().unwrap().frames.len() + 2)?;
                         let monitor_type: usize = lua.globals().get("monitor_type")?;
-                        a.lock().current_monitor_settings.monitor_type = monitor_type;
+                        a.lock().unwrap().current_monitor_settings.monitor_type = monitor_type;
 
-                        a.lock().current_monitor_settings.gamma =
+                        a.lock().unwrap().current_monitor_settings.gamma =
                             lua.globals().get("monitor_gamma")?;
-                        a.lock().current_monitor_settings.contrast =
+                        a.lock().unwrap().current_monitor_settings.contrast =
                             lua.globals().get("monitor_contrast")?;
-                        a.lock().current_monitor_settings.saturation =
+                        a.lock().unwrap().current_monitor_settings.saturation =
                             lua.globals().get("monitor_saturation")?;
-                        a.lock().current_monitor_settings.brightness =
+                        a.lock().unwrap().current_monitor_settings.brightness =
                             lua.globals().get("monitor_brightness")?;
-                        a.lock().current_monitor_settings.blur =
+                        a.lock().unwrap().current_monitor_settings.blur =
                             lua.globals().get("monitor_blur")?;
-                        a.lock().current_monitor_settings.curvature =
+                        a.lock().unwrap().current_monitor_settings.curvature =
                             lua.globals().get("monitor_curvature")?;
-                        a.lock().current_monitor_settings.scanlines =
+                        a.lock().unwrap().current_monitor_settings.scanlines =
                             lua.globals().get("monitor_scanlines")?;
 
-                        a.lock().lua_next_frame(&data.borrow::<LuaBuffer>()?.buffer)
+                        a.lock().unwrap().lua_next_frame(&data.borrow::<LuaBuffer>()?.buffer)
                     } else {
                         Err(mlua::Error::RuntimeError(format!(
                             "UserData parameter required, got: {:?}",
@@ -520,7 +522,7 @@ impl Animator {
 
         globals.set("cur_frame", 1)?;
         {
-            let lock = animator.lock();
+            let lock = animator.lock().unwrap();
             globals.set("monitor_type", lock.current_monitor_settings.monitor_type)?;
             globals.set("monitor_gamma", lock.current_monitor_settings.gamma)?;
             globals.set("monitor_contrast", lock.current_monitor_settings.contrast)?;
@@ -570,6 +572,7 @@ impl Animator {
         self.speed = speed;
     }
 
+    #[cfg(feature = "ui")]
     pub fn update_frame(
         &mut self,
         buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>,
@@ -582,6 +585,7 @@ impl Animator {
         self.current_monitor_settings.clone()
     }
 
+    #[cfg(feature = "ui")]
     pub fn start_playback(
         &mut self,
         buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>,
@@ -592,6 +596,7 @@ impl Animator {
         self.display_frame(buffer_view)
     }
 
+    #[cfg(feature = "ui")]
     pub fn display_frame(
         &self,
         buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>,
@@ -614,6 +619,7 @@ impl Animator {
         }
     }
 
+    #[cfg(feature = "ui")]
     fn next_frame(&mut self) {
         self.cur_frame += 1;
         if self.cur_frame >= self.frames.len() {

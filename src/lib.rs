@@ -1,7 +1,10 @@
 pub mod animations;
+use icy_engine::Color;
+use serde::{Serialize, Deserialize};
+
+#[cfg(feature = "ui")]
 pub mod ui;
-use egui::Color32;
-use serde::{Deserialize, Serialize};
+#[cfg(feature = "ui")]
 pub use ui::*;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -20,21 +23,21 @@ pub struct MonitorSettings {
     pub scanlines: f32,
 
     pub background_effect: BackgroundEffect,
-    pub selection_fg: Color32,
-    pub selection_bg: Color32,
+    pub selection_fg: Color,
+    pub selection_bg: Color,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MarkerSettings {
-    pub border_color: Color32,
+    pub border_color: Color,
 
     pub reference_image_alpha: f32,
 
     pub raster_alpha: f32,
-    pub raster_color: Color32,
+    pub raster_color: Color,
 
     pub guide_alpha: f32,
-    pub guide_color: Color32,
+    pub guide_color: Color,
 }
 
 impl Default for MarkerSettings {
@@ -42,11 +45,11 @@ impl Default for MarkerSettings {
         Self {
             reference_image_alpha: 0.2,
             raster_alpha: 0.2,
-            raster_color: Color32::from_rgb(0xAB, 0xAB, 0xAB),
+            raster_color: Color::new(0xAB, 0xAB, 0xAB),
             guide_alpha: 0.2,
-            guide_color: Color32::from_rgb(0xAB, 0xAB, 0xAB),
+            guide_color: Color::new(0xAB, 0xAB, 0xAB),
 
-            border_color: Color32::from_rgb(64, 69, 74),
+            border_color: Color::new(64, 69, 74),
         }
     }
 }
@@ -74,8 +77,8 @@ impl Default for MonitorSettings {
             curvature: 10.,
             scanlines: 10.,
             background_effect: BackgroundEffect::None,
-            selection_fg: Color32::from_rgb(0xAB, 0x00, 0xAB),
-            selection_bg: Color32::from_rgb(0xAB, 0xAB, 0xAB),
+            selection_fg: Color::new(0xAB, 0x00, 0xAB),
+            selection_bg: Color::new(0xAB, 0xAB, 0xAB),
         }
     }
 }
@@ -94,26 +97,8 @@ impl MonitorSettings {
             curvature: 0.,
             scanlines: 0.,
             background_effect: BackgroundEffect::None,
-            selection_fg: Color32::from_rgb(0xAB, 0x00, 0xAB),
-            selection_bg: Color32::from_rgb(0xAB, 0xAB, 0xAB),
+            selection_fg: Color::new(0xAB, 0x00, 0xAB),
+            selection_bg: Color::new(0xAB, 0xAB, 0xAB),
         }
     }
 }
-
-use i18n_embed::{
-    fluent::{fluent_language_loader, FluentLanguageLoader},
-    DesktopLanguageRequester,
-};
-use rust_embed::RustEmbed;
-
-#[derive(RustEmbed)]
-#[folder = "i18n"] // path to the compiled localization resources
-struct Localizations;
-
-use once_cell::sync::Lazy;
-static LANGUAGE_LOADER: Lazy<FluentLanguageLoader> = Lazy::new(|| {
-    let loader = fluent_language_loader!();
-    let requested_languages = DesktopLanguageRequester::requested_languages();
-    let _result = i18n_embed::select(&loader, &Localizations, &requested_languages);
-    loader
-});

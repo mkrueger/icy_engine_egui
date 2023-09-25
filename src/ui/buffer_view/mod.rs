@@ -353,6 +353,7 @@ impl BufferView {
     pub fn set_buffer(&mut self, buf: Buffer) {
         self.edit_state.set_buffer(buf);
         self.redraw_font();
+        self.redraw_view();
     }
 
     pub fn reset_caret_blink(&mut self) {

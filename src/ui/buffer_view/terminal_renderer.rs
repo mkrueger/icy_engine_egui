@@ -680,22 +680,20 @@ impl TerminalRenderer {
                 .as_ref(),
             terminal_options.marker_settings.reference_image_alpha,
         );
+        let (r, g, b) = terminal_options.monitor_settings.selection_fg.get_rgb_f32();
 
         gl.uniform_4_f32(
             gl.get_uniform_location(self.terminal_shader, "u_selection_fg")
                 .as_ref(),
-            terminal_options.monitor_settings.selection_fg.r() as f32 / 255.0,
-            terminal_options.monitor_settings.selection_fg.g() as f32 / 255.0,
-            terminal_options.monitor_settings.selection_fg.b() as f32 / 255.0,
-            terminal_options.monitor_settings.selection_fg.a() as f32 / 255.0,
+            r,g,b, 1.0,
         );
+
+        let (r, g, b) = terminal_options.monitor_settings.selection_bg.get_rgb_f32();
+
         gl.uniform_4_f32(
             gl.get_uniform_location(self.terminal_shader, "u_selection_bg")
                 .as_ref(),
-            terminal_options.monitor_settings.selection_bg.r() as f32 / 255.0,
-            terminal_options.monitor_settings.selection_bg.g() as f32 / 255.0,
-            terminal_options.monitor_settings.selection_bg.b() as f32 / 255.0,
-            terminal_options.monitor_settings.selection_bg.a() as f32 / 255.0,
+                r, g,b , 1.0,
         );
 
         gl.uniform_1_f32(
