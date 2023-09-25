@@ -615,6 +615,8 @@ impl TerminalRenderer {
         } else {
             0.0
         };
+        ///println!("has focus:{} visible: {}, w:{}", has_focus, buffer_view.get_caret().is_visible, caret_w);
+
         gl.uniform_4_f32(
             gl.get_uniform_location(self.terminal_shader, "u_caret_rectangle")
                 .as_ref(),
