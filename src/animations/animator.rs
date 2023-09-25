@@ -6,6 +6,8 @@ use std::{
 use icy_engine::{AttributedChar, Buffer, BufferParser, Caret, Position, TextPane};
 use mlua::{Lua, UserData, Value};
 use regex::Regex;
+
+#[cfg(feature = "ui")]
 use web_time::Instant;
 
 #[cfg(feature = "ui")]
@@ -24,6 +26,8 @@ pub struct Animator {
     is_loop: bool,
     is_playing: bool,
     speed: u32,
+
+    #[cfg(feature = "ui")]
     instant: Instant,
 }
 const DEFAULT_SPEEED: u32 = 100; // like animated gifs
@@ -39,6 +43,7 @@ impl Default for Animator {
             is_loop: Default::default(),
             is_playing: Default::default(),
             speed: DEFAULT_SPEEED,
+            #[cfg(feature = "ui")]
             instant: Instant::now(),
         }
     }
