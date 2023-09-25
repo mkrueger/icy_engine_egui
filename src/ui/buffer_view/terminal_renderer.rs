@@ -1,4 +1,5 @@
 #![allow(clippy::float_cmp)]
+use std::backtrace::Backtrace;
 use std::cmp::max;
 
 use egui::epaint::ahash::HashMap;
@@ -39,6 +40,8 @@ pub struct TerminalRenderer {
     redraw_view: bool,
     redraw_palette: bool,
     redraw_font: bool,
+
+    last_scroll_position: Vec2,
 
     caret_blink: Blink,
     character_blink: Blink,
@@ -83,6 +86,7 @@ impl TerminalRenderer {
                 character_blink: Blink::new((1000.0 / 1.8) as u128),
                 reference_image_texture,
                 start_time: Instant::now(),
+                last_scroll_position: Vec2::ZERO,
             }
         }
     }
@@ -128,7 +132,12 @@ impl TerminalRenderer {
             self.update_font_texture(gl, edit_state.get_buffer());
         }
 
-        if self.redraw_view {
+        if self.redraw_view
+            || calc.char_scroll_positon != self.last_scroll_position
+            || edit_state.is_buffer_dirty
+        {
+            self.last_scroll_position = calc.char_scroll_positon;
+            edit_state.is_buffer_dirty = false;
             self.redraw_view = false;
             self.update_terminal_texture(gl, edit_state, calc, use_fg, use_bg);
         }
@@ -151,12 +160,10 @@ impl TerminalRenderer {
         }
     }
 
-    // Redraw whole terminal on caret or character blink update.
     fn check_blink_timers(&mut self) {
         let cur_ms = self.start_time.elapsed().as_millis();
-        if self.caret_blink.update(cur_ms) || self.character_blink.update(cur_ms) {
-            self.redraw_terminal();
-        }
+        self.caret_blink.update(cur_ms);
+        self.character_blink.update(cur_ms);
     }
 
     fn update_font_texture(&mut self, gl: &glow::Context, buf: &Buffer) {
@@ -267,6 +274,8 @@ impl TerminalRenderer {
     }
 
     fn update_palette_texture(&self, gl: &glow::Context, buf: &Buffer) {
+        println!("update palette texture!");
+
         let mut palette_data = Vec::new();
         for i in 0..buf.palette.len() {
             let (r, g, b) = buf.palette.get_rgb(i);

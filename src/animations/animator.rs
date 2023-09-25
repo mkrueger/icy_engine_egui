@@ -4,7 +4,7 @@ use std::{
 };
 
 use eframe::epaint::mutex::Mutex;
-use icy_engine::{AttributedChar, Buffer, Caret, Position, TextPane};
+use icy_engine::{AttributedChar, Buffer, BufferParser, Caret, Position, TextPane};
 use mlua::{Lua, UserData, Value};
 use regex::Regex;
 use web_time::Instant;
@@ -46,6 +46,50 @@ struct LuaBuffer {
     cur_layer: usize,
     caret: Caret,
     buffer: Buffer,
+}
+impl LuaBuffer {
+    fn convert_from_unicode(&self, ch: String) -> mlua::Result<char> {
+        let Some(ch) = ch.chars().next() else {
+            return Err(mlua::Error::SyntaxError {
+                message: "Empty string".to_string(),
+                incomplete_input: false,
+            });
+        };
+
+        let buffer_type = self.buffer.buffer_type;
+        let ch = match buffer_type {
+            icy_engine::BufferType::Unicode => ch,
+            icy_engine::BufferType::CP437 => icy_engine::ascii::Parser::default()
+                .convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::Petscii => icy_engine::petscii::Parser::default()
+                .convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::Atascii => icy_engine::atascii::Parser::default()
+                .convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::Viewdata => icy_engine::viewdata::Parser::default()
+                .convert_from_unicode(ch, self.caret.get_font_page()),
+        };
+        Ok(ch)
+    }
+
+    fn convert_to_unicode(&self, ch: AttributedChar) -> String {
+        let buffer_type = self.buffer.buffer_type;
+        let ch = match buffer_type {
+            icy_engine::BufferType::Unicode => ch.ch,
+            icy_engine::BufferType::CP437 => {
+                icy_engine::ascii::Parser::default().convert_to_unicode(ch)
+            }
+            icy_engine::BufferType::Petscii => {
+                icy_engine::petscii::Parser::default().convert_to_unicode(ch)
+            }
+            icy_engine::BufferType::Atascii => {
+                icy_engine::atascii::Parser::default().convert_to_unicode(ch)
+            }
+            icy_engine::BufferType::Viewdata => {
+                icy_engine::viewdata::Parser::default().convert_to_unicode(ch)
+            }
+        };
+        ch.to_string()
+    }
 }
 
 impl UserData for LuaBuffer {
@@ -132,7 +176,7 @@ impl UserData for LuaBuffer {
             Ok(color)
         });
 
-        methods.add_method_mut("set_char", |_, this, (x, y, ch): (i32, i32, u32)| {
+        methods.add_method_mut("set_char", |_, this, (x, y, ch): (i32, i32, String)| {
             if this.cur_layer >= this.buffer.layers.len() {
                 return Err(mlua::Error::SyntaxError {
                     message: format!(
@@ -143,14 +187,10 @@ impl UserData for LuaBuffer {
                     incomplete_input: false,
                 });
             }
+            let attr = this.caret.get_attribute();
+            let ch = AttributedChar::new(this.convert_from_unicode(ch)?, attr);
 
-            this.buffer.layers[this.cur_layer].set_char(
-                (x, y),
-                AttributedChar::new(
-                    unsafe { std::char::from_u32_unchecked(ch) },
-                    this.caret.get_attribute(),
-                ),
-            );
+            this.buffer.layers[this.cur_layer].set_char((x, y), ch);
             Ok(())
         });
 
@@ -167,7 +207,24 @@ impl UserData for LuaBuffer {
             }
 
             let ch = this.buffer.layers[this.cur_layer].get_char((x, y));
-            Ok(ch.ch as u32)
+            Ok(this.convert_to_unicode(ch))
+        });
+
+        methods.add_method_mut("pickup_char", |_, this, (x, y): (i32, i32)| {
+            if this.cur_layer >= this.buffer.layers.len() {
+                return Err(mlua::Error::SyntaxError {
+                    message: format!(
+                        "Current layer {} out of range (0..<{})",
+                        this.cur_layer,
+                        this.buffer.layers.len()
+                    ),
+                    incomplete_input: false,
+                });
+            }
+
+            let ch = this.buffer.layers[this.cur_layer].get_char((x, y));
+            this.caret.set_attr(ch.attribute);
+            Ok(this.convert_to_unicode(ch))
         });
 
         methods.add_method_mut("set_fg", |_, this, (x, y, col): (i32, i32, u32)| {
@@ -239,8 +296,10 @@ impl UserData for LuaBuffer {
         methods.add_method_mut("print", |_, this, str: String| {
             for c in str.chars() {
                 let mut pos = this.caret.get_position();
-                this.buffer.layers[this.cur_layer]
-                    .set_char(pos, AttributedChar::new(c, this.caret.get_attribute()));
+                let attribute = this.caret.get_attribute();
+                let ch = AttributedChar::new(this.convert_from_unicode(c.to_string())?, attribute);
+
+                this.buffer.layers[this.cur_layer].set_char(pos, ch);
                 pos.x += 1;
                 this.caret.set_position(pos);
             }

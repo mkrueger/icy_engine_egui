@@ -236,8 +236,6 @@ pub fn show_terminal_area(
                 }
 
                 forced_width = (buf_w as i32).min(real_width);
-
-                buffer_view2.lock().redraw_view();
             }
 
             let char_size = Vec2::new(
