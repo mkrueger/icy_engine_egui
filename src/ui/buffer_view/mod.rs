@@ -190,10 +190,6 @@ impl BufferView {
         self.terminal_renderer.redraw_terminal();
     }
 
-    pub fn redraw_palette(&mut self) {
-        self.terminal_renderer.redraw_palette();
-    }
-
     pub fn redraw_font(&mut self) {
         self.terminal_renderer.redraw_font();
     }
@@ -357,7 +353,6 @@ impl BufferView {
     pub fn set_buffer(&mut self, buf: Buffer) {
         self.edit_state.set_buffer(buf);
         self.redraw_font();
-        self.redraw_palette();
     }
 
     pub fn reset_caret_blink(&mut self) {

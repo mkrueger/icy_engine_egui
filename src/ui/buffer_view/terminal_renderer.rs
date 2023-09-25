@@ -1,5 +1,4 @@
 #![allow(clippy::float_cmp)]
-use std::backtrace::Backtrace;
 use std::cmp::max;
 
 use egui::epaint::ahash::HashMap;
@@ -34,11 +33,9 @@ pub struct TerminalRenderer {
     palette_texture: glow::Texture,
     vertex_array: glow::VertexArray,
 
-    // used to determine if palette needs to be updated - Note: palette only grows.
-    old_palette_color_count: usize,
+    old_palette_hash: u32,
 
     redraw_view: bool,
-    redraw_palette: bool,
     redraw_font: bool,
 
     last_scroll_position: Vec2,
@@ -70,7 +67,7 @@ impl TerminalRenderer {
             Self {
                 terminal_shader,
                 font_lookup_table: HashMap::default(),
-                old_palette_color_count: 0,
+                old_palette_hash: 0,
 
                 terminal_render_texture,
                 font_texture,
@@ -79,7 +76,6 @@ impl TerminalRenderer {
                 load_reference_image: false,
                 show_reference_image: false,
                 redraw_view: true,
-                redraw_palette: true,
                 redraw_font: true,
                 vertex_array,
                 caret_blink: Blink::new((1000.0 / 1.875) as u128 / 2),
@@ -106,10 +102,6 @@ impl TerminalRenderer {
 
     pub fn redraw_terminal(&mut self) {
         self.redraw_view = true;
-    }
-
-    pub fn redraw_palette(&mut self) {
-        self.redraw_palette = true;
     }
 
     pub fn redraw_font(&mut self) {
@@ -142,13 +134,11 @@ impl TerminalRenderer {
             self.update_terminal_texture(gl, edit_state, calc, use_fg, use_bg);
         }
 
-        if self.redraw_palette
-            || self.old_palette_color_count != edit_state.get_buffer().palette.len()
+        if self.old_palette_hash != edit_state.get_buffer_mut().palette.get_hash()
             || edit_state.is_palette_dirty
         {
-            self.redraw_palette = false;
             edit_state.is_palette_dirty = false;
-            self.old_palette_color_count = edit_state.get_buffer().palette.len();
+            self.old_palette_hash = edit_state.get_buffer_mut().palette.get_hash();
             self.update_palette_texture(gl, edit_state.get_buffer());
         }
 
@@ -274,8 +264,6 @@ impl TerminalRenderer {
     }
 
     fn update_palette_texture(&self, gl: &glow::Context, buf: &Buffer) {
-        println!("update palette texture!");
-
         let mut palette_data = Vec::new();
         for i in 0..buf.palette.len() {
             let (r, g, b) = buf.palette.get_rgb(i);
