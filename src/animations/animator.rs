@@ -336,6 +336,47 @@ impl UserData for LuaBuffer {
                 }
             },
         );
+
+        methods.add_method_mut(
+            "set_layer_x_position",
+            |_, this, (layer, x): (usize, i32)| {
+                if layer < this.buffer.layers.len() {
+                    let offset = this.buffer.layers[layer].get_offset();
+                    this.buffer.layers[layer].set_offset((x, offset.y));
+                    Ok(())
+                } else {
+                    Err(mlua::Error::SyntaxError {
+                        message: format!(
+                            "Layer {} out of range (0..<{})",
+                            layer,
+                            this.buffer.layers.len()
+                        ),
+                        incomplete_input: false,
+                    })
+                }
+            },
+        );
+
+        methods.add_method_mut(
+            "set_layer_y_position",
+            |_, this, (layer, y): (usize, i32)| {
+                if layer < this.buffer.layers.len() {
+                    let offset = this.buffer.layers[layer].get_offset();
+                    this.buffer.layers[layer].set_offset((offset.x, y));
+                    Ok(())
+                } else {
+                    Err(mlua::Error::SyntaxError {
+                        message: format!(
+                            "Layer {} out of range (0..<{})",
+                            layer,
+                            this.buffer.layers.len()
+                        ),
+                        incomplete_input: false,
+                    })
+                }
+            },
+        );
+
         methods.add_method_mut("get_layer_position", |_, this, layer: usize| {
             if layer < this.buffer.layers.len() {
                 let pos = this.buffer.layers[layer].get_offset();

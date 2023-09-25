@@ -161,7 +161,7 @@ pub fn show_terminal_area(
         buffer_view
             .lock()
             .get_buffer()
-            .get_line_count()
+            .get_height()
             .max(forced_height)
     } else {
         forced_height
