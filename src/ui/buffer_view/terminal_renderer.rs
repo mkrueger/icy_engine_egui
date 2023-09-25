@@ -39,6 +39,8 @@ pub struct TerminalRenderer {
     redraw_font: bool,
 
     last_scroll_position: Vec2,
+    last_char_size: Vec2,
+    last_buffer_rect_size: Vec2,
 
     caret_blink: Blink,
     character_blink: Blink,
@@ -83,6 +85,8 @@ impl TerminalRenderer {
                 reference_image_texture,
                 start_time: Instant::now(),
                 last_scroll_position: Vec2::ZERO,
+                last_char_size: Vec2::ZERO,
+                last_buffer_rect_size: Vec2::ZERO,
             }
         }
     }
@@ -126,9 +130,13 @@ impl TerminalRenderer {
 
         if self.redraw_view
             || calc.char_scroll_positon != self.last_scroll_position
+            || calc.char_size != self.last_char_size
+            || calc.buffer_rect.size() != self.last_buffer_rect_size
             || edit_state.is_buffer_dirty
         {
             self.last_scroll_position = calc.char_scroll_positon;
+            self.last_char_size = calc.char_size;
+            self.last_buffer_rect_size = calc.buffer_rect.size();
             edit_state.is_buffer_dirty = false;
             self.redraw_view = false;
             self.update_terminal_texture(gl, edit_state, calc, use_fg, use_bg);
