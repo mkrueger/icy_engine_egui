@@ -166,6 +166,71 @@ impl UserData for LuaBuffer {
             this.caret.set_y_position(val);
             Ok(())
         });
+        fields.add_field_method_get("layer_x", |_, this| {
+            if this.cur_layer < this.buffer.layers.len() {
+                let offset = this.buffer.layers[this.cur_layer].get_offset();
+                Ok(offset.x)
+            } else {
+                Err(mlua::Error::SyntaxError {
+                    message: format!(
+                        "Layer {} out of range (0..<{})",
+                        this.cur_layer,
+                        this.buffer.layers.len()
+                    ),
+                    incomplete_input: false,
+                })
+            }
+        });
+
+        fields.add_field_method_set("layer_x", |_, this, val| {
+            if this.cur_layer < this.buffer.layers.len() {
+                let offset = this.buffer.layers[this.cur_layer].get_offset();
+                this.buffer.layers[this.cur_layer].set_offset((val, offset.y));
+                Ok(())
+            } else {
+                Err(mlua::Error::SyntaxError {
+                    message: format!(
+                        "Layer {} out of range (0..<{})",
+                        this.cur_layer,
+                        this.buffer.layers.len()
+                    ),
+                    incomplete_input: false,
+                })
+            }
+        });
+
+        fields.add_field_method_get("layer_y", |_, this| {
+            if this.cur_layer < this.buffer.layers.len() {
+                let offset = this.buffer.layers[this.cur_layer].get_offset();
+                Ok(offset.y)
+            } else {
+                Err(mlua::Error::SyntaxError {
+                    message: format!(
+                        "Layer {} out of range (0..<{})",
+                        this.cur_layer,
+                        this.buffer.layers.len()
+                    ),
+                    incomplete_input: false,
+                })
+            }
+        });
+
+        fields.add_field_method_set("layer_y", |_, this, val| {
+            if this.cur_layer < this.buffer.layers.len() {
+                let offset = this.buffer.layers[this.cur_layer].get_offset();
+                this.buffer.layers[this.cur_layer].set_offset((offset.x, val));
+                Ok(())
+            } else {
+                Err(mlua::Error::SyntaxError {
+                    message: format!(
+                        "Layer {} out of range (0..<{})",
+                        this.cur_layer,
+                        this.buffer.layers.len()
+                    ),
+                    incomplete_input: false,
+                })
+            }
+        });
 
         fields.add_field_method_get("layer_count", |_, this| Ok(this.buffer.layers.len()));
     }
@@ -536,7 +601,8 @@ impl Animator {
                 "next_frame",
                 lua.create_function_mut(move |lua, buffer: Value<'_>| {
                     if let Value::UserData(data) = &buffer {
-                        lua.globals().set("cur_frame", a.lock().unwrap().frames.len() + 2)?;
+                        lua.globals()
+                            .set("cur_frame", a.lock().unwrap().frames.len() + 2)?;
                         let monitor_type: usize = lua.globals().get("monitor_type")?;
                         a.lock().unwrap().current_monitor_settings.monitor_type = monitor_type;
 
@@ -555,7 +621,9 @@ impl Animator {
                         a.lock().unwrap().current_monitor_settings.scanlines =
                             lua.globals().get("monitor_scanlines")?;
 
-                        a.lock().unwrap().lua_next_frame(&data.borrow::<LuaBuffer>()?.buffer)
+                        a.lock()
+                            .unwrap()
+                            .lua_next_frame(&data.borrow::<LuaBuffer>()?.buffer)
                     } else {
                         Err(mlua::Error::RuntimeError(format!(
                             "UserData parameter required, got: {:?}",
