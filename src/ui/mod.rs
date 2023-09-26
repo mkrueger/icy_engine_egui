@@ -424,8 +424,6 @@ pub fn show_terminal_area(
     (response, calc)
 }
 
-
-
 use i18n_embed::{
     fluent::{fluent_language_loader, FluentLanguageLoader},
     DesktopLanguageRequester,

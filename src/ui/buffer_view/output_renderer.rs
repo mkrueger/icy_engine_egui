@@ -305,11 +305,14 @@ impl OutputRenderer {
             options.marker_settings.raster_alpha,
         );
 
-        let (r, g, b) =options.marker_settings.raster_color.get_rgb_f32();
+        let (r, g, b) = options.marker_settings.raster_color.get_rgb_f32();
 
         gl.uniform_3_f32(
             gl.get_uniform_location(self.output_shader, "u_raster_color")
-                .as_ref(),r,g,b
+                .as_ref(),
+            r,
+            g,
+            b,
         );
 
         gl.uniform_1_f32(
@@ -323,14 +326,18 @@ impl OutputRenderer {
         gl.uniform_3_f32(
             gl.get_uniform_location(self.output_shader, "u_guide_color")
                 .as_ref(),
-                r,g,b,
+            r,
+            g,
+            b,
         );
         let (r, g, b) = options.marker_settings.border_color.get_rgb_f32();
 
         gl.uniform_3_f32(
             gl.get_uniform_location(self.output_shader, "u_border_color")
                 .as_ref(),
-                r, g, b
+            r,
+            g,
+            b,
         );
 
         if let Some(layer) = buffer_view.edit_state.get_cur_layer() {

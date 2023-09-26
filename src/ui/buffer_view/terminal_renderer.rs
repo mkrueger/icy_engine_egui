@@ -19,7 +19,6 @@ use super::Blink;
 use super::BufferView;
 
 const FONT_TEXTURE_SLOT: u32 = 6;
-const PALETTE_TEXTURE_SLOT: u32 = 8;
 const BUFFER_TEXTURE_SLOT: u32 = 10;
 const REFERENCE_IMAGE_TEXTURE_SLOT: u32 = 12;
 
@@ -30,7 +29,6 @@ pub struct TerminalRenderer {
 
     terminal_render_texture: glow::Texture,
     font_texture: glow::Texture,
-    palette_texture: glow::Texture,
     vertex_array: glow::VertexArray,
 
     old_palette_hash: u32,
@@ -58,7 +56,6 @@ impl TerminalRenderer {
         unsafe {
             let reference_image_texture = create_reference_image_texture(gl);
             let font_texture = create_font_texture(gl);
-            let palette_texture = create_palette_texture(gl);
             let terminal_render_texture = create_buffer_texture(gl);
             let terminal_shader = compile_shader(gl);
 
@@ -73,7 +70,6 @@ impl TerminalRenderer {
 
                 terminal_render_texture,
                 font_texture,
-                palette_texture,
                 reference_image: None,
                 load_reference_image: false,
                 show_reference_image: false,
@@ -99,7 +95,6 @@ impl TerminalRenderer {
 
             gl.delete_texture(self.terminal_render_texture);
             gl.delete_texture(self.font_texture);
-            gl.delete_texture(self.palette_texture);
             gl.delete_texture(self.reference_image_texture);
         }
     }
@@ -127,6 +122,11 @@ impl TerminalRenderer {
             edit_state.get_buffer_mut().set_font_table_is_updated();
             self.update_font_texture(gl, edit_state.get_buffer());
         }
+        if self.old_palette_hash != edit_state.get_buffer_mut().palette.get_hash()
+            || edit_state.is_palette_dirty
+        {
+            self.redraw_view = true;
+        }
 
         if self.redraw_view
             || calc.char_scroll_positon != self.last_scroll_position
@@ -140,14 +140,6 @@ impl TerminalRenderer {
             edit_state.is_buffer_dirty = false;
             self.redraw_view = false;
             self.update_terminal_texture(gl, edit_state, calc, use_fg, use_bg);
-        }
-
-        if self.old_palette_hash != edit_state.get_buffer_mut().palette.get_hash()
-            || edit_state.is_palette_dirty
-        {
-            edit_state.is_palette_dirty = false;
-            self.old_palette_hash = edit_state.get_buffer_mut().palette.get_hash();
-            self.update_palette_texture(gl, edit_state.get_buffer());
         }
 
         if self.load_reference_image {
@@ -271,32 +263,6 @@ impl TerminalRenderer {
         }
     }
 
-    fn update_palette_texture(&self, gl: &glow::Context, buf: &Buffer) {
-        let mut palette_data = Vec::new();
-        for i in 0..buf.palette.len() {
-            let (r, g, b) = buf.palette.get_rgb(i);
-            palette_data.push(r);
-            palette_data.push(g);
-            palette_data.push(b);
-            palette_data.push(0xFF);
-        }
-        unsafe {
-            gl.bind_texture(glow::TEXTURE_2D, Some(self.palette_texture));
-            gl.tex_image_2d(
-                glow::TEXTURE_2D,
-                0,
-                glow::RGBA as i32,
-                i32::try_from(buf.palette.len()).unwrap(),
-                1,
-                0,
-                glow::RGBA,
-                glow::UNSIGNED_BYTE,
-                Some(&palette_data),
-            );
-            crate::check_gl_error!(gl, "update_palette_texture");
-        }
-    }
-
     fn update_terminal_texture(
         &self,
         gl: &glow::Context,
@@ -316,7 +282,7 @@ impl TerminalRenderer {
         let scroll_back_line = max(0, max_lines - first_row);
         let first_line = 0.max(real_height.saturating_sub(calc.forced_height));
         let mut buffer_data = Vec::with_capacity((2 * (buf_w + 1) * 4 * buf_h) as usize);
-        let colors = buf.palette.len().max(1) as u32 - 1;
+        let colors = buf.palette.len().max(1) as u32;
         let mut y: i32 = 0;
         while y <= buf_h {
             let mut is_double_height = false;
@@ -335,27 +301,16 @@ impl TerminalRenderer {
                     ch.attribute.set_foreground(7);
                     ch.attribute.set_is_bold(false);
                 }
-                let fg = if ch.attribute.is_bold() && ch.attribute.get_foreground() < 8 {
-                    conv_color(ch.attribute.get_foreground() + 8, colors)
+                let fg: u32 = if ch.attribute.is_bold() && ch.attribute.get_foreground() < 8 {
+                    ch.attribute.get_foreground() + 8
                 } else {
-                    conv_color(ch.attribute.get_foreground(), colors)
+                    ch.attribute.get_foreground()
                 };
-                buffer_data.push(fg);
 
-                if !use_bg {
-                    ch.attribute.set_background(0);
-                }
-                let bg = conv_color(ch.attribute.get_background(), colors);
-                buffer_data.push(bg);
-                if buf.has_fonts() {
-                    if let Some(font_number) = self.font_lookup_table.get(&ch.get_font_page()) {
-                        buffer_data.push(*font_number as u8);
-                    } else {
-                        buffer_data.push(0);
-                    }
-                } else {
-                    buffer_data.push(0);
-                }
+                let (r, g, b) = buf.palette.get_rgb(fg as usize);
+                buffer_data.push(r);
+                buffer_data.push(g);
+                buffer_data.push(b);
             }
 
             if is_double_height {
@@ -395,6 +350,7 @@ impl TerminalRenderer {
             }
         }
 
+        // additional attributes
         y = 0;
         while y <= buf_h {
             let mut is_double_height = false;
@@ -422,7 +378,17 @@ impl TerminalRenderer {
                 }
 
                 buffer_data.push(attr);
-                buffer_data.push(attr);
+
+                if buf.has_fonts() {
+                    if let Some(font_number) = self.font_lookup_table.get(&ch.get_font_page()) {
+                        buffer_data.push(*font_number as u8);
+                    } else {
+                        buffer_data.push(0);
+                    }
+                } else {
+                    buffer_data.push(0);
+                }
+
                 let mut preview_flag = 0;
                 if is_selected {
                     preview_flag |= 1;
@@ -486,6 +452,42 @@ impl TerminalRenderer {
             }
         }
 
+        // bg color.
+        y = 0;
+        while y <= buf_h {
+            let is_double_height = false;
+
+            for x in 0..=buf_w {
+                let mut ch = buf.get_char((x, first_line - scroll_back_line + y));
+                if !use_bg {
+                    ch.attribute.set_background(0);
+                }
+                let (r, g, b) = buf.palette.get_rgb(ch.attribute.get_background() as usize);
+                buffer_data.push(r);
+                buffer_data.push(g);
+                buffer_data.push(b);
+                buffer_data.push(255);
+            }
+
+            if is_double_height {
+                for x in 0..=buf_w {
+                    let ch = buf.get_char((x, first_line - scroll_back_line + y));
+
+                    let (r, g, b) = buf.palette.get_rgb(ch.attribute.get_background() as usize);
+                    buffer_data.push(r);
+                    buffer_data.push(g);
+                    buffer_data.push(b);
+                    buffer_data.push(255);
+                }
+            }
+
+            if is_double_height {
+                y += 2;
+            } else {
+                y += 1;
+            }
+        }
+
         unsafe {
             gl.bind_texture(glow::TEXTURE_2D_ARRAY, Some(self.terminal_render_texture));
             gl.tex_image_3d(
@@ -494,7 +496,7 @@ impl TerminalRenderer {
                 glow::RGBA as i32,
                 buf_w + 1,
                 buf_h + 1,
-                2,
+                3,
                 0,
                 glow::RGBA,
                 glow::UNSIGNED_BYTE,
@@ -515,9 +517,6 @@ impl TerminalRenderer {
         unsafe {
             gl.active_texture(glow::TEXTURE0 + FONT_TEXTURE_SLOT);
             gl.bind_texture(glow::TEXTURE_2D_ARRAY, Some(self.font_texture));
-
-            gl.active_texture(glow::TEXTURE0 + PALETTE_TEXTURE_SLOT);
-            gl.bind_texture(glow::TEXTURE_2D, Some(self.palette_texture));
 
             gl.active_texture(glow::TEXTURE0 + BUFFER_TEXTURE_SLOT);
             gl.bind_texture(glow::TEXTURE_2D_ARRAY, Some(self.terminal_render_texture));
@@ -615,7 +614,7 @@ impl TerminalRenderer {
         } else {
             0.0
         };
-        ///println!("has focus:{} visible: {}, w:{}", has_focus, buffer_view.get_caret().is_visible, caret_w);
+        //println!("has focus:{} visible: {}, w:{}", has_focus, buffer_view.get_caret().is_visible, caret_w);
 
         gl.uniform_4_f32(
             gl.get_uniform_location(self.terminal_shader, "u_caret_rectangle")
@@ -647,11 +646,7 @@ impl TerminalRenderer {
                 .as_ref(),
             FONT_TEXTURE_SLOT as i32,
         );
-        gl.uniform_1_i32(
-            gl.get_uniform_location(self.terminal_shader, "u_palette")
-                .as_ref(),
-            PALETTE_TEXTURE_SLOT as i32,
-        );
+
         gl.uniform_1_i32(
             gl.get_uniform_location(self.terminal_shader, "u_terminal_buffer")
                 .as_ref(),
@@ -687,7 +682,10 @@ impl TerminalRenderer {
         gl.uniform_4_f32(
             gl.get_uniform_location(self.terminal_shader, "u_selection_fg")
                 .as_ref(),
-            r,g,b, 1.0,
+            r,
+            g,
+            b,
+            1.0,
         );
 
         let (r, g, b) = terminal_options.monitor_settings.selection_bg.get_rgb_f32();
@@ -695,7 +693,10 @@ impl TerminalRenderer {
         gl.uniform_4_f32(
             gl.get_uniform_location(self.terminal_shader, "u_selection_bg")
                 .as_ref(),
-                r, g,b , 1.0,
+            r,
+            g,
+            b,
+            1.0,
         );
 
         gl.uniform_1_f32(
@@ -794,35 +795,6 @@ unsafe fn create_buffer_texture(gl: &glow::Context) -> glow::Texture {
     buffer_texture
 }
 
-unsafe fn create_palette_texture(gl: &glow::Context) -> glow::Texture {
-    let palette_texture: glow::Texture = gl.create_texture().unwrap();
-    gl.bind_texture(glow::TEXTURE_2D, Some(palette_texture));
-
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D,
-        glow::TEXTURE_MIN_FILTER,
-        glow::NEAREST as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D,
-        glow::TEXTURE_MAG_FILTER,
-        glow::NEAREST as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D,
-        glow::TEXTURE_WRAP_S,
-        glow::CLAMP_TO_EDGE as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D,
-        glow::TEXTURE_WRAP_T,
-        glow::CLAMP_TO_EDGE as i32,
-    );
-    crate::check_gl_error!(gl, "create_palette_texture");
-
-    palette_texture
-}
-
 unsafe fn create_reference_image_texture(gl: &glow::Context) -> glow::Texture {
     let reference_image_texture: glow::Texture = gl.create_texture().unwrap();
     gl.bind_texture(glow::TEXTURE_2D, Some(reference_image_texture));
@@ -874,5 +846,5 @@ fn conv_color(c: u32, colors: u32) -> u8 {
     if colors == 0 {
         return 0;
     }
-    ((255 * c) / colors) as u8
+    ((256 * c) / colors) as u8
 }

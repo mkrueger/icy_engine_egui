@@ -1,6 +1,6 @@
 pub mod animations;
 use icy_engine::Color;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "ui")]
 pub mod ui;

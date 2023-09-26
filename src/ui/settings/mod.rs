@@ -2,7 +2,7 @@ use egui::RichText;
 use i18n_embed_fl::fl;
 use lazy_static::lazy_static;
 
-use crate::{MonitorSettings, ui::LANGUAGE_LOADER};
+use crate::{ui::LANGUAGE_LOADER, MonitorSettings};
 lazy_static! {
     static ref MONITOR_NAMES: [String; 6] = [
         fl!(LANGUAGE_LOADER, "settings-monitor-color"),
@@ -40,10 +40,7 @@ pub fn show_monitor_settings(
 
     ui.checkbox(
         &mut monitor_settings.use_filter,
-        fl!(
-            LANGUAGE_LOADER,
-            "settings-monitor-use-crt-filter-checkbox"
-        ),
+        fl!(LANGUAGE_LOADER, "settings-monitor-use-crt-filter-checkbox"),
     );
     ui.add_enabled_ui(use_filter, |ui| {
         // todo: that should take full with, but doesn't work - egui bug ?

@@ -2,7 +2,6 @@ precision highp float;
 precision lowp sampler2DArray;
 
 uniform sampler2DArray u_fonts;
-uniform sampler2D u_palette;
 uniform sampler2DArray u_terminal_buffer;
 
 uniform vec2        u_resolution;
@@ -37,10 +36,6 @@ vec4 get_char(vec2 p, float c, float page) {
   //  return texture(u_fonts, vec3(v, page));
 }
 
-vec4 get_palette_color(float c) {
-    return texture(u_palette, vec2(c, 0));
-}
-
 bool check_bit(float v, int bit) {
     return (int(255.0 * v) & (1 << bit)) != 0;
 }
@@ -56,6 +51,7 @@ void main (void) {
     terminal_buffer_coordinates = vec2(terminal_buffer_coordinates.s, 1.0 - terminal_buffer_coordinates.t);
     vec4 ch = texture(u_terminal_buffer, vec3(terminal_buffer_coordinates, 0.0));
     vec4 ch_attr = texture(u_terminal_buffer, vec3(terminal_buffer_coordinates, 1.0));
+    vec4 ch_bg = texture(u_terminal_buffer, vec3(terminal_buffer_coordinates, 2.0));
     
     vec2 fract_fb_pos = fract(vec2(fb_pos.x, fb_pos.y));
 
@@ -69,10 +65,10 @@ void main (void) {
         }
     }
 
-    vec4 char_data = get_char(fract_fb_pos, ch_value, ch.a * 255.0);
+    vec4 char_data = get_char(fract_fb_pos, ch_value, ch_attr[1] * 255.0);
     
-    vec4 fg = get_palette_color(ch.y);
-    vec4 bg = get_palette_color(ch.z);
+    vec4 fg = vec4(ch.gba, 1.0);
+    vec4 bg = vec4(ch_bg.rgb, 1.0);
 
     int flag = int(ch_attr.b * 255);
     float r = 0.0;
@@ -144,7 +140,7 @@ void main (void) {
         upper_left.y <= terminal_buffer_coordinates.y && 
         terminal_buffer_coordinates.x < bottom_right.x && 
         terminal_buffer_coordinates.y < bottom_right.y) {
-        color1 = get_palette_color(ch.y);
+        color1 = fg;
     } 
    // color1= texture(u_fonts, vec3(view_coord, 0.0));
 }
