@@ -17,8 +17,8 @@ pub const MONO_COLORS: [(u8, u8, u8); 5] = [
     (0x00, 0xD5, 0x6D), // Apple ][
     (0x72, 0x9F, 0xCF), // Futuristic
 ];
-pub const INPUT_TEXTURE_SLOT: u32 = 0;
-pub const DATA_TEXTURE_SLOT: u32 = 2;
+pub const INPUT_TEXTURE_SLOT: u32 = 4;
+pub const DATA_TEXTURE_SLOT: u32 = 6;
 
 pub struct OutputRenderer {
     output_shader: glow::Program,

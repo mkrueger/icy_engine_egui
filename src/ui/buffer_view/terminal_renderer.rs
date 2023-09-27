@@ -18,7 +18,7 @@ use crate::TerminalOptions;
 use super::Blink;
 use super::BufferView;
 
-const FONT_TEXTURE_SLOT: u32 = 6;
+const FONT_TEXTURE_SLOT: u32 = 8;
 const BUFFER_TEXTURE_SLOT: u32 = 10;
 const REFERENCE_IMAGE_TEXTURE_SLOT: u32 = 12;
 
@@ -356,12 +356,12 @@ impl TerminalRenderer {
             let mut is_double_height = false;
 
             for x in 0..=buf_w {
-                let ch = buf.get_char((x, first_line - scroll_back_line + y));
-                let is_selected =
-                    edit_state.get_is_mask_selected((x, first_line - scroll_back_line + y));
+                let ch = buf.get_char((first_column + x, first_line - scroll_back_line + y));
+                let is_selected = edit_state
+                    .get_is_mask_selected((first_column + x, first_line - scroll_back_line + y));
                 let is_tool_overlay = edit_state
                     .get_tool_overlay_mask()
-                    .get_is_selected((x, first_line - scroll_back_line + y));
+                    .get_is_selected((first_column + x, first_line - scroll_back_line + y));
 
                 let mut attr = if ch.attribute.is_double_underlined() {
                     3
@@ -458,7 +458,7 @@ impl TerminalRenderer {
             let is_double_height = false;
 
             for x in 0..=buf_w {
-                let mut ch = buf.get_char((x, first_line - scroll_back_line + y));
+                let mut ch = buf.get_char((first_column + x, first_line - scroll_back_line + y));
                 if !use_bg {
                     ch.attribute.set_background(0);
                 }
