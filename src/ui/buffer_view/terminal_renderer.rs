@@ -125,7 +125,8 @@ impl TerminalRenderer {
         if self.old_palette_hash != edit_state.get_buffer_mut().palette.get_hash()
             || edit_state.is_palette_dirty
         {
-            self.redraw_view = true;
+            self.old_palette_hash = edit_state.get_buffer_mut().palette.get_hash();
+            self.redraw_terminal();
         }
 
         if self.redraw_view
