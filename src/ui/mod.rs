@@ -121,6 +121,8 @@ pub struct TerminalOptions {
     pub show_layer_borders: bool,
     pub show_line_numbers: bool,
 
+    pub hide_scrollbars: bool,
+
     pub terminal_size: Option<Vec2>,
     pub guide: Option<Vec2>,
     pub raster: Option<Vec2>,
@@ -139,6 +141,7 @@ impl Default for TerminalOptions {
             use_terminal_height: true,
             show_layer_borders: false,
             show_line_numbers: false,
+            hide_scrollbars: false,
             scroll_offset_x: None,
             scroll_offset_y: None,
             id: None,
@@ -175,7 +178,8 @@ pub fn show_terminal_area(
     let mut scroll = SmoothScroll::new()
         .with_stick_to_bottom(options.stick_to_bottom)
         .with_scroll_y_offset(options.scroll_offset_y)
-        .with_scroll_x_offset(options.scroll_offset_x);
+        .with_scroll_x_offset(options.scroll_offset_x)
+        .with_hide_scrollbars(options.hide_scrollbars);
 
     if let Some(id) = options.id {
         scroll = scroll.with_id(id);

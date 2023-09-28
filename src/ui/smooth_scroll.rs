@@ -11,6 +11,7 @@ pub struct SmoothScroll {
     drag_vert_start: bool,
     id: Id,
     lock_focus: bool,
+    hide_scrollbars: bool,
     stick_to_bottom: bool,
     scroll_offset_x: Option<f32>,
     scroll_offset_y: Option<f32>,
@@ -37,6 +38,7 @@ impl SmoothScroll {
             scroll_offset_x: None,
             scroll_offset_y: None,
             set_scroll_positon: false,
+            hide_scrollbars: false,
         }
     }
 
@@ -47,6 +49,11 @@ impl SmoothScroll {
 
     pub fn with_lock_focus(mut self, lock_focus: bool) -> Self {
         self.lock_focus = lock_focus;
+        self
+    }
+
+    pub fn with_hide_scrollbars(mut self, hide_scrollbars: bool) -> Self {
+        self.hide_scrollbars = hide_scrollbars;
         self
     }
 
@@ -143,7 +150,7 @@ impl SmoothScroll {
 
         let has_horiz_scollbar = calc.char_width > calc.buffer_char_width;
         let has_vert_scrollbar = calc.char_height > calc.buffer_char_height;
-        if has_vert_scrollbar {
+        if has_vert_scrollbar && !self.hide_scrollbars {
             self.clamp_scroll_position(&mut calc);
             response = self.show_vertical_scrollbar(ui, response, &mut calc, has_horiz_scollbar);
         }
@@ -156,7 +163,7 @@ impl SmoothScroll {
             response.request_focus();
         }
 
-        if has_horiz_scollbar {
+        if has_horiz_scollbar && !self.hide_scrollbars {
             self.clamp_scroll_position(&mut calc);
             response = self.show_horizontal_scrollbar(ui, response, &mut calc, has_vert_scrollbar);
         }
