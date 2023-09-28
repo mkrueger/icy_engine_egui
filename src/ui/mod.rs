@@ -44,10 +44,6 @@ pub struct TerminalCalc {
     pub real_width: i32,
     pub real_height: i32,
 
-    /// remainder for scaled mode
-    pub scroll_remainder_x: f32,
-    pub scroll_remainder_y: f32,
-
     pub set_scroll_position_set_by_user: bool,
 
     pub has_focus: bool,
@@ -75,8 +71,6 @@ impl Default for TerminalCalc {
             char_scroll_position: Default::default(),
             forced_width: Default::default(),
             forced_height: Default::default(),
-            scroll_remainder_x: Default::default(),
-            scroll_remainder_y: Default::default(),
             set_scroll_position_set_by_user: Default::default(),
             has_focus: Default::default(),
             real_width: 0,
@@ -101,6 +95,26 @@ impl TerminalCalc {
 
     pub fn viewport_top(&self) -> Vec2 {
         self.char_scroll_position * self.scale
+    }
+
+    pub fn max_y_scroll(&self) -> f32 {
+        if self.char_height <= self.buffer_char_height {
+            return 0.0;
+        }
+        let y_remainder =
+            (self.char_size.y - self.terminal_rect.height() % self.char_size.y) / self.scale.y;
+        (self.font_height * (self.char_height - self.buffer_char_height).max(0.0) + y_remainder)
+            .floor()
+    }
+
+    pub fn max_x_scroll(&self) -> f32 {
+        if self.char_width <= self.buffer_char_width {
+            return 0.0;
+        }
+        let x_remainder =
+            (self.char_size.x - self.terminal_rect.width() % self.char_size.x) / self.scale.x;
+        (self.font_width * (self.char_width - self.buffer_char_width).max(0.0) + x_remainder)
+            .floor()
     }
 }
 
@@ -206,8 +220,6 @@ pub fn show_terminal_area(
 
             let mut scale_x = size.x / font_width / buf_w;
             let mut scale_y = size.y / font_dimensions.height as f32 / buf_h;
-            let mut scroll_remainder_x = 0.0;
-            let mut scroll_remainder_y = 0.0;
             let mut forced_scale = options.scale;
             if options.fit_width {
                 forced_scale = Some(Vec2::new(scale_x, scale_x));
@@ -225,19 +237,11 @@ pub fn show_terminal_area(
 
                 let h = size.y / (font_dimensions.height as f32 * scale_y);
                 buf_h = h.ceil().min(real_height as f32);
-                if real_height as f32 > buf_h {
-                    // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
-                    scroll_remainder_y = 1.0 - h.fract();
-                }
 
                 forced_height = (buf_h as i32).min(real_height);
 
                 let w = size.x / (font_dimensions.width as f32 * scale_x);
                 buf_w = w.ceil().min(real_width as f32);
-                if real_width as f32 > buf_w {
-                    // HACK: for cutting the last line in scaled mode - not sure where the real rounding error is.
-                    scroll_remainder_x = 1.0 - w.fract();
-                }
 
                 forced_width = (buf_w as i32).min(real_width);
             }
@@ -280,8 +284,6 @@ pub fn show_terminal_area(
                 set_scroll_position_set_by_user: false,
                 forced_width,
                 forced_height,
-                scroll_remainder_y,
-                scroll_remainder_x,
                 real_width,
                 real_height,
                 has_focus: false,

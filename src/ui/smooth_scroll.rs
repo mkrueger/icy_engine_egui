@@ -199,16 +199,17 @@ impl SmoothScroll {
     }
 
     fn clamp_scroll_position(&mut self, calc: &mut TerminalCalc) {
-        let mut max_y: f32 =
-            calc.font_height * (calc.char_height - calc.buffer_char_height).max(0.0);
-        let mut max_x: f32 =
-            calc.font_width * (calc.real_width as f32 - calc.buffer_char_width).max(0.0);
-        // HACK around cutting the last line - I'm sure the error is somewhere else, but this works.
-        max_y += calc.scroll_remainder_y * (calc.font_height - 1.0);
-        max_x += calc.scroll_remainder_x * (calc.font_width - 1.0);
+        self.char_scroll_position.y = self
+            .char_scroll_position
+            .y
+            .clamp(0.0, calc.max_y_scroll())
+            .floor();
+        self.char_scroll_position.x = self
+            .char_scroll_position
+            .x
+            .clamp(0.0, calc.max_x_scroll())
+            .floor();
 
-        self.char_scroll_position.y = self.char_scroll_position.y.clamp(0.0, max_y).floor();
-        self.char_scroll_position.x = self.char_scroll_position.x.clamp(0.0, max_x).floor();
         calc.char_scroll_position = self.char_scroll_position;
     }
 
@@ -224,16 +225,16 @@ impl SmoothScroll {
         let mut bg_rect: Rect = calc.terminal_rect;
         bg_rect.set_left(x);
 
-        // HACK for scroll remainder workaround:
-        let real_char_height = calc.scroll_remainder_y + calc.char_height.max(1.0);
-        let bar_height = (calc.buffer_char_height / real_char_height)
-            * if has_horiz_scrollbar {
-                calc.terminal_rect.height() - scrollbar_width
+        let max_y_scroll = calc.max_y_scroll();
+        let term_height = calc.terminal_rect.height()
+            - if has_horiz_scrollbar {
+                scrollbar_width
             } else {
-                calc.terminal_rect.height()
+                0.0
             };
-        let bar_offset = -bar_height / 2.0;
+        let bar_height = term_height * calc.buffer_char_height / calc.char_height;
 
+        let bar_offset = -bar_height / 2.0;
         let how_on = if ui.is_enabled() {
             let (dragged, hovered) =
                 self.handle_user_input_vert(ui, &response, x, bar_offset, calc, bg_rect);
@@ -250,7 +251,7 @@ impl SmoothScroll {
         ui.painter().rect_filled(
             Rect::from_min_size(
                 Pos2::new(calc.terminal_rect.right() - x_size, bg_rect.top()),
-                Vec2::new(x_size, calc.terminal_rect.height()),
+                Vec2::new(x_size, term_height),
             ),
             0.,
             Color32::from_rgba_unmultiplied(0x3F, 0x3F, 0x3F, 32),
@@ -258,8 +259,8 @@ impl SmoothScroll {
 
         // draw bar
         let bar_top = calc.terminal_rect.top()
-            + calc.terminal_rect.height() * self.char_scroll_position.y
-                / (calc.font_height * real_char_height);
+            + term_height * self.char_scroll_position.y
+                / (max_y_scroll + calc.buffer_char_height * calc.font_height);
         ui.painter().rect_filled(
             Rect::from_min_size(
                 Pos2::new(calc.terminal_rect.right() - x_size, bar_top),
@@ -283,14 +284,14 @@ impl SmoothScroll {
         let mut bg_rect: Rect = calc.terminal_rect;
         bg_rect.set_top(y);
 
-        // HACK for scroll remainder workaround:
-        let real_char_width = calc.scroll_remainder_x + calc.char_width.max(1.0);
-        let bar_width = (calc.buffer_char_width / real_char_width)
-            * if has_vert_scrollbar {
-                calc.terminal_rect.width() - scrollbar_height
+        let max_x_scroll = calc.max_x_scroll();
+        let term_width = calc.terminal_rect.width()
+            - if has_vert_scrollbar {
+                scrollbar_height
             } else {
-                calc.terminal_rect.width()
+                0.0
             };
+        let bar_width = term_width * calc.buffer_char_width / calc.char_width;
         let bar_offset = -bar_width / 2.0;
 
         let how_on = if ui.is_enabled() {
@@ -317,8 +318,8 @@ impl SmoothScroll {
 
         // draw bar
         let bar_left = calc.terminal_rect.left()
-            + calc.terminal_rect.width() * self.char_scroll_position.x
-                / (calc.font_width * real_char_width);
+            + term_width * self.char_scroll_position.x
+                / (max_x_scroll + calc.buffer_char_width * calc.font_width);
         ui.painter().rect_filled(
             Rect::from_min_size(
                 Pos2::new(bar_left, calc.terminal_rect.bottom() - y_size),
