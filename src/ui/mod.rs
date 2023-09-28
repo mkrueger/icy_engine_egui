@@ -321,107 +321,115 @@ pub fn show_terminal_area(
                 let font_size = 12.0 * calc.font_height / 16.0 * calc.scale.y;
                 ui.set_clip_rect(calc.terminal_rect);
                 let painter = ui.painter();
-                for y in 0..calc.forced_height {
-                    let font_id = FontId::new(font_size, FontFamily::Proportional);
-                    let text: WidgetText = format!("{}", 1 + y + calc.first_line as i32).into();
-                    let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
-                    let rect = Rect::from_min_size(
-                        Pos2::new(
-                            calc.buffer_rect.left()
-                                - galley.size().x
-                                - 4.0
-                                - (calc.char_scroll_position.x % calc.font_height) * calc.scale.y,
-                            calc.buffer_rect.top() + y as f32 * calc.char_size.y
-                                - (calc.char_scroll_position.y % calc.font_height) * calc.scale.y,
-                        ),
-                        Vec2::new(galley.size().x, calc.char_height),
-                    );
-                    let is_selected = if let Some(sel) = selected_rect {
-                        sel.min().y <= y + calc.first_line as i32
-                            && y + (calc.first_line as i32) < sel.max().y
-                    } else {
-                        caret_pos.y == y + calc.first_line as i32
-                    };
-                    let color = if is_selected {
-                        ui.visuals().strong_text_color()
-                    } else {
-                        ui.visuals().text_color()
-                    };
-                    painter.galley_with_color(
-                        egui::Align2::RIGHT_TOP
-                            .align_size_within_rect(galley.size(), rect)
-                            .min,
-                        galley.galley.clone(),
-                        color,
-                    );
+                if calc.char_width <= calc.buffer_char_width {
+                    for y in 0..calc.forced_height {
+                        let font_id = FontId::new(font_size, FontFamily::Proportional);
+                        let text: WidgetText = format!("{}", 1 + y + calc.first_line as i32).into();
+                        let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
+                        let rect = Rect::from_min_size(
+                            Pos2::new(
+                                calc.buffer_rect.left()
+                                    - galley.size().x
+                                    - 4.0
+                                    - (calc.char_scroll_position.x % calc.font_height)
+                                        * calc.scale.y,
+                                calc.buffer_rect.top() + y as f32 * calc.char_size.y
+                                    - (calc.char_scroll_position.y % calc.font_height)
+                                        * calc.scale.y,
+                            ),
+                            Vec2::new(galley.size().x, calc.char_height),
+                        );
+                        let is_selected = if let Some(sel) = selected_rect {
+                            sel.min().y <= y + calc.first_line as i32
+                                && y + (calc.first_line as i32) < sel.max().y
+                        } else {
+                            caret_pos.y == y + calc.first_line as i32
+                        };
+                        let color = if is_selected {
+                            ui.visuals().strong_text_color()
+                        } else {
+                            ui.visuals().text_color()
+                        };
+                        painter.galley_with_color(
+                            egui::Align2::RIGHT_TOP
+                                .align_size_within_rect(galley.size(), rect)
+                                .min,
+                            galley.galley.clone(),
+                            color,
+                        );
 
-                    let rect = Rect::from_min_size(
-                        Pos2::new(
-                            calc.buffer_rect.left()
-                                + calc.buffer_char_width * calc.char_size.x
-                                + 4.0
-                                - (calc.char_scroll_position.x % calc.font_width) * calc.scale.x,
-                            calc.buffer_rect.top() + y as f32 * calc.char_size.y
-                                - (calc.char_scroll_position.y % calc.font_height) * calc.scale.y,
-                        ),
-                        Vec2::new(galley.size().x, calc.char_height),
-                    );
-                    painter.galley_with_color(
-                        egui::Align2::LEFT_TOP
-                            .align_size_within_rect(galley.size(), rect)
-                            .min,
-                        galley.galley,
-                        color,
-                    );
+                        let rect = Rect::from_min_size(
+                            Pos2::new(
+                                calc.buffer_rect.left()
+                                    + calc.buffer_char_width * calc.char_size.x
+                                    + 4.0
+                                    - (calc.char_scroll_position.x % calc.font_width)
+                                        * calc.scale.x,
+                                calc.buffer_rect.top() + y as f32 * calc.char_size.y
+                                    - (calc.char_scroll_position.y % calc.font_height)
+                                        * calc.scale.y,
+                            ),
+                            Vec2::new(galley.size().x, calc.char_height),
+                        );
+                        painter.galley_with_color(
+                            egui::Align2::LEFT_TOP
+                                .align_size_within_rect(galley.size(), rect)
+                                .min,
+                            galley.galley,
+                            color,
+                        );
+                    }
                 }
                 let buf_w = calc.buffer_char_width;
-                for x in 0..buf_w as i32 {
-                    let font_id = FontId::new(font_size, FontFamily::Proportional);
-                    let text: WidgetText = format!("{}", (1 + x) % 10).into();
-                    let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
-                    let rect = Rect::from_min_size(
-                        Pos2::new(
-                            calc.buffer_rect.left() - galley.size().x - 4.0
-                                + x as f32 * calc.char_size.x
-                                + calc.char_size.x,
-                            calc.buffer_rect.top() - calc.char_size.y,
-                        ),
-                        Vec2::new(galley.size().x, calc.char_height),
-                    );
-                    let is_selected = if let Some(sel) = selected_rect {
-                        sel.min().x <= x && x < sel.max().x
-                    } else {
-                        caret_pos.x == x
-                    };
-                    let color = if is_selected {
-                        ui.visuals().strong_text_color()
-                    } else {
-                        ui.visuals().text_color()
-                    };
-                    painter.galley_with_color(
-                        egui::Align2::RIGHT_TOP
-                            .align_size_within_rect(galley.size(), rect)
-                            .min,
-                        galley.galley.clone(),
-                        color,
-                    );
-                    let rect = Rect::from_min_size(
-                        Pos2::new(
-                            calc.buffer_rect.left() - galley.size().x - 4.0
-                                + x as f32 * calc.char_size.x
-                                + calc.char_size.x,
-                            calc.buffer_rect.bottom() + 4.0,
-                        ),
-                        Vec2::new(galley.size().x, calc.char_height),
-                    );
+                if calc.char_height <= calc.buffer_char_height {
+                    for x in 0..buf_w as i32 {
+                        let font_id = FontId::new(font_size, FontFamily::Proportional);
+                        let text: WidgetText = format!("{}", (1 + x) % 10).into();
+                        let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
+                        let rect = Rect::from_min_size(
+                            Pos2::new(
+                                calc.buffer_rect.left() - galley.size().x - 4.0
+                                    + x as f32 * calc.char_size.x
+                                    + calc.char_size.x,
+                                calc.buffer_rect.top() - calc.char_size.y,
+                            ),
+                            Vec2::new(galley.size().x, calc.char_height),
+                        );
+                        let is_selected = if let Some(sel) = selected_rect {
+                            sel.min().x <= x && x < sel.max().x
+                        } else {
+                            caret_pos.x == x
+                        };
+                        let color = if is_selected {
+                            ui.visuals().strong_text_color()
+                        } else {
+                            ui.visuals().text_color()
+                        };
+                        painter.galley_with_color(
+                            egui::Align2::RIGHT_TOP
+                                .align_size_within_rect(galley.size(), rect)
+                                .min,
+                            galley.galley.clone(),
+                            color,
+                        );
+                        let rect = Rect::from_min_size(
+                            Pos2::new(
+                                calc.buffer_rect.left() - galley.size().x - 4.0
+                                    + x as f32 * calc.char_size.x
+                                    + calc.char_size.x,
+                                calc.buffer_rect.bottom() + 4.0,
+                            ),
+                            Vec2::new(galley.size().x, calc.char_height),
+                        );
 
-                    painter.galley_with_color(
-                        egui::Align2::RIGHT_TOP
-                            .align_size_within_rect(galley.size(), rect)
-                            .min,
-                        galley.galley,
-                        color,
-                    );
+                        painter.galley_with_color(
+                            egui::Align2::RIGHT_TOP
+                                .align_size_within_rect(galley.size(), rect)
+                                .min,
+                            galley.galley,
+                            color,
+                        );
+                    }
                 }
             }
         },
