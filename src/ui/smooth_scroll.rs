@@ -115,7 +115,7 @@ impl SmoothScroll {
         let mut response = ui.interact(rect, self.id, Sense::click_and_drag());
 
         let mut calc = calc_contents(rect, options);
-        calc.char_scroll_positon = self.char_scroll_positon;
+        calc.char_scroll_position = self.char_scroll_positon;
 
         if self.stick_to_bottom && (calc.char_height - self.last_char_height).abs() > 0.1 {
             self.char_scroll_positon = Vec2::new(
@@ -195,7 +195,7 @@ impl SmoothScroll {
 
         self.char_scroll_positon.y = self.char_scroll_positon.y.clamp(0.0, max_y).floor();
         self.char_scroll_positon.x = self.char_scroll_positon.x.clamp(0.0, max_x).floor();
-        calc.char_scroll_positon = self.char_scroll_positon;
+        calc.char_scroll_position = self.char_scroll_positon;
     }
 
     fn show_vertical_scrollbar(

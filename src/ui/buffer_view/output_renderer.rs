@@ -253,7 +253,7 @@ impl OutputRenderer {
                 / (terminal_rect.height() * info.pixels_per_point),
         );
 
-        let y = buffer_view.calc.buffer_rect.top() - buffer_view.calc.char_scroll_positon.y;
+        let y = buffer_view.calc.buffer_rect.top() - buffer_view.calc.char_scroll_position.y;
         let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point;
         gl.uniform_2_f32(
             gl.get_uniform_location(self.output_shader, "u_scroll_position")

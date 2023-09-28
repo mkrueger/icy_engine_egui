@@ -38,7 +38,7 @@ pub struct TerminalCalc {
     pub buffer_rect: egui::Rect,
     pub vert_scrollbar_rect: egui::Rect,
     pub horiz_scrollbar_rect: egui::Rect,
-    pub char_scroll_positon: Vec2,
+    pub char_scroll_position: Vec2,
     pub forced_width: i32,
     pub forced_height: i32,
     pub real_width: i32,
@@ -72,7 +72,7 @@ impl Default for TerminalCalc {
             buffer_rect: egui::Rect::NOTHING,
             vert_scrollbar_rect: egui::Rect::NOTHING,
             horiz_scrollbar_rect: egui::Rect::NOTHING,
-            char_scroll_positon: Default::default(),
+            char_scroll_position: Default::default(),
             forced_width: Default::default(),
             forced_height: Default::default(),
             scroll_remainder_x: Default::default(),
@@ -100,7 +100,7 @@ impl TerminalCalc {
     }
 
     pub fn viewport_top(&self) -> Vec2 {
-        self.char_scroll_positon * self.scale
+        self.char_scroll_position * self.scale
     }
 }
 
@@ -276,7 +276,7 @@ pub fn show_terminal_area(
                 buffer_rect,
                 vert_scrollbar_rect: Rect::NOTHING,
                 horiz_scrollbar_rect: Rect::NOTHING,
-                char_scroll_positon: Vec2::ZERO,
+                char_scroll_position: Vec2::ZERO,
                 set_scroll_position_set_by_user: false,
                 forced_width,
                 forced_height,
@@ -289,9 +289,9 @@ pub fn show_terminal_area(
             }
         },
         |ui, calc, options: &TerminalOptions| {
-            let viewport_top_y = calc.char_scroll_positon.y * calc.scale.y;
+            let viewport_top_y = calc.char_scroll_position.y * calc.scale.y;
             calc.first_line = viewport_top_y / calc.char_size.y;
-            let viewport_top_x = calc.char_scroll_positon.x * calc.scale.x;
+            let viewport_top_x = calc.char_scroll_position.x * calc.scale.x;
             calc.first_column = viewport_top_x / calc.char_size.x;
 
             /*
@@ -328,9 +328,9 @@ pub fn show_terminal_area(
                             calc.buffer_rect.left()
                                 - galley.size().x
                                 - 4.0
-                                - (calc.char_scroll_positon.x % calc.font_height) * calc.scale.y,
+                                - (calc.char_scroll_position.x % calc.font_height) * calc.scale.y,
                             calc.buffer_rect.top() + y as f32 * calc.char_size.y
-                                - (calc.char_scroll_positon.y % calc.font_height) * calc.scale.y,
+                                - (calc.char_scroll_position.y % calc.font_height) * calc.scale.y,
                         ),
                         Vec2::new(galley.size().x, calc.char_height),
                     );
@@ -358,9 +358,9 @@ pub fn show_terminal_area(
                             calc.buffer_rect.left()
                                 + calc.buffer_char_width * calc.char_size.x
                                 + 4.0
-                                - (calc.char_scroll_positon.x % calc.font_width) * calc.scale.x,
+                                - (calc.char_scroll_position.x % calc.font_width) * calc.scale.x,
                             calc.buffer_rect.top() + y as f32 * calc.char_size.y
-                                - (calc.char_scroll_positon.y % calc.font_height) * calc.scale.y,
+                                - (calc.char_scroll_position.y % calc.font_height) * calc.scale.y,
                         ),
                         Vec2::new(galley.size().x, calc.char_height),
                     );
