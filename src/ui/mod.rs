@@ -172,12 +172,16 @@ pub fn show_terminal_area(
     options: TerminalOptions,
 ) -> (Response, TerminalCalc) {
     let mut forced_height = buffer_view.lock().get_buffer().get_height();
+    let mut forced_width = buffer_view.lock().get_buffer().get_width();
 
     if buffer_view.lock().get_buffer().is_terminal_buffer {
+        forced_width = buffer_view.lock().get_buffer().terminal_state.get_width();
         forced_height = buffer_view.lock().get_buffer().terminal_state.get_height();
+
+        println!("forced_width: {} height:{forced_height}", forced_width);
     }
 
-    let mut forced_width = buffer_view.lock().get_buffer().get_width();
+
     let mut buf_h = forced_height as f32;
     let real_height = if options.use_terminal_height {
         buffer_view
@@ -189,6 +193,8 @@ pub fn show_terminal_area(
         forced_height
     };
     let real_width = forced_width;
+
+
     let mut buf_w = real_width as f32;
 
     let font_dimensions = buffer_view.lock().get_buffer().get_font_dimensions();
