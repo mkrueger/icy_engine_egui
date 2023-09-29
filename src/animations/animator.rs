@@ -1,12 +1,13 @@
 use std::{
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex}, thread,
 };
 
 use icy_engine::{AttributedChar, Buffer, BufferParser, Caret, Position, TextPane};
 use mlua::{Lua, UserData, Value};
 use regex::Regex;
 
+use web_time::Duration;
 #[cfg(feature = "ui")]
 use web_time::Instant;
 
@@ -20,7 +21,7 @@ pub struct Animator {
     pub frames: Vec<(Buffer, MonitorSettings, u32)>,
     current_monitor_settings: MonitorSettings,
     pub buffers: Vec<Buffer>,
-
+    pub error: String,
     // play controls:
     cur_frame: usize,
     is_loop: bool,
@@ -29,6 +30,8 @@ pub struct Animator {
 
     #[cfg(feature = "ui")]
     instant: Instant,
+
+    run_thread: Option<thread::JoinHandle<()>>
 }
 const DEFAULT_SPEEED: u32 = 100; // like animated gifs
 
@@ -45,6 +48,8 @@ impl Default for Animator {
             speed: DEFAULT_SPEEED,
             #[cfg(feature = "ui")]
             instant: Instant::now(),
+            run_thread: None,
+            error: String::new()
         }
     }
 }
@@ -528,155 +533,172 @@ impl Animator {
         Ok(())
     }
 
-    pub fn run(parent: &Option<PathBuf>, in_txt: &str) -> mlua::Result<Arc<Mutex<Self>>> {
-        let lua = Lua::new();
-        let globals = lua.globals();
+    pub fn run(parent: &Option<PathBuf>, in_txt: String) -> Arc<Mutex<Self>> {
         let animator = Arc::new(Mutex::new(Animator::default()));
-
-        let re = Regex::new(r"#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
-
+        let animator_thread = animator.clone();
         let parent = parent.clone();
+        let run_thread = thread::spawn(move || {
+            println!("start thread!");
+            let lua: Lua = Lua::new();
+            let globals = lua.globals();
+    
+            let re = Regex::new(r"#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
 
-        let txt = re
-            .replace_all(in_txt, |caps: &regex::Captures<'_>| {
-                let r = u32::from_str_radix(caps.get(1).unwrap().as_str(), 16).unwrap();
-                let g = u32::from_str_radix(caps.get(2).unwrap().as_str(), 16).unwrap();
-                let b = u32::from_str_radix(caps.get(3).unwrap().as_str(), 16).unwrap();
 
-                format!("{},{},{}", r, g, b)
-            })
-            .to_string();
-        //  txt.push_str(&in_txt[last_pos..]);
+            let txt = re
+                .replace_all(&in_txt, |caps: &regex::Captures<'_>| {
+                    let r = u32::from_str_radix(caps.get(1).unwrap().as_str(), 16).unwrap();
+                    let g = u32::from_str_radix(caps.get(2).unwrap().as_str(), 16).unwrap();
+                    let b = u32::from_str_radix(caps.get(3).unwrap().as_str(), 16).unwrap();
 
-        globals
-            .set(
-                "load_buffer",
-                lua.create_function(move |_lua, file: String| {
-                    let mut file_name = Path::new(&file).to_path_buf();
-                    if file_name.is_relative() {
-                        if let Some(parent) = &parent {
-                            file_name = parent.join(&file_name);
+                    format!("{},{},{}", r, g, b)
+                })
+                .to_string();
+            //  txt.push_str(&in_txt[last_pos..]);
+
+            globals
+                .set(
+                    "load_buffer",
+                    lua.create_function(move |_lua, file: String| {
+                        let mut file_name = Path::new(&file).to_path_buf();
+                        if file_name.is_relative() {
+                            if let Some(parent) = &parent {
+                                file_name = parent.join(&file_name);
+                            }
                         }
-                    }
 
-                    if !file_name.exists() {
-                        return Err(mlua::Error::RuntimeError(format!(
-                            "File not found {}",
-                            file
-                        )));
-                    }
+                        if !file_name.exists() {
+                            return Err(mlua::Error::RuntimeError(format!(
+                                "File not found {}",
+                                file
+                            )));
+                        }
 
-                    if let Ok(buffer) = icy_engine::Buffer::load_buffer(&file_name, true) {
+                        if let Ok(buffer) = icy_engine::Buffer::load_buffer(&file_name, true) {
+                            mlua::Result::Ok(LuaBuffer {
+                                caret: Caret::default(),
+                                buffer,
+                                cur_layer: 0,
+                            })
+                        } else {
+                            Err(mlua::Error::RuntimeError(format!(
+                                "Could not load file {}",
+                                file
+                            )))
+                        }
+                    }).unwrap(),
+                )
+                .unwrap();
+
+            globals
+                .set(
+                    "new_buffer",
+                    lua.create_function(move |_lua, (width, height): (i32, i32)| {
                         mlua::Result::Ok(LuaBuffer {
                             caret: Caret::default(),
-                            buffer,
+                            buffer: Buffer::create((width, height)),
                             cur_layer: 0,
                         })
-                    } else {
-                        Err(mlua::Error::RuntimeError(format!(
-                            "Could not load file {}",
-                            file
-                        )))
-                    }
-                })?,
-            )
-            .unwrap();
+                    }).unwrap(),
+                )
+                .unwrap();
 
-        globals
-            .set(
-                "new_buffer",
-                lua.create_function(move |_lua, (width, height): (i32, i32)| {
-                    mlua::Result::Ok(LuaBuffer {
-                        caret: Caret::default(),
-                        buffer: Buffer::create((width, height)),
-                        cur_layer: 0,
-                    })
-                })?,
-            )
-            .unwrap();
+            let a = animator_thread.clone();
+            globals
+                .set(
+                    "next_frame",
+                    lua.create_function_mut(move |lua, buffer: Value<'_>| {
+                        if let Value::UserData(data) = &buffer {
+                            lua.globals()
+                                .set("cur_frame", a.lock().unwrap().frames.len() + 2)?;
+                            let monitor_type: usize = lua.globals().get("monitor_type")?;
+                            a.lock().unwrap().current_monitor_settings.monitor_type = monitor_type;
 
-        let a = animator.clone();
-        globals
-            .set(
-                "next_frame",
-                lua.create_function_mut(move |lua, buffer: Value<'_>| {
-                    if let Value::UserData(data) = &buffer {
-                        lua.globals()
-                            .set("cur_frame", a.lock().unwrap().frames.len() + 2)?;
-                        let monitor_type: usize = lua.globals().get("monitor_type")?;
-                        a.lock().unwrap().current_monitor_settings.monitor_type = monitor_type;
+                            a.lock().unwrap().current_monitor_settings.gamma =
+                                lua.globals().get("monitor_gamma")?;
+                            a.lock().unwrap().current_monitor_settings.contrast =
+                                lua.globals().get("monitor_contrast")?;
+                            a.lock().unwrap().current_monitor_settings.saturation =
+                                lua.globals().get("monitor_saturation")?;
+                            a.lock().unwrap().current_monitor_settings.brightness =
+                                lua.globals().get("monitor_brightness")?;
+                            a.lock().unwrap().current_monitor_settings.blur =
+                                lua.globals().get("monitor_blur")?;
+                            a.lock().unwrap().current_monitor_settings.curvature =
+                                lua.globals().get("monitor_curvature")?;
+                            a.lock().unwrap().current_monitor_settings.scanlines =
+                                lua.globals().get("monitor_scanlines")?;
 
-                        a.lock().unwrap().current_monitor_settings.gamma =
-                            lua.globals().get("monitor_gamma")?;
-                        a.lock().unwrap().current_monitor_settings.contrast =
-                            lua.globals().get("monitor_contrast")?;
-                        a.lock().unwrap().current_monitor_settings.saturation =
-                            lua.globals().get("monitor_saturation")?;
-                        a.lock().unwrap().current_monitor_settings.brightness =
-                            lua.globals().get("monitor_brightness")?;
-                        a.lock().unwrap().current_monitor_settings.blur =
-                            lua.globals().get("monitor_blur")?;
-                        a.lock().unwrap().current_monitor_settings.curvature =
-                            lua.globals().get("monitor_curvature")?;
-                        a.lock().unwrap().current_monitor_settings.scanlines =
-                            lua.globals().get("monitor_scanlines")?;
+                            a.lock()
+                                .unwrap()
+                                .lua_next_frame(&data.borrow::<LuaBuffer>()?.buffer)
+                        } else {
+                            Err(mlua::Error::RuntimeError(format!(
+                                "UserData parameter required, got: {:?}",
+                                buffer
+                            )))
+                        }
+                    }).unwrap(),
+                )
+                .unwrap();
 
-                        a.lock()
-                            .unwrap()
-                            .lua_next_frame(&data.borrow::<LuaBuffer>()?.buffer)
-                    } else {
-                        Err(mlua::Error::RuntimeError(format!(
-                            "UserData parameter required, got: {:?}",
-                            buffer
-                        )))
-                    }
-                })?,
-            )
-            .unwrap();
+            let luaanimator = animator_thread.clone();
+            globals
+                .set(
+                    "set_speed",
+                    lua.create_function(move |_lua, ()| {
+                        let speed = luaanimator.lock().unwrap().get_speed();
+                        mlua::Result::Ok(speed)
+                    }).unwrap(),
+                )
+                .unwrap();
 
-        let luaanimator = animator.clone();
-        globals
-            .set(
-                "set_speed",
-                lua.create_function(move |_lua, ()| {
-                    let speed = luaanimator.lock().unwrap().get_speed();
-                    mlua::Result::Ok(speed)
-                })?,
-            )
-            .unwrap();
+            let luaanimator = animator_thread.clone();
+            globals
+                .set(
+                    "set_speed",
+                    lua.create_function(move |_lua, speed: u32| {
+                        luaanimator.lock().unwrap().set_speed(speed);
+                        mlua::Result::Ok(())
+                    }).unwrap(),
+                )
+                .unwrap();
 
-        let luaanimator = animator.clone();
-        globals
-            .set(
-                "set_speed",
-                lua.create_function(move |_lua, speed: u32| {
-                    luaanimator.lock().unwrap().set_speed(speed);
-                    mlua::Result::Ok(())
-                })?,
-            )
-            .unwrap();
+            globals.set("cur_frame", 1).unwrap();
+            {
+                let lock = animator_thread.lock().unwrap();
+                globals.set("monitor_type", lock.current_monitor_settings.monitor_type).unwrap();
+                globals.set("monitor_gamma", lock.current_monitor_settings.gamma).unwrap();
+                globals.set("monitor_contrast", lock.current_monitor_settings.contrast).unwrap();
+                globals.set(
+                    "monitor_saturation",
+                    lock.current_monitor_settings.saturation,
+                ).unwrap();
+                globals.set(
+                    "monitor_brightness",
+                    lock.current_monitor_settings.brightness,
+                ).unwrap();
+                globals.set("monitor_blur", lock.current_monitor_settings.blur).unwrap();
+                globals.set("monitor_curvature", lock.current_monitor_settings.curvature).unwrap();
+                globals.set("monitor_scanlines", lock.current_monitor_settings.scanlines).unwrap();
+            }
 
-        globals.set("cur_frame", 1)?;
-        {
-            let lock = animator.lock().unwrap();
-            globals.set("monitor_type", lock.current_monitor_settings.monitor_type)?;
-            globals.set("monitor_gamma", lock.current_monitor_settings.gamma)?;
-            globals.set("monitor_contrast", lock.current_monitor_settings.contrast)?;
-            globals.set(
-                "monitor_saturation",
-                lock.current_monitor_settings.saturation,
-            )?;
-            globals.set(
-                "monitor_brightness",
-                lock.current_monitor_settings.brightness,
-            )?;
-            globals.set("monitor_blur", lock.current_monitor_settings.blur)?;
-            globals.set("monitor_curvature", lock.current_monitor_settings.curvature)?;
-            globals.set("monitor_scanlines", lock.current_monitor_settings.scanlines)?;
-        }
+            if let Err(err) = lua.load(txt).exec() {
+                animator_thread.lock().unwrap().error = format!("{err}");
+            }
+            println!("end thread!");
 
-        lua.load(txt).exec()?;
-        Ok(animator)
+        });
+        animator.lock().unwrap().run_thread = Some(run_thread);
+        animator
+    }
+
+    pub fn is_thread_running(&self) -> bool {
+        self.run_thread.is_some() && !self.run_thread.as_ref().unwrap().is_finished()
+    }
+
+    pub fn success(&self) ->bool {
+        !self.is_thread_running() && self.error.is_empty()
     }
 
     pub fn is_playing(&self) -> bool {
@@ -754,11 +776,21 @@ impl Animator {
             MonitorSettings::default()
         }
     }
+    
+    pub fn get_cur_frame_buffer(&self) -> Option<(&Buffer, &MonitorSettings, &u32)> {
+        if let Some((scene, settings, next_frame)) = self.frames.get(self.cur_frame) {
+            return Some((scene, settings, next_frame));
+        }
+        None
+    }
 
-    #[cfg(feature = "ui")]
-    fn next_frame(&mut self) {
+    pub fn next_frame(&mut self) -> bool {
         self.cur_frame += 1;
         if self.cur_frame >= self.frames.len() {
+            if self.is_thread_running() {
+                self.cur_frame -= 1;
+                return false;
+            }
             if self.is_loop {
                 self.speed = DEFAULT_SPEEED;
                 self.cur_frame = 0;
@@ -766,8 +798,9 @@ impl Animator {
                 self.cur_frame -= 1;
                 self.is_playing = false;
             }
-            return;
+            return true;
         }
         self.speed = self.frames[self.cur_frame].2;
+        true
     }
 }
