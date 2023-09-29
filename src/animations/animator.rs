@@ -634,6 +634,28 @@ impl Animator {
             )
             .unwrap();
 
+        let luaanimator = animator.clone();
+        globals
+            .set(
+                "set_speed",
+                lua.create_function(move |_lua, ()| {
+                    let speed = luaanimator.lock().unwrap().get_speed();
+                    mlua::Result::Ok(speed)
+                })?,
+            )
+            .unwrap();
+        
+        let luaanimator = animator.clone();
+        globals
+            .set(
+                "set_speed",
+                lua.create_function(move |_lua, speed: u32| {
+                    luaanimator.lock().unwrap().set_speed(speed);
+                    mlua::Result::Ok(())
+                })?,
+            )
+            .unwrap();
+        
         globals.set("cur_frame", 1)?;
         {
             let lock = animator.lock().unwrap();
