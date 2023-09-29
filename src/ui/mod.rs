@@ -177,10 +177,7 @@ pub fn show_terminal_area(
     if buffer_view.lock().get_buffer().is_terminal_buffer {
         forced_width = buffer_view.lock().get_buffer().terminal_state.get_width();
         forced_height = buffer_view.lock().get_buffer().terminal_state.get_height();
-
-        println!("forced_width: {} height:{forced_height}", forced_width);
     }
-
 
     let mut buf_h = forced_height as f32;
     let real_height = if options.use_terminal_height {
