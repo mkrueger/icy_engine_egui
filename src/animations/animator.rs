@@ -7,7 +7,6 @@ use icy_engine::{AttributedChar, Buffer, BufferParser, Caret, Position, TextPane
 use mlua::{Lua, UserData, Value};
 use regex::Regex;
 
-use web_time::Duration;
 #[cfg(feature = "ui")]
 use web_time::Instant;
 

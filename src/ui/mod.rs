@@ -172,6 +172,11 @@ pub fn show_terminal_area(
     options: TerminalOptions,
 ) -> (Response, TerminalCalc) {
     let mut forced_height = buffer_view.lock().get_buffer().get_height();
+
+    if buffer_view.lock().get_buffer().is_terminal_buffer {
+        forced_height = buffer_view.lock().get_buffer().terminal_state.get_height();
+    }
+
     let mut forced_width = buffer_view.lock().get_buffer().get_width();
     let mut buf_h = forced_height as f32;
     let real_height = if options.use_terminal_height {
