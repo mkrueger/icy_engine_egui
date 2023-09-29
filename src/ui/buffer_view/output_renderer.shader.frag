@@ -196,7 +196,6 @@ void draw_selection_rect(vec2 upper_left, vec2 bottom_right, bool in_buffer_rect
 		}
 	}
 
-
     if (upper_left.y <= uv.y && uv.y <= bottom_right.y)  {
 		// left
 		if (upper_left.x == uv.x) {
@@ -414,7 +413,6 @@ void draw_preview_rect(vec2 upper_left, vec2 bottom_right, vec3 rect_color) {
     }
 }
 
-
 void draw_layer_rectangle(bool in_buffer_rect) {
 	if (u_layer_rectangle_color == vec3(0.0)) {
 		return;
@@ -424,7 +422,6 @@ void draw_layer_rectangle(bool in_buffer_rect) {
 	draw_preview_rect(u_preview_layer_rectangle.xy, u_preview_layer_rectangle.zw, u_preview_layer_rectangle_color);
 	draw_selection_rect(u_selection_rectangle.xy, u_selection_rectangle.zw, in_buffer_rect);
 }
-
 
 void main() {
 	vec2 uv   = gl_FragCoord.xy / u_resolution;

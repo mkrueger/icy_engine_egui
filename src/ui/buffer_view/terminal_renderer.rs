@@ -283,11 +283,10 @@ impl TerminalRenderer {
         let scroll_back_line = max(0, max_lines - first_row);
         let first_line = 0.max(real_height.saturating_sub(calc.forced_height));
         let mut buffer_data = Vec::with_capacity((2 * (buf_w + 1) * 4 * buf_h) as usize);
-        let colors = buf.palette.len().max(1) as u32;
         let mut y: i32 = 0;
         while y <= buf_h {
             let mut is_double_height = false;
-
+            let cur_idx = buffer_data.len();
             for x in 0..=buf_w {
                 let mut ch = buf.get_char((first_column + x, first_line - scroll_back_line + y));
                 if ch.attribute.is_double_height() {
@@ -315,35 +314,17 @@ impl TerminalRenderer {
             }
 
             if is_double_height {
+                let double_line_start = buffer_data.len();
+                buffer_data.extend_from_within(cur_idx..buffer_data.len());
+                // clear all chars that are not double height.
                 for x in 0..=buf_w {
                     let ch = buf.get_char((first_column + x, first_line - scroll_back_line + y));
-
-                    if ch.attribute.is_double_height() {
-                        buffer_data.push(ch.ch as u8);
-                    } else {
-                        buffer_data.push(b' ');
-                    }
-
-                    if ch.attribute.is_bold() {
-                        buffer_data.push(conv_color(ch.attribute.get_foreground() + 8, colors));
-                    } else {
-                        buffer_data.push(conv_color(ch.attribute.get_foreground(), colors));
-                    }
-
-                    buffer_data.push(conv_color(ch.attribute.get_background(), colors));
-
-                    if buf.has_fonts() {
-                        if let Some(font_number) = self.font_lookup_table.get(&ch.get_font_page()) {
-                            buffer_data.push(*font_number as u8);
-                        } else {
-                            buffer_data.push(0);
-                        }
-                    } else {
-                        buffer_data.push(0);
+                    if !ch.attribute.is_double_height() {
+                        buffer_data[double_line_start + x as usize * 4] = b' ';
                     }
                 }
             }
-
+            
             if is_double_height {
                 y += 2;
             } else {
@@ -355,6 +336,7 @@ impl TerminalRenderer {
         y = 0;
         while y <= buf_h {
             let mut is_double_height = false;
+            let cur_idx = buffer_data.len();
 
             for x in 0..=buf_w {
                 let ch = buf.get_char((first_column + x, first_line - scroll_back_line + y));
@@ -404,45 +386,12 @@ impl TerminalRenderer {
                     buffer_data.push(if ch.attribute.is_blinking() { 255 } else { 0 });
                 }
             }
-
+            
             if is_double_height {
+                let double_line_start = buffer_data.len();
+                buffer_data.extend_from_within(cur_idx..buffer_data.len());
                 for x in 0..=buf_w {
-                    let ch = buf.get_char((x, first_line - scroll_back_line + y));
-                    let is_selected =
-                        edit_state.get_is_selected((x, first_line - scroll_back_line + y));
-                    let is_tool_overlay = edit_state
-                        .get_tool_overlay_mask()
-                        .get_is_selected((x, first_line - scroll_back_line + y));
-                    let mut attr = if ch.attribute.is_double_underlined() {
-                        3
-                    } else {
-                        u8::from(ch.attribute.is_underlined())
-                    };
-                    if ch.attribute.is_crossed_out() {
-                        attr |= 4;
-                    }
-
-                    if ch.attribute.is_double_height() {
-                        is_double_height = true;
-                        attr |= 8;
-                        attr |= 16;
-                    }
-
-                    buffer_data.push(attr);
-                    buffer_data.push(attr);
-                    let mut preview_flag = 0;
-                    if is_selected {
-                        preview_flag |= 1;
-                    }
-                    if is_tool_overlay {
-                        preview_flag |= 2;
-                    }
-                    buffer_data.push(preview_flag);
-                    if !ch.is_visible() {
-                        buffer_data.push(128);
-                    } else {
-                        buffer_data.push(if ch.attribute.is_blinking() { 255 } else { 0 });
-                    }
+                    buffer_data[double_line_start + x as usize * 4] |= 16;
                 }
             }
 
@@ -456,12 +405,16 @@ impl TerminalRenderer {
         // bg color.
         y = 0;
         while y <= buf_h {
-            let is_double_height = false;
+            let mut is_double_height = false;
+            let cur_idx = buffer_data.len();
 
             for x in 0..=buf_w {
                 let mut ch = buf.get_char((first_column + x, first_line - scroll_back_line + y));
                 if !use_bg {
                     ch.attribute.set_background(0);
+                }
+                if ch.attribute.is_double_height() {
+                    is_double_height = true;
                 }
                 let (r, g, b) = buf.palette.get_rgb(ch.attribute.get_background() as usize);
                 buffer_data.push(r);
@@ -471,15 +424,7 @@ impl TerminalRenderer {
             }
 
             if is_double_height {
-                for x in 0..=buf_w {
-                    let ch = buf.get_char((x, first_line - scroll_back_line + y));
-
-                    let (r, g, b) = buf.palette.get_rgb(ch.attribute.get_background() as usize);
-                    buffer_data.push(r);
-                    buffer_data.push(g);
-                    buffer_data.push(b);
-                    buffer_data.push(255);
-                }
+                buffer_data.extend_from_within(cur_idx..buffer_data.len());
             }
 
             if is_double_height {
@@ -841,11 +786,4 @@ unsafe fn create_font_texture(gl: &glow::Context) -> glow::Texture {
     crate::check_gl_error!(gl, "create_font_texture");
 
     font_texture
-}
-
-fn conv_color(c: u32, colors: u32) -> u8 {
-    if colors == 0 {
-        return 0;
-    }
-    ((256 * c) / colors) as u8
 }
