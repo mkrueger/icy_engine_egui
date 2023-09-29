@@ -644,7 +644,7 @@ impl Animator {
                 })?,
             )
             .unwrap();
-        
+
         let luaanimator = animator.clone();
         globals
             .set(
@@ -655,7 +655,7 @@ impl Animator {
                 })?,
             )
             .unwrap();
-        
+
         globals.set("cur_frame", 1)?;
         {
             let lock = animator.lock().unwrap();

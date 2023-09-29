@@ -31,7 +31,7 @@ pub struct TerminalRenderer {
     font_texture: glow::Texture,
     vertex_array: glow::VertexArray,
 
-    old_palette_hash: u32,
+    old_palette_checksum: u32,
 
     redraw_view: bool,
     redraw_font: bool,
@@ -66,7 +66,7 @@ impl TerminalRenderer {
             Self {
                 terminal_shader,
                 font_lookup_table: HashMap::default(),
-                old_palette_hash: 0,
+                old_palette_checksum: 0,
 
                 terminal_render_texture,
                 font_texture,
@@ -122,10 +122,10 @@ impl TerminalRenderer {
             edit_state.get_buffer_mut().set_font_table_is_updated();
             self.update_font_texture(gl, edit_state.get_buffer());
         }
-        if self.old_palette_hash != edit_state.get_buffer_mut().palette.get_hash()
+        if self.old_palette_checksum != edit_state.get_buffer_mut().palette.get_checksum()
             || edit_state.is_palette_dirty
         {
-            self.old_palette_hash = edit_state.get_buffer_mut().palette.get_hash();
+            self.old_palette_checksum = edit_state.get_buffer_mut().palette.get_checksum();
             self.redraw_terminal();
         }
 

@@ -322,7 +322,11 @@ pub fn show_terminal_area(
                 ui.set_clip_rect(calc.terminal_rect);
                 let painter = ui.painter();
                 if calc.char_width <= calc.buffer_char_width {
-                    for y in 0..if calc.forced_height < calc.char_height as i32 { calc.forced_height + 1 } else { calc.forced_height } {
+                    for y in 0..if calc.forced_height < calc.char_height as i32 {
+                        calc.forced_height + 1
+                    } else {
+                        calc.forced_height
+                    } {
                         let font_id = FontId::new(font_size, FontFamily::Proportional);
                         let text: WidgetText = format!("{}", 1 + y + calc.first_line as i32).into();
                         let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
