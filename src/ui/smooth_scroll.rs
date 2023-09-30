@@ -75,21 +75,13 @@ impl SmoothScroll {
         ui.ctx().memory_mut(|mem: &mut egui::Memory| {
             mem.data.insert_persisted(
                 self.id,
-                (
-                    self.char_scroll_position,
-                    self.last_char_height,
-                    self.drag_horiz_start,
-                    self.drag_vert_start,
-                ),
+                (self.char_scroll_position, self.last_char_height, self.drag_horiz_start, self.drag_vert_start),
             );
         });
     }
 
     fn load_data(&mut self, ui: &Ui) {
-        if let Some(scroll) = ui
-            .ctx()
-            .memory_mut(|mem| mem.data.get_persisted::<(Vec2, f32, bool, bool)>(self.id))
-        {
+        if let Some(scroll) = ui.ctx().memory_mut(|mem| mem.data.get_persisted::<(Vec2, f32, bool, bool)>(self.id)) {
             self.char_scroll_position = scroll.0;
             if self.char_scroll_position.x.is_nan() {
                 self.char_scroll_position.x = 0.0;
@@ -199,48 +191,27 @@ impl SmoothScroll {
     }
 
     fn clamp_scroll_position(&mut self, calc: &mut TerminalCalc) {
-        self.char_scroll_position.y = self
-            .char_scroll_position
-            .y
-            .clamp(0.0, calc.max_y_scroll())
-            .floor();
-        self.char_scroll_position.x = self
-            .char_scroll_position
-            .x
-            .clamp(0.0, calc.max_x_scroll())
-            .floor();
+        self.char_scroll_position.y = self.char_scroll_position.y.clamp(0.0, calc.max_y_scroll()).floor();
+        self.char_scroll_position.x = self.char_scroll_position.x.clamp(0.0, calc.max_x_scroll()).floor();
 
         calc.char_scroll_position = self.char_scroll_position;
     }
 
-    fn show_vertical_scrollbar(
-        &mut self,
-        ui: &Ui,
-        response: Response,
-        calc: &mut TerminalCalc,
-        has_horiz_scrollbar: bool,
-    ) -> Response {
+    fn show_vertical_scrollbar(&mut self, ui: &Ui, response: Response, calc: &mut TerminalCalc, has_horiz_scrollbar: bool) -> Response {
         let scrollbar_width = ui.style().spacing.scroll_bar_width;
         let x = calc.terminal_rect.right() - scrollbar_width;
         let mut bg_rect: Rect = calc.terminal_rect;
         bg_rect.set_left(x);
 
         let max_y_scroll = calc.max_y_scroll();
-        let term_height = calc.terminal_rect.height()
-            - if has_horiz_scrollbar {
-                scrollbar_width
-            } else {
-                0.0
-            };
+        let term_height = calc.terminal_rect.height() - if has_horiz_scrollbar { scrollbar_width } else { 0.0 };
         let bar_height = term_height * calc.buffer_char_height / calc.char_height;
 
         let bar_offset = -bar_height / 2.0;
         let how_on = if ui.is_enabled() {
-            let (dragged, hovered) =
-                self.handle_user_input_vert(ui, &response, x, bar_offset, calc, bg_rect);
+            let (dragged, hovered) = self.handle_user_input_vert(ui, &response, x, bar_offset, calc, bg_rect);
             self.clamp_scroll_position(calc);
-            ui.ctx()
-                .animate_bool(response.id.with("_vert"), hovered || dragged)
+            ui.ctx().animate_bool(response.id.with("_vert"), hovered || dragged)
         } else {
             0.0
         };
@@ -249,57 +220,36 @@ impl SmoothScroll {
 
         // draw bg
         ui.painter().rect_filled(
-            Rect::from_min_size(
-                Pos2::new(calc.terminal_rect.right() - x_size, bg_rect.top()),
-                Vec2::new(x_size, term_height),
-            ),
+            Rect::from_min_size(Pos2::new(calc.terminal_rect.right() - x_size, bg_rect.top()), Vec2::new(x_size, term_height)),
             0.,
             Color32::from_rgba_unmultiplied(0x3F, 0x3F, 0x3F, 32),
         );
 
         // draw bar
-        let bar_top = calc.terminal_rect.top()
-            + term_height * self.char_scroll_position.y
-                / (max_y_scroll + calc.buffer_char_height * calc.font_height);
+        let bar_top = calc.terminal_rect.top() + term_height * self.char_scroll_position.y / (max_y_scroll + calc.buffer_char_height * calc.font_height);
         ui.painter().rect_filled(
-            Rect::from_min_size(
-                Pos2::new(calc.terminal_rect.right() - x_size, bar_top),
-                Vec2::new(x_size, bar_height),
-            ),
+            Rect::from_min_size(Pos2::new(calc.terminal_rect.right() - x_size, bar_top), Vec2::new(x_size, bar_height)),
             4.,
             Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x5F + (127.0 * how_on) as u8),
         );
         response
     }
 
-    fn show_horizontal_scrollbar(
-        &mut self,
-        ui: &Ui,
-        response: Response,
-        calc: &mut TerminalCalc,
-        has_vert_scrollbar: bool,
-    ) -> Response {
+    fn show_horizontal_scrollbar(&mut self, ui: &Ui, response: Response, calc: &mut TerminalCalc, has_vert_scrollbar: bool) -> Response {
         let scrollbar_height = ui.style().spacing.scroll_bar_width;
         let y = calc.terminal_rect.bottom() - scrollbar_height;
         let mut bg_rect: Rect = calc.terminal_rect;
         bg_rect.set_top(y);
 
         let max_x_scroll = calc.max_x_scroll();
-        let term_width = calc.terminal_rect.width()
-            - if has_vert_scrollbar {
-                scrollbar_height
-            } else {
-                0.0
-            };
+        let term_width = calc.terminal_rect.width() - if has_vert_scrollbar { scrollbar_height } else { 0.0 };
         let bar_width = term_width * calc.buffer_char_width / calc.char_width;
         let bar_offset = -bar_width / 2.0;
 
         let how_on = if ui.is_enabled() {
-            let (dragged, hovered) =
-                self.handle_user_input_horiz(ui, &response, y, bar_offset, calc, bg_rect);
+            let (dragged, hovered) = self.handle_user_input_horiz(ui, &response, y, bar_offset, calc, bg_rect);
             self.clamp_scroll_position(calc);
-            ui.ctx()
-                .animate_bool(response.id.with("_horiz"), hovered || dragged)
+            ui.ctx().animate_bool(response.id.with("_horiz"), hovered || dragged)
         } else {
             0.0
         };
@@ -317,37 +267,23 @@ impl SmoothScroll {
         );
 
         // draw bar
-        let bar_left = calc.terminal_rect.left()
-            + term_width * self.char_scroll_position.x
-                / (max_x_scroll + calc.buffer_char_width * calc.font_width);
+        let bar_left = calc.terminal_rect.left() + term_width * self.char_scroll_position.x / (max_x_scroll + calc.buffer_char_width * calc.font_width);
         ui.painter().rect_filled(
-            Rect::from_min_size(
-                Pos2::new(bar_left, calc.terminal_rect.bottom() - y_size),
-                Vec2::new(bar_width, y_size),
-            ),
+            Rect::from_min_size(Pos2::new(bar_left, calc.terminal_rect.bottom() - y_size), Vec2::new(bar_width, y_size)),
             4.,
             Color32::from_rgba_unmultiplied(0xFF, 0xFF, 0xFF, 0x5F + (127.0 * how_on) as u8),
         );
         response
     }
 
-    fn handle_user_input_vert(
-        &mut self,
-        ui: &Ui,
-        response: &Response,
-        x: f32,
-        bar_offset: f32,
-        calc: &TerminalCalc,
-        bg_rect: Rect,
-    ) -> (bool, bool) {
+    fn handle_user_input_vert(&mut self, ui: &Ui, response: &Response, x: f32, bar_offset: f32, calc: &TerminalCalc, bg_rect: Rect) -> (bool, bool) {
         if response.clicked() {
             if let Some(mouse_pos) = response.interact_pointer_pos() {
                 if mouse_pos.x > x {
                     let my = mouse_pos.y + bar_offset;
                     self.char_scroll_position = Vec2::new(
                         self.char_scroll_position.x,
-                        calc.char_height * calc.font_height * (my - bg_rect.top())
-                            / bg_rect.height().max(1.0),
+                        calc.char_height * calc.font_height * (my - bg_rect.top()) / bg_rect.height().max(1.0),
                     );
                     self.set_scroll_position = true;
                 }
@@ -362,8 +298,7 @@ impl SmoothScroll {
                 let my = mouse_pos.y + bar_offset;
                 self.char_scroll_position = Vec2::new(
                     self.char_scroll_position.x,
-                    calc.char_height * calc.font_height * (my - bg_rect.top())
-                        / bg_rect.height().max(1.0),
+                    calc.char_height * calc.font_height * (my - bg_rect.top()) / bg_rect.height().max(1.0),
                 );
                 self.set_scroll_position = true;
             }
@@ -395,22 +330,13 @@ impl SmoothScroll {
         (dragged, hovered)
     }
 
-    fn handle_user_input_horiz(
-        &mut self,
-        ui: &Ui,
-        response: &Response,
-        y: f32,
-        bar_offset: f32,
-        calc: &TerminalCalc,
-        bg_rect: Rect,
-    ) -> (bool, bool) {
+    fn handle_user_input_horiz(&mut self, ui: &Ui, response: &Response, y: f32, bar_offset: f32, calc: &TerminalCalc, bg_rect: Rect) -> (bool, bool) {
         if response.clicked() {
             if let Some(mouse_pos) = response.interact_pointer_pos() {
                 if mouse_pos.y > y {
                     let mx = mouse_pos.x + bar_offset;
                     self.char_scroll_position = Vec2::new(
-                        calc.char_width * calc.font_width * (mx - bg_rect.left())
-                            / bg_rect.width().max(1.0),
+                        calc.char_width * calc.font_width * (mx - bg_rect.left()) / bg_rect.width().max(1.0),
                         self.char_scroll_position.y,
                     );
                     self.set_scroll_position = true;
@@ -425,8 +351,7 @@ impl SmoothScroll {
                 dragged = true;
                 let mx = mouse_pos.x + bar_offset;
                 self.char_scroll_position = Vec2::new(
-                    calc.char_width * calc.font_width * (mx - bg_rect.left())
-                        / bg_rect.width().max(1.0),
+                    calc.char_width * calc.font_width * (mx - bg_rect.left()) / bg_rect.width().max(1.0),
                     self.char_scroll_position.y,
                 );
                 self.set_scroll_position = true;

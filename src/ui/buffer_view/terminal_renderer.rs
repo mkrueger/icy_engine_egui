@@ -59,9 +59,7 @@ impl TerminalRenderer {
             let terminal_render_texture = create_buffer_texture(gl);
             let terminal_shader = compile_shader(gl);
 
-            let vertex_array = gl
-                .create_vertex_array()
-                .expect("Cannot create vertex array");
+            let vertex_array = gl.create_vertex_array().expect("Cannot create vertex array");
 
             Self {
                 terminal_shader,
@@ -107,14 +105,7 @@ impl TerminalRenderer {
         self.redraw_font = true;
     }
 
-    pub fn update_textures(
-        &mut self,
-        gl: &glow::Context,
-        edit_state: &mut EditState,
-        calc: &TerminalCalc,
-        use_fg: bool,
-        use_bg: bool,
-    ) {
+    pub fn update_textures(&mut self, gl: &glow::Context, edit_state: &mut EditState, calc: &TerminalCalc, use_fg: bool, use_bg: bool) {
         self.check_blink_timers();
 
         if self.redraw_font || edit_state.get_buffer().is_font_table_updated() {
@@ -122,9 +113,7 @@ impl TerminalRenderer {
             edit_state.get_buffer_mut().set_font_table_is_updated();
             self.update_font_texture(gl, edit_state.get_buffer());
         }
-        if self.old_palette_checksum != edit_state.get_buffer_mut().palette.get_checksum()
-            || edit_state.is_palette_dirty
-        {
+        if self.old_palette_checksum != edit_state.get_buffer_mut().palette.get_checksum() || edit_state.is_palette_dirty {
             self.old_palette_checksum = edit_state.get_buffer_mut().palette.get_checksum();
             self.redraw_terminal();
         }
@@ -175,9 +164,7 @@ impl TerminalRenderer {
             let fontpage_start = cur_font_num as i32 * (line_width * height);
             for ch in 0..256 {
                 let cur_font = font.1;
-                let glyph = cur_font
-                    .get_glyph(unsafe { char::from_u32_unchecked(ch as u32) })
-                    .unwrap();
+                let glyph = cur_font.get_glyph(unsafe { char::from_u32_unchecked(ch as u32) }).unwrap();
 
                 let x = ch % chars_in_line;
                 let y = ch / chars_in_line;
@@ -203,11 +190,7 @@ impl TerminalRenderer {
                                 po += 1;
                             }
                         }
-                        if buf.use_letter_spacing()
-                            && (0xC0..=0xDF).contains(&ch)
-                            && !(0xB0..=0xBF).contains(&ch)
-                            && (scan_line & 1) != 0
-                        {
+                        if buf.use_letter_spacing() && (0xC0..=0xDF).contains(&ch) && !(0xB0..=0xBF).contains(&ch) && (scan_line & 1) != 0 {
                             // unroll
                             font_data[po] = 0xFF;
                             po += 1;
@@ -264,14 +247,7 @@ impl TerminalRenderer {
         }
     }
 
-    fn update_terminal_texture(
-        &self,
-        gl: &glow::Context,
-        edit_state: &EditState,
-        calc: &TerminalCalc,
-        use_fg: bool,
-        use_bg: bool,
-    ) {
+    fn update_terminal_texture(&self, gl: &glow::Context, edit_state: &EditState, calc: &TerminalCalc, use_fg: bool, use_bg: bool) {
         let buf = edit_state.get_buffer();
         let first_column = (calc.viewport_top().x / calc.char_size.x) as i32;
         let first_row = (calc.viewport_top().y / calc.char_size.y) as i32;
@@ -324,7 +300,7 @@ impl TerminalRenderer {
                     }
                 }
             }
-            
+
             if is_double_height {
                 y += 2;
             } else {
@@ -340,8 +316,7 @@ impl TerminalRenderer {
 
             for x in 0..=buf_w {
                 let ch = buf.get_char((first_column + x, first_line - scroll_back_line + y));
-                let is_selected = edit_state
-                    .get_is_mask_selected((first_column + x, first_line - scroll_back_line + y));
+                let is_selected = edit_state.get_is_mask_selected((first_column + x, first_line - scroll_back_line + y));
                 let is_tool_overlay = edit_state
                     .get_tool_overlay_mask()
                     .get_is_selected((first_column + x, first_line - scroll_back_line + y));
@@ -386,7 +361,7 @@ impl TerminalRenderer {
                     buffer_data.push(if ch.attribute.is_blinking() { 255 } else { 0 });
                 }
             }
-            
+
             if is_double_height {
                 let double_line_start = buffer_data.len();
                 buffer_data.extend_from_within(cur_idx..buffer_data.len());
@@ -471,13 +446,7 @@ impl TerminalRenderer {
             gl.bind_texture(glow::TEXTURE_2D, Some(self.reference_image_texture));
             crate::check_gl_error!(gl, "render_terminal_bind_textures");
 
-            self.run_shader(
-                gl,
-                view_state,
-                render_buffer_size,
-                terminal_options,
-                has_focus,
-            );
+            self.run_shader(gl, view_state, render_buffer_size, terminal_options, has_focus);
 
             gl.bind_vertex_array(Some(self.vertex_array));
             gl.draw_arrays(glow::TRIANGLES, 0, 6);
@@ -495,24 +464,17 @@ impl TerminalRenderer {
     ) {
         let fontdim = buffer_view.get_buffer().get_font_dimensions();
         let font_height = fontdim.height as f32;
-        let font_width = fontdim.width as f32
-            + if buffer_view.get_buffer().use_letter_spacing() {
-                1.0
-            } else {
-                0.0
-            };
+        let font_width = fontdim.width as f32 + if buffer_view.get_buffer().use_letter_spacing() { 1.0 } else { 0.0 };
 
         gl.use_program(Some(self.terminal_shader));
         gl.uniform_2_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_resolution")
-                .as_ref(),
+            gl.get_uniform_location(self.terminal_shader, "u_resolution").as_ref(),
             render_buffer_size.x,
             render_buffer_size.y,
         );
 
         gl.uniform_2_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_output_resolution")
-                .as_ref(),
+            gl.get_uniform_location(self.terminal_shader, "u_output_resolution").as_ref(),
             render_buffer_size.x + font_width,
             render_buffer_size.y + font_height,
         );
@@ -523,15 +485,13 @@ impl TerminalRenderer {
         let scroll_offset_x = -(((viewport_top.x / c_width) * font_width) % font_width).floor();
         let scroll_offset_y = (((viewport_top.y / c_height) * font_height) % font_height).floor();
         gl.uniform_2_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_position")
-                .as_ref(),
+            gl.get_uniform_location(self.terminal_shader, "u_position").as_ref(),
             scroll_offset_x,
             scroll_offset_y - font_height,
         );
 
         gl.uniform_2_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_scroll_pos")
-                .as_ref(),
+            gl.get_uniform_location(self.terminal_shader, "u_scroll_pos").as_ref(),
             (viewport_top.x / c_width) * font_height,
             (viewport_top.y / c_height) * font_height,
         );
@@ -541,8 +501,7 @@ impl TerminalRenderer {
             caret_pos += layer.get_offset();
         }
 
-        let caret_x = caret_pos.x as f32 * font_width
-            - (top_pos.x / buffer_view.calc.char_size.x * font_width);
+        let caret_x = caret_pos.x as f32 * font_width - (top_pos.x / buffer_view.calc.char_size.x * font_width);
 
         let caret_h = if buffer_view.get_caret().insert_mode {
             fontdim.height as f32 / 2.0
@@ -550,12 +509,9 @@ impl TerminalRenderer {
             2.0
         };
 
-        let caret_y = caret_pos.y as f32 * fontdim.height as f32 + fontdim.height as f32
-            - caret_h
-            - (top_pos.y / buffer_view.calc.char_size.y * font_height)
+        let caret_y = caret_pos.y as f32 * fontdim.height as f32 + fontdim.height as f32 - caret_h - (top_pos.y / buffer_view.calc.char_size.y * font_height)
             + scroll_offset_y;
-        let caret_w = if self.caret_blink.is_on() && buffer_view.get_caret().is_visible && has_focus
-        {
+        let caret_w = if self.caret_blink.is_on() && buffer_view.get_caret().is_visible && has_focus {
             font_width
         } else {
             0.0
@@ -563,8 +519,7 @@ impl TerminalRenderer {
         //println!("has focus:{} visible: {}, w:{}", has_focus, buffer_view.get_caret().is_visible, caret_w);
 
         gl.uniform_4_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_caret_rectangle")
-                .as_ref(),
+            gl.get_uniform_location(self.terminal_shader, "u_caret_rectangle").as_ref(),
             caret_x / (render_buffer_size.x + font_width),
             caret_y / (render_buffer_size.y + font_height),
             (caret_x + caret_w) / (render_buffer_size.x + font_width),
@@ -572,87 +527,53 @@ impl TerminalRenderer {
         );
 
         gl.uniform_1_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_character_blink")
-                .as_ref(),
-            if self.character_blink.is_on() {
-                1.0
-            } else {
-                0.0
-            },
+            gl.get_uniform_location(self.terminal_shader, "u_character_blink").as_ref(),
+            if self.character_blink.is_on() { 1.0 } else { 0.0 },
         );
         gl.uniform_2_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_terminal_size")
-                .as_ref(),
+            gl.get_uniform_location(self.terminal_shader, "u_terminal_size").as_ref(),
             buffer_view.calc.forced_width as f32 - 0.0001,
             buffer_view.calc.forced_height as f32 - 0.0001,
         );
 
-        gl.uniform_1_i32(
-            gl.get_uniform_location(self.terminal_shader, "u_fonts")
-                .as_ref(),
-            FONT_TEXTURE_SLOT as i32,
-        );
+        gl.uniform_1_i32(gl.get_uniform_location(self.terminal_shader, "u_fonts").as_ref(), FONT_TEXTURE_SLOT as i32);
 
         gl.uniform_1_i32(
-            gl.get_uniform_location(self.terminal_shader, "u_terminal_buffer")
-                .as_ref(),
+            gl.get_uniform_location(self.terminal_shader, "u_terminal_buffer").as_ref(),
             BUFFER_TEXTURE_SLOT as i32,
         );
 
         if let Some(img) = &self.reference_image {
             gl.uniform_1_i32(
-                gl.get_uniform_location(self.terminal_shader, "u_reference_image")
-                    .as_ref(),
+                gl.get_uniform_location(self.terminal_shader, "u_reference_image").as_ref(),
                 REFERENCE_IMAGE_TEXTURE_SLOT as i32,
             );
             gl.uniform_2_f32(
-                gl.get_uniform_location(self.terminal_shader, "u_reference_image_size")
-                    .as_ref(),
+                gl.get_uniform_location(self.terminal_shader, "u_reference_image_size").as_ref(),
                 img.width() as f32,
                 img.height() as f32,
             );
         }
 
         gl.uniform_1_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_has_reference_image")
-                .as_ref(),
+            gl.get_uniform_location(self.terminal_shader, "u_has_reference_image").as_ref(),
             if self.show_reference_image { 1.0 } else { 0.0 },
         );
         gl.uniform_1_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha")
-                .as_ref(),
+            gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(),
             terminal_options.marker_settings.reference_image_alpha,
         );
         let (r, g, b) = terminal_options.monitor_settings.selection_fg.get_rgb_f32();
 
-        gl.uniform_4_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_selection_fg")
-                .as_ref(),
-            r,
-            g,
-            b,
-            1.0,
-        );
+        gl.uniform_4_f32(gl.get_uniform_location(self.terminal_shader, "u_selection_fg").as_ref(), r, g, b, 1.0);
 
         let (r, g, b) = terminal_options.monitor_settings.selection_bg.get_rgb_f32();
 
-        gl.uniform_4_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_selection_bg")
-                .as_ref(),
-            r,
-            g,
-            b,
-            1.0,
-        );
+        gl.uniform_4_f32(gl.get_uniform_location(self.terminal_shader, "u_selection_bg").as_ref(), r, g, b, 1.0);
 
         gl.uniform_1_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_selection_attr")
-                .as_ref(),
-            if buffer_view.get_buffer().is_terminal_buffer {
-                1.0
-            } else {
-                0.0
-            },
+            gl.get_uniform_location(self.terminal_shader, "u_selection_attr").as_ref(),
+            if buffer_view.get_buffer().is_terminal_buffer { 1.0 } else { 0.0 },
         );
 
         crate::check_gl_error!(gl, "run_shader");
@@ -671,38 +592,22 @@ unsafe fn compile_shader(gl: &glow::Context) -> glow::Program {
         prepare_shader!(crate::ui::buffer_view::SHADER_SOURCE),
         prepare_shader!(include_str!("terminal_renderer.shader.frag")),
     );
-    let shader_sources = [
-        (glow::VERTEX_SHADER, vertex_shader_source),
-        (glow::FRAGMENT_SHADER, fragment_shader_source),
-    ];
+    let shader_sources = [(glow::VERTEX_SHADER, vertex_shader_source), (glow::FRAGMENT_SHADER, fragment_shader_source)];
 
     let shaders: Vec<_> = shader_sources
         .iter()
         .map(|(shader_type, shader_source)| {
-            let shader = gl
-                .create_shader(*shader_type)
-                .expect("Cannot create shader");
-            gl.shader_source(
-                shader,
-                shader_source, /*&format!("{}\n{}", shader_version, shader_source)*/
-            );
+            let shader = gl.create_shader(*shader_type).expect("Cannot create shader");
+            gl.shader_source(shader, shader_source /*&format!("{}\n{}", shader_version, shader_source)*/);
             gl.compile_shader(shader);
-            assert!(
-                gl.get_shader_compile_status(shader),
-                "{}",
-                gl.get_shader_info_log(shader)
-            );
+            assert!(gl.get_shader_compile_status(shader), "{}", gl.get_shader_info_log(shader));
             gl.attach_shader(program, shader);
             shader
         })
         .collect();
 
     gl.link_program(program);
-    assert!(
-        gl.get_program_link_status(program),
-        "{}",
-        gl.get_program_info_log(program)
-    );
+    assert!(gl.get_program_link_status(program), "{}", gl.get_program_info_log(program));
 
     for shader in shaders {
         gl.detach_shader(program, shader);
@@ -716,26 +621,10 @@ unsafe fn compile_shader(gl: &glow::Context) -> glow::Program {
 unsafe fn create_buffer_texture(gl: &glow::Context) -> glow::Texture {
     let buffer_texture = gl.create_texture().unwrap();
     gl.bind_texture(glow::TEXTURE_2D_ARRAY, Some(buffer_texture));
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D_ARRAY,
-        glow::TEXTURE_MIN_FILTER,
-        glow::NEAREST as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D_ARRAY,
-        glow::TEXTURE_MAG_FILTER,
-        glow::NEAREST as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D_ARRAY,
-        glow::TEXTURE_WRAP_S,
-        glow::CLAMP_TO_EDGE as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D_ARRAY,
-        glow::TEXTURE_WRAP_T,
-        glow::CLAMP_TO_EDGE as i32,
-    );
+    gl.tex_parameter_i32(glow::TEXTURE_2D_ARRAY, glow::TEXTURE_MIN_FILTER, glow::NEAREST as i32);
+    gl.tex_parameter_i32(glow::TEXTURE_2D_ARRAY, glow::TEXTURE_MAG_FILTER, glow::NEAREST as i32);
+    gl.tex_parameter_i32(glow::TEXTURE_2D_ARRAY, glow::TEXTURE_WRAP_S, glow::CLAMP_TO_EDGE as i32);
+    gl.tex_parameter_i32(glow::TEXTURE_2D_ARRAY, glow::TEXTURE_WRAP_T, glow::CLAMP_TO_EDGE as i32);
     crate::check_gl_error!(gl, "create_buffer_texture");
 
     buffer_texture
@@ -744,16 +633,8 @@ unsafe fn create_buffer_texture(gl: &glow::Context) -> glow::Texture {
 unsafe fn create_reference_image_texture(gl: &glow::Context) -> glow::Texture {
     let reference_image_texture: glow::Texture = gl.create_texture().unwrap();
     gl.bind_texture(glow::TEXTURE_2D, Some(reference_image_texture));
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D,
-        glow::TEXTURE_MIN_FILTER,
-        glow::NEAREST as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D,
-        glow::TEXTURE_MAG_FILTER,
-        glow::NEAREST as i32,
-    );
+    gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, glow::NEAREST as i32);
+    gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MAG_FILTER, glow::NEAREST as i32);
     crate::check_gl_error!(gl, "create_refeference_image_texture");
 
     reference_image_texture
@@ -763,26 +644,10 @@ unsafe fn create_font_texture(gl: &glow::Context) -> glow::Texture {
     let font_texture = gl.create_texture().unwrap();
     gl.bind_texture(glow::TEXTURE_2D_ARRAY, Some(font_texture));
 
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D_ARRAY,
-        glow::TEXTURE_MIN_FILTER,
-        glow::NEAREST as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D_ARRAY,
-        glow::TEXTURE_MAG_FILTER,
-        glow::NEAREST as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D_ARRAY,
-        glow::TEXTURE_WRAP_S,
-        glow::CLAMP_TO_EDGE as i32,
-    );
-    gl.tex_parameter_i32(
-        glow::TEXTURE_2D_ARRAY,
-        glow::TEXTURE_WRAP_T,
-        glow::CLAMP_TO_EDGE as i32,
-    );
+    gl.tex_parameter_i32(glow::TEXTURE_2D_ARRAY, glow::TEXTURE_MIN_FILTER, glow::NEAREST as i32);
+    gl.tex_parameter_i32(glow::TEXTURE_2D_ARRAY, glow::TEXTURE_MAG_FILTER, glow::NEAREST as i32);
+    gl.tex_parameter_i32(glow::TEXTURE_2D_ARRAY, glow::TEXTURE_WRAP_S, glow::CLAMP_TO_EDGE as i32);
+    gl.tex_parameter_i32(glow::TEXTURE_2D_ARRAY, glow::TEXTURE_WRAP_T, glow::CLAMP_TO_EDGE as i32);
     crate::check_gl_error!(gl, "create_font_texture");
 
     font_texture

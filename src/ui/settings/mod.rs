@@ -14,10 +14,7 @@ lazy_static! {
     ];
 }
 
-pub fn show_monitor_settings(
-    ui: &mut egui::Ui,
-    old_settings: &MonitorSettings,
-) -> Option<MonitorSettings> {
+pub fn show_monitor_settings(ui: &mut egui::Ui, old_settings: &MonitorSettings) -> Option<MonitorSettings> {
     let mut result = None;
 
     let mut monitor_settings = old_settings.clone();
@@ -45,22 +42,10 @@ pub fn show_monitor_settings(
     ui.add_enabled_ui(use_filter, |ui| {
         // todo: that should take full with, but doesn't work - egui bug ?
         ui.vertical_centered_justified(|ui| {
-            ui.add(
-                egui::Slider::new(&mut monitor_settings.brightness, 0.0..=100.0)
-                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-brightness")),
-            );
-            ui.add(
-                egui::Slider::new(&mut monitor_settings.contrast, 0.0..=100.0)
-                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-contrast")),
-            );
-            ui.add(
-                egui::Slider::new(&mut monitor_settings.saturation, 0.0..=100.0)
-                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-saturation")),
-            );
-            ui.add(
-                egui::Slider::new(&mut monitor_settings.gamma, 0.0..=100.0)
-                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-gamma")),
-            );
+            ui.add(egui::Slider::new(&mut monitor_settings.brightness, 0.0..=100.0).text(fl!(LANGUAGE_LOADER, "settings-monitor-brightness")));
+            ui.add(egui::Slider::new(&mut monitor_settings.contrast, 0.0..=100.0).text(fl!(LANGUAGE_LOADER, "settings-monitor-contrast")));
+            ui.add(egui::Slider::new(&mut monitor_settings.saturation, 0.0..=100.0).text(fl!(LANGUAGE_LOADER, "settings-monitor-saturation")));
+            ui.add(egui::Slider::new(&mut monitor_settings.gamma, 0.0..=100.0).text(fl!(LANGUAGE_LOADER, "settings-monitor-gamma")));
             /*  ui.add_enabled(
                 use_filter,
                 egui::Slider::new(
@@ -69,18 +54,9 @@ pub fn show_monitor_settings(
                 )
                 .text("Light"),
             );*/
-            ui.add(
-                egui::Slider::new(&mut monitor_settings.blur, 0.0..=100.0)
-                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-blur")),
-            );
-            ui.add(
-                egui::Slider::new(&mut monitor_settings.curvature, 0.0..=100.0)
-                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-curve")),
-            );
-            ui.add(
-                egui::Slider::new(&mut monitor_settings.scanlines, 0.0..=100.0)
-                    .text(fl!(LANGUAGE_LOADER, "settings-monitor-scanlines")),
-            );
+            ui.add(egui::Slider::new(&mut monitor_settings.blur, 0.0..=100.0).text(fl!(LANGUAGE_LOADER, "settings-monitor-blur")));
+            ui.add(egui::Slider::new(&mut monitor_settings.curvature, 0.0..=100.0).text(fl!(LANGUAGE_LOADER, "settings-monitor-curve")));
+            ui.add(egui::Slider::new(&mut monitor_settings.scanlines, 0.0..=100.0).text(fl!(LANGUAGE_LOADER, "settings-monitor-scanlines")));
         });
     });
 

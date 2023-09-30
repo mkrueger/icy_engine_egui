@@ -2,16 +2,11 @@ use std::path::PathBuf;
 
 use egui::{Response, Vec2};
 use glow::HasContext;
-use icy_engine::{
-    editor::EditState, Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position,
-    Selection, TextPane,
-};
+use icy_engine::{editor::EditState, Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position, Selection, TextPane};
 
 pub mod glerror;
 
-use crate::{
-    buffer_view::texture_renderer::TextureRenderer, check_gl_error, TerminalCalc, TerminalOptions,
-};
+use crate::{buffer_view::texture_renderer::TextureRenderer, check_gl_error, TerminalCalc, TerminalOptions};
 
 mod output_renderer;
 mod sixel_renderer;
@@ -200,12 +195,7 @@ impl BufferView {
         parser.print_char(buf, 0, caret, c)
     }
 
-    pub fn render_contents(
-        &mut self,
-        gl: &glow::Context,
-        info: &egui::PaintCallbackInfo,
-        options: &TerminalOptions,
-    ) {
+    pub fn render_contents(&mut self, gl: &glow::Context, info: &egui::PaintCallbackInfo, options: &TerminalOptions) {
         if self.destroyed {
             return;
         }
@@ -223,56 +213,28 @@ impl BufferView {
             gl.disable(glow::SCISSOR_TEST);
             self.update_contents(gl, self.use_fg, self.use_bg);
 
-            let w = self.get_buffer().get_font_dimensions().width as f32
-                + if self.get_buffer().use_letter_spacing() {
-                    1.0
-                } else {
-                    0.0
-                };
+            let w = self.get_buffer().get_font_dimensions().width as f32 + if self.get_buffer().use_letter_spacing() { 1.0 } else { 0.0 };
 
             let render_buffer_size = Vec2::new(
                 w * self.calc.forced_width as f32,
-                self.get_buffer().get_font_dimensions().height as f32
-                    * self.calc.forced_height as f32,
+                self.get_buffer().get_font_dimensions().height as f32 * self.calc.forced_height as f32,
             );
 
-            let (render_texture, render_data_texture) =
-                self.output_renderer
-                    .bind_framebuffers(gl, render_buffer_size, options.filter);
-            self.terminal_renderer.render_terminal(
-                gl,
-                self,
-                render_buffer_size,
-                options,
-                has_focus,
-            );
+            let (render_texture, render_data_texture) = self.output_renderer.bind_framebuffers(gl, render_buffer_size, options.filter);
+            self.terminal_renderer.render_terminal(gl, self, render_buffer_size, options, has_focus);
             // draw sixels
-            let render_texture = self.sixel_renderer.render_sixels(
-                gl,
-                self,
-                render_buffer_size,
-                render_texture,
-                &self.output_renderer,
-            );
+            let render_texture = self
+                .sixel_renderer
+                .render_sixels(gl, self, render_buffer_size, render_texture, &self.output_renderer);
             gl.enable(glow::SCISSOR_TEST);
 
-            self.output_renderer.render_to_screen(
-                gl,
-                info,
-                self,
-                render_texture,
-                render_data_texture,
-                options,
-            );
+            self.output_renderer
+                .render_to_screen(gl, info, self, render_texture, render_data_texture, options);
             check_gl_error!(gl, "buffer_view.render_contents");
         }
     }
 
-    pub fn render_buffer(
-        &mut self,
-        gl: &glow::Context,
-        options: &TerminalOptions,
-    ) -> (Vec2, Vec<u8>) {
+    pub fn render_buffer(&mut self, gl: &glow::Context, options: &TerminalOptions) -> (Vec2, Vec<u8>) {
         if self.destroyed {
             return (Vec2::ZERO, Vec::new());
         }
@@ -283,44 +245,25 @@ impl BufferView {
 
             self.update_contents(gl, self.use_fg, self.use_bg);
 
-            let w = self.get_buffer().get_font_dimensions().width as f32
-                + if self.get_buffer().use_letter_spacing() {
-                    1.0
-                } else {
-                    0.0
-                };
+            let w = self.get_buffer().get_font_dimensions().width as f32 + if self.get_buffer().use_letter_spacing() { 1.0 } else { 0.0 };
 
             let render_buffer_size = Vec2::new(
                 w * self.calc.forced_width as f32,
-                self.get_buffer().get_font_dimensions().height as f32
-                    * self.calc.forced_height as f32,
+                self.get_buffer().get_font_dimensions().height as f32 * self.calc.forced_height as f32,
             );
 
             let texture_renderer = TextureRenderer::new(gl);
-            let (render_texture, render_data_texture) =
-                self.output_renderer
-                    .bind_framebuffers(gl, render_buffer_size, options.filter);
+            let (render_texture, render_data_texture) = self.output_renderer.bind_framebuffers(gl, render_buffer_size, options.filter);
 
             gl.delete_texture(render_data_texture);
-            self.terminal_renderer.render_terminal(
-                gl,
-                self,
-                render_buffer_size,
-                options,
-                has_focus,
-            );
+            self.terminal_renderer.render_terminal(gl, self, render_buffer_size, options, has_focus);
             // draw sixels
-            let render_texture = self.sixel_renderer.render_sixels(
-                gl,
-                self,
-                render_buffer_size,
-                render_texture,
-                &self.output_renderer,
-            );
+            let render_texture = self
+                .sixel_renderer
+                .render_sixels(gl, self, render_buffer_size, render_texture, &self.output_renderer);
             gl.enable(glow::SCISSOR_TEST);
 
-            let result =
-                texture_renderer.render_to_buffer(gl, render_texture, render_buffer_size, options);
+            let result = texture_renderer.render_to_buffer(gl, render_texture, render_buffer_size, options);
             texture_renderer.destroy(gl);
             check_gl_error!(gl, "buffer_view.render_contents");
             result
@@ -329,10 +272,8 @@ impl BufferView {
 
     fn update_contents(&mut self, gl: &glow::Context, use_fg: bool, use_bg: bool) {
         let edit_state = &mut self.edit_state;
-        self.sixel_renderer
-            .update_sixels(gl, edit_state.get_buffer_mut(), &self.calc);
-        self.terminal_renderer
-            .update_textures(gl, edit_state, &self.calc, use_fg, use_bg);
+        self.sixel_renderer.update_sixels(gl, edit_state.get_buffer_mut(), &self.calc);
+        self.terminal_renderer.update_textures(gl, edit_state, &self.calc, use_fg, use_bg);
 
         check_gl_error!(gl, "buffer_view.update_contents");
     }

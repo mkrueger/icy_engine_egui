@@ -1,6 +1,7 @@
 use std::{
     path::{Path, PathBuf},
-    sync::{Arc, Mutex}, thread,
+    sync::{Arc, Mutex},
+    thread,
 };
 
 use icy_engine::{AttributedChar, Buffer, BufferParser, Caret, Position, TextPane};
@@ -30,7 +31,7 @@ pub struct Animator {
     #[cfg(feature = "ui")]
     instant: Instant,
 
-    run_thread: Option<thread::JoinHandle<()>>
+    run_thread: Option<thread::JoinHandle<()>>,
 }
 const DEFAULT_SPEEED: u32 = 100; // like animated gifs
 
@@ -48,7 +49,7 @@ impl Default for Animator {
             #[cfg(feature = "ui")]
             instant: Instant::now(),
             run_thread: None,
-            error: String::new()
+            error: String::new(),
         }
     }
 }
@@ -70,14 +71,10 @@ impl LuaBuffer {
         let buffer_type = self.buffer.buffer_type;
         let ch = match buffer_type {
             icy_engine::BufferType::Unicode => ch,
-            icy_engine::BufferType::CP437 => icy_engine::ascii::Parser::default()
-                .convert_from_unicode(ch, self.caret.get_font_page()),
-            icy_engine::BufferType::Petscii => icy_engine::petscii::Parser::default()
-                .convert_from_unicode(ch, self.caret.get_font_page()),
-            icy_engine::BufferType::Atascii => icy_engine::atascii::Parser::default()
-                .convert_from_unicode(ch, self.caret.get_font_page()),
-            icy_engine::BufferType::Viewdata => icy_engine::viewdata::Parser::default()
-                .convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::CP437 => icy_engine::ascii::Parser::default().convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::Petscii => icy_engine::petscii::Parser::default().convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::Atascii => icy_engine::atascii::Parser::default().convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::Viewdata => icy_engine::viewdata::Parser::default().convert_from_unicode(ch, self.caret.get_font_page()),
         };
         Ok(ch)
     }
@@ -86,18 +83,10 @@ impl LuaBuffer {
         let buffer_type = self.buffer.buffer_type;
         let ch = match buffer_type {
             icy_engine::BufferType::Unicode => ch.ch,
-            icy_engine::BufferType::CP437 => {
-                icy_engine::ascii::Parser::default().convert_to_unicode(ch)
-            }
-            icy_engine::BufferType::Petscii => {
-                icy_engine::petscii::Parser::default().convert_to_unicode(ch)
-            }
-            icy_engine::BufferType::Atascii => {
-                icy_engine::atascii::Parser::default().convert_to_unicode(ch)
-            }
-            icy_engine::BufferType::Viewdata => {
-                icy_engine::viewdata::Parser::default().convert_to_unicode(ch)
-            }
+            icy_engine::BufferType::CP437 => icy_engine::ascii::Parser::default().convert_to_unicode(ch),
+            icy_engine::BufferType::Petscii => icy_engine::petscii::Parser::default().convert_to_unicode(ch),
+            icy_engine::BufferType::Atascii => icy_engine::atascii::Parser::default().convert_to_unicode(ch),
+            icy_engine::BufferType::Viewdata => icy_engine::viewdata::Parser::default().convert_to_unicode(ch),
         };
         ch.to_string()
     }
@@ -129,19 +118,13 @@ impl UserData for LuaBuffer {
                 Ok(())
             } else {
                 Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Layer {} out of range (0..<{})",
-                        val,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Layer {} out of range (0..<{})", val, this.buffer.layers.len()),
                     incomplete_input: false,
                 })
             }
         });
 
-        fields.add_field_method_get("fg", |_, this| {
-            Ok(this.caret.get_attribute().get_foreground())
-        });
+        fields.add_field_method_get("fg", |_, this| Ok(this.caret.get_attribute().get_foreground()));
         fields.add_field_method_set("fg", |_, this, val| {
             let mut attr = this.caret.get_attribute();
             attr.set_foreground(val);
@@ -149,9 +132,7 @@ impl UserData for LuaBuffer {
             Ok(())
         });
 
-        fields.add_field_method_get("bg", |_, this| {
-            Ok(this.caret.get_attribute().get_background())
-        });
+        fields.add_field_method_get("bg", |_, this| Ok(this.caret.get_attribute().get_background()));
         fields.add_field_method_set("bg", |_, this, val| {
             let mut attr = this.caret.get_attribute();
             attr.set_background(val);
@@ -176,11 +157,7 @@ impl UserData for LuaBuffer {
                 Ok(offset.x)
             } else {
                 Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 })
             }
@@ -193,11 +170,7 @@ impl UserData for LuaBuffer {
                 Ok(())
             } else {
                 Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 })
             }
@@ -209,11 +182,7 @@ impl UserData for LuaBuffer {
                 Ok(offset.y)
             } else {
                 Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 })
             }
@@ -226,11 +195,7 @@ impl UserData for LuaBuffer {
                 Ok(())
             } else {
                 Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 })
             }
@@ -255,11 +220,7 @@ impl UserData for LuaBuffer {
         methods.add_method_mut("set_char", |_, this, (x, y, ch): (i32, i32, String)| {
             if this.cur_layer >= this.buffer.layers.len() {
                 return Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Current layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Current layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 });
             }
@@ -273,11 +234,7 @@ impl UserData for LuaBuffer {
         methods.add_method_mut("get_char", |_, this, (x, y): (i32, i32)| {
             if this.cur_layer >= this.buffer.layers.len() {
                 return Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Current layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Current layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 });
             }
@@ -289,11 +246,7 @@ impl UserData for LuaBuffer {
         methods.add_method_mut("pickup_char", |_, this, (x, y): (i32, i32)| {
             if this.cur_layer >= this.buffer.layers.len() {
                 return Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Current layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Current layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 });
             }
@@ -306,11 +259,7 @@ impl UserData for LuaBuffer {
         methods.add_method_mut("set_fg", |_, this, (x, y, col): (i32, i32, u32)| {
             if this.cur_layer >= this.buffer.layers.len() {
                 return Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Current layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Current layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 });
             }
@@ -323,11 +272,7 @@ impl UserData for LuaBuffer {
         methods.add_method_mut("get_fg", |_, this, (x, y): (i32, i32)| {
             if this.cur_layer >= this.buffer.layers.len() {
                 return Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Current layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Current layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 });
             }
@@ -339,11 +284,7 @@ impl UserData for LuaBuffer {
         methods.add_method_mut("set_bg", |_, this, (x, y, col): (i32, i32, u32)| {
             if this.cur_layer >= this.buffer.layers.len() {
                 return Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Current layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Current layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 });
             }
@@ -356,11 +297,7 @@ impl UserData for LuaBuffer {
         methods.add_method_mut("get_bg", |_, this, (x, y): (i32, i32)| {
             if this.cur_layer >= this.buffer.layers.len() {
                 return Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Current layer {} out of range (0..<{})",
-                        this.cur_layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Current layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 });
             }
@@ -387,64 +324,43 @@ impl UserData for LuaBuffer {
             Ok(())
         });
 
-        methods.add_method_mut(
-            "set_layer_position",
-            |_, this, (layer, x, y): (usize, i32, i32)| {
-                if layer < this.buffer.layers.len() {
-                    this.buffer.layers[layer].set_offset((x, y));
-                    Ok(())
-                } else {
-                    Err(mlua::Error::SyntaxError {
-                        message: format!(
-                            "Layer {} out of range (0..<{})",
-                            layer,
-                            this.buffer.layers.len()
-                        ),
-                        incomplete_input: false,
-                    })
-                }
-            },
-        );
+        methods.add_method_mut("set_layer_position", |_, this, (layer, x, y): (usize, i32, i32)| {
+            if layer < this.buffer.layers.len() {
+                this.buffer.layers[layer].set_offset((x, y));
+                Ok(())
+            } else {
+                Err(mlua::Error::SyntaxError {
+                    message: format!("Layer {} out of range (0..<{})", layer, this.buffer.layers.len()),
+                    incomplete_input: false,
+                })
+            }
+        });
 
-        methods.add_method_mut(
-            "set_layer_x_position",
-            |_, this, (layer, x): (usize, i32)| {
-                if layer < this.buffer.layers.len() {
-                    let offset = this.buffer.layers[layer].get_offset();
-                    this.buffer.layers[layer].set_offset((x, offset.y));
-                    Ok(())
-                } else {
-                    Err(mlua::Error::SyntaxError {
-                        message: format!(
-                            "Layer {} out of range (0..<{})",
-                            layer,
-                            this.buffer.layers.len()
-                        ),
-                        incomplete_input: false,
-                    })
-                }
-            },
-        );
+        methods.add_method_mut("set_layer_x_position", |_, this, (layer, x): (usize, i32)| {
+            if layer < this.buffer.layers.len() {
+                let offset = this.buffer.layers[layer].get_offset();
+                this.buffer.layers[layer].set_offset((x, offset.y));
+                Ok(())
+            } else {
+                Err(mlua::Error::SyntaxError {
+                    message: format!("Layer {} out of range (0..<{})", layer, this.buffer.layers.len()),
+                    incomplete_input: false,
+                })
+            }
+        });
 
-        methods.add_method_mut(
-            "set_layer_y_position",
-            |_, this, (layer, y): (usize, i32)| {
-                if layer < this.buffer.layers.len() {
-                    let offset = this.buffer.layers[layer].get_offset();
-                    this.buffer.layers[layer].set_offset((offset.x, y));
-                    Ok(())
-                } else {
-                    Err(mlua::Error::SyntaxError {
-                        message: format!(
-                            "Layer {} out of range (0..<{})",
-                            layer,
-                            this.buffer.layers.len()
-                        ),
-                        incomplete_input: false,
-                    })
-                }
-            },
-        );
+        methods.add_method_mut("set_layer_y_position", |_, this, (layer, y): (usize, i32)| {
+            if layer < this.buffer.layers.len() {
+                let offset = this.buffer.layers[layer].get_offset();
+                this.buffer.layers[layer].set_offset((offset.x, y));
+                Ok(())
+            } else {
+                Err(mlua::Error::SyntaxError {
+                    message: format!("Layer {} out of range (0..<{})", layer, this.buffer.layers.len()),
+                    incomplete_input: false,
+                })
+            }
+        });
 
         methods.add_method_mut("get_layer_position", |_, this, layer: usize| {
             if layer < this.buffer.layers.len() {
@@ -452,46 +368,31 @@ impl UserData for LuaBuffer {
                 Ok((pos.x, pos.y))
             } else {
                 Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Layer {} out of range (0..<{})",
-                        layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Layer {} out of range (0..<{})", layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 })
             }
         });
 
-        methods.add_method_mut(
-            "set_layer_visible",
-            |_, this, (layer, is_visible): (i32, bool)| {
-                let layer = layer as usize;
-                if layer < this.buffer.layers.len() {
-                    this.buffer.layers[layer].is_visible = is_visible;
-                    Ok(())
-                } else {
-                    Err(mlua::Error::SyntaxError {
-                        message: format!(
-                            "Layer {} out of range (0..<{})",
-                            layer,
-                            this.buffer.layers.len()
-                        ),
-                        incomplete_input: false,
-                    })
-                }
-            },
-        );
+        methods.add_method_mut("set_layer_visible", |_, this, (layer, is_visible): (i32, bool)| {
+            let layer = layer as usize;
+            if layer < this.buffer.layers.len() {
+                this.buffer.layers[layer].is_visible = is_visible;
+                Ok(())
+            } else {
+                Err(mlua::Error::SyntaxError {
+                    message: format!("Layer {} out of range (0..<{})", layer, this.buffer.layers.len()),
+                    incomplete_input: false,
+                })
+            }
+        });
 
         methods.add_method_mut("get_layer_visible", |_, this, layer: usize| {
             if layer < this.buffer.layers.len() {
                 Ok(this.buffer.layers[layer].is_visible)
             } else {
                 Err(mlua::Error::SyntaxError {
-                    message: format!(
-                        "Layer {} out of range (0..<{})",
-                        layer,
-                        this.buffer.layers.len()
-                    ),
+                    message: format!("Layer {} out of range (0..<{})", layer, this.buffer.layers.len()),
                     incomplete_input: false,
                 })
             }
@@ -511,9 +412,7 @@ impl Animator {
         // Need to limit it a bit to avoid out of memory & slowness
         // Not sure how large the number should be but it's easy to define millions of frames
         if self.frames.len() > MAX_FRAMES {
-            return Err(mlua::Error::RuntimeError(
-                "Maximum number of frames reached".to_string(),
-            ));
+            return Err(mlua::Error::RuntimeError("Maximum number of frames reached".to_string()));
         }
         let mut frame = Buffer::new(buffer.get_size());
         frame.layers = buffer.layers.clone();
@@ -527,8 +426,7 @@ impl Animator {
         for f in buffer.font_iter() {
             frame.set_font(*f.0, f.1.clone());
         }
-        self.frames
-            .push((frame, self.current_monitor_settings.clone(), self.speed));
+        self.frames.push((frame, self.current_monitor_settings.clone(), self.speed));
         Ok(())
     }
 
@@ -540,9 +438,8 @@ impl Animator {
             println!("start thread!");
             let lua: Lua = Lua::new();
             let globals = lua.globals();
-    
-            let re = Regex::new(r"#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
 
+            let re = Regex::new(r"#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
 
             let txt = re
                 .replace_all(&in_txt, |caps: &regex::Captures<'_>| {
@@ -567,10 +464,7 @@ impl Animator {
                         }
 
                         if !file_name.exists() {
-                            return Err(mlua::Error::RuntimeError(format!(
-                                "File not found {}",
-                                file
-                            )));
+                            return Err(mlua::Error::RuntimeError(format!("File not found {}", file)));
                         }
 
                         if let Ok(buffer) = icy_engine::Buffer::load_buffer(&file_name, true) {
@@ -580,12 +474,10 @@ impl Animator {
                                 cur_layer: 0,
                             })
                         } else {
-                            Err(mlua::Error::RuntimeError(format!(
-                                "Could not load file {}",
-                                file
-                            )))
+                            Err(mlua::Error::RuntimeError(format!("Could not load file {}", file)))
                         }
-                    }).unwrap(),
+                    })
+                    .unwrap(),
                 )
                 .unwrap();
 
@@ -598,7 +490,8 @@ impl Animator {
                             buffer: Buffer::create((width, height)),
                             cur_layer: 0,
                         })
-                    }).unwrap(),
+                    })
+                    .unwrap(),
                 )
                 .unwrap();
 
@@ -608,36 +501,24 @@ impl Animator {
                     "next_frame",
                     lua.create_function_mut(move |lua, buffer: Value<'_>| {
                         if let Value::UserData(data) = &buffer {
-                            lua.globals()
-                                .set("cur_frame", a.lock().unwrap().frames.len() + 2)?;
+                            lua.globals().set("cur_frame", a.lock().unwrap().frames.len() + 2)?;
                             let monitor_type: usize = lua.globals().get("monitor_type")?;
                             a.lock().unwrap().current_monitor_settings.monitor_type = monitor_type;
 
-                            a.lock().unwrap().current_monitor_settings.gamma =
-                                lua.globals().get("monitor_gamma")?;
-                            a.lock().unwrap().current_monitor_settings.contrast =
-                                lua.globals().get("monitor_contrast")?;
-                            a.lock().unwrap().current_monitor_settings.saturation =
-                                lua.globals().get("monitor_saturation")?;
-                            a.lock().unwrap().current_monitor_settings.brightness =
-                                lua.globals().get("monitor_brightness")?;
-                            a.lock().unwrap().current_monitor_settings.blur =
-                                lua.globals().get("monitor_blur")?;
-                            a.lock().unwrap().current_monitor_settings.curvature =
-                                lua.globals().get("monitor_curvature")?;
-                            a.lock().unwrap().current_monitor_settings.scanlines =
-                                lua.globals().get("monitor_scanlines")?;
+                            a.lock().unwrap().current_monitor_settings.gamma = lua.globals().get("monitor_gamma")?;
+                            a.lock().unwrap().current_monitor_settings.contrast = lua.globals().get("monitor_contrast")?;
+                            a.lock().unwrap().current_monitor_settings.saturation = lua.globals().get("monitor_saturation")?;
+                            a.lock().unwrap().current_monitor_settings.brightness = lua.globals().get("monitor_brightness")?;
+                            a.lock().unwrap().current_monitor_settings.blur = lua.globals().get("monitor_blur")?;
+                            a.lock().unwrap().current_monitor_settings.curvature = lua.globals().get("monitor_curvature")?;
+                            a.lock().unwrap().current_monitor_settings.scanlines = lua.globals().get("monitor_scanlines")?;
 
-                            a.lock()
-                                .unwrap()
-                                .lua_next_frame(&data.borrow::<LuaBuffer>()?.buffer)
+                            a.lock().unwrap().lua_next_frame(&data.borrow::<LuaBuffer>()?.buffer)
                         } else {
-                            Err(mlua::Error::RuntimeError(format!(
-                                "UserData parameter required, got: {:?}",
-                                buffer
-                            )))
+                            Err(mlua::Error::RuntimeError(format!("UserData parameter required, got: {:?}", buffer)))
                         }
-                    }).unwrap(),
+                    })
+                    .unwrap(),
                 )
                 .unwrap();
 
@@ -648,7 +529,8 @@ impl Animator {
                     lua.create_function(move |_lua, ()| {
                         let speed = luaanimator.lock().unwrap().get_speed();
                         mlua::Result::Ok(speed)
-                    }).unwrap(),
+                    })
+                    .unwrap(),
                 )
                 .unwrap();
 
@@ -659,7 +541,8 @@ impl Animator {
                     lua.create_function(move |_lua, speed: u32| {
                         luaanimator.lock().unwrap().set_speed(speed);
                         mlua::Result::Ok(())
-                    }).unwrap(),
+                    })
+                    .unwrap(),
                 )
                 .unwrap();
 
@@ -669,14 +552,8 @@ impl Animator {
                 globals.set("monitor_type", lock.current_monitor_settings.monitor_type).unwrap();
                 globals.set("monitor_gamma", lock.current_monitor_settings.gamma).unwrap();
                 globals.set("monitor_contrast", lock.current_monitor_settings.contrast).unwrap();
-                globals.set(
-                    "monitor_saturation",
-                    lock.current_monitor_settings.saturation,
-                ).unwrap();
-                globals.set(
-                    "monitor_brightness",
-                    lock.current_monitor_settings.brightness,
-                ).unwrap();
+                globals.set("monitor_saturation", lock.current_monitor_settings.saturation).unwrap();
+                globals.set("monitor_brightness", lock.current_monitor_settings.brightness).unwrap();
                 globals.set("monitor_blur", lock.current_monitor_settings.blur).unwrap();
                 globals.set("monitor_curvature", lock.current_monitor_settings.curvature).unwrap();
                 globals.set("monitor_scanlines", lock.current_monitor_settings.scanlines).unwrap();
@@ -686,7 +563,6 @@ impl Animator {
                 animator_thread.lock().unwrap().error = format!("{err}");
             }
             println!("end thread!");
-
         });
         animator.lock().unwrap().run_thread = Some(run_thread);
         animator
@@ -696,7 +572,7 @@ impl Animator {
         self.run_thread.is_some() && !self.run_thread.as_ref().unwrap().is_finished()
     }
 
-    pub fn success(&self) ->bool {
+    pub fn success(&self) -> bool {
         !self.is_thread_running() && self.error.is_empty()
     }
 
@@ -730,10 +606,7 @@ impl Animator {
     }
 
     #[cfg(feature = "ui")]
-    pub fn update_frame(
-        &mut self,
-        buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>,
-    ) -> MonitorSettings {
+    pub fn update_frame(&mut self, buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>) -> MonitorSettings {
         if self.is_playing && self.instant.elapsed().as_millis() > self.speed as u128 {
             self.next_frame();
             self.instant = Instant::now();
@@ -743,10 +616,7 @@ impl Animator {
     }
 
     #[cfg(feature = "ui")]
-    pub fn start_playback(
-        &mut self,
-        buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>,
-    ) -> MonitorSettings {
+    pub fn start_playback(&mut self, buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>) -> MonitorSettings {
         self.is_playing = true;
         self.instant = Instant::now();
         self.cur_frame = 0;
@@ -754,10 +624,7 @@ impl Animator {
     }
 
     #[cfg(feature = "ui")]
-    pub fn display_frame(
-        &self,
-        buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>,
-    ) -> MonitorSettings {
+    pub fn display_frame(&self, buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>) -> MonitorSettings {
         if let Some((scene, settings, _next_frame)) = self.frames.get(self.cur_frame) {
             let mut frame = Buffer::new(scene.get_size());
             frame.is_terminal_buffer = true;
@@ -775,7 +642,7 @@ impl Animator {
             MonitorSettings::default()
         }
     }
-    
+
     pub fn get_cur_frame_buffer(&self) -> Option<(&Buffer, &MonitorSettings, &u32)> {
         if let Some((scene, settings, next_frame)) = self.frames.get(self.cur_frame) {
             return Some((scene, settings, next_frame));

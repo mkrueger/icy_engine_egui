@@ -83,13 +83,11 @@ impl Default for TerminalCalc {
 impl TerminalCalc {
     /// Returns the char position of the cursor in the buffer
     pub fn calc_click_pos(&self, click_pos: Pos2) -> Vec2 {
-        (click_pos.to_vec2() - self.buffer_rect.left_top().to_vec2()) / self.char_size
-            + Vec2::new(self.first_column, self.first_line)
+        (click_pos.to_vec2() - self.buffer_rect.left_top().to_vec2()) / self.char_size + Vec2::new(self.first_column, self.first_line)
     }
 
     pub fn calc_click_pos_half_block(&self, click_pos: Pos2) -> Vec2 {
-        (click_pos.to_vec2() - self.buffer_rect.left_top().to_vec2())
-            / Vec2::new(self.char_size.x, self.char_size.y / 2.0)
+        (click_pos.to_vec2() - self.buffer_rect.left_top().to_vec2()) / Vec2::new(self.char_size.x, self.char_size.y / 2.0)
             + Vec2::new(self.first_column, self.first_line * 2.0)
     }
 
@@ -101,20 +99,16 @@ impl TerminalCalc {
         if self.char_height <= self.buffer_char_height {
             return 0.0;
         }
-        let y_remainder =
-            (self.char_size.y - self.terminal_rect.height() % self.char_size.y) / self.scale.y;
-        (self.font_height * (self.char_height - self.buffer_char_height).max(0.0) + y_remainder)
-            .floor()
+        let y_remainder = (self.char_size.y - self.terminal_rect.height() % self.char_size.y) / self.scale.y;
+        (self.font_height * (self.char_height - self.buffer_char_height).max(0.0) + y_remainder).floor()
     }
 
     pub fn max_x_scroll(&self) -> f32 {
         if self.char_width <= self.buffer_char_width {
             return 0.0;
         }
-        let x_remainder =
-            (self.char_size.x - self.terminal_rect.width() % self.char_size.x) / self.scale.x;
-        (self.font_width * (self.char_width - self.buffer_char_width).max(0.0) + x_remainder)
-            .floor()
+        let x_remainder = (self.char_size.x - self.terminal_rect.width() % self.char_size.x) / self.scale.x;
+        (self.font_width * (self.char_width - self.buffer_char_width).max(0.0) + x_remainder).floor()
     }
 }
 
@@ -166,11 +160,7 @@ impl Default for TerminalOptions {
     }
 }
 
-pub fn show_terminal_area(
-    ui: &mut egui::Ui,
-    buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>,
-    options: TerminalOptions,
-) -> (Response, TerminalCalc) {
+pub fn show_terminal_area(ui: &mut egui::Ui, buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>, options: TerminalOptions) -> (Response, TerminalCalc) {
     let mut forced_height = buffer_view.lock().get_buffer().get_height();
     let mut forced_width = buffer_view.lock().get_buffer().get_width();
 
@@ -181,16 +171,11 @@ pub fn show_terminal_area(
 
     let mut buf_h = forced_height as f32;
     let real_height = if options.use_terminal_height {
-        buffer_view
-            .lock()
-            .get_buffer()
-            .get_height()
-            .max(forced_height)
+        buffer_view.lock().get_buffer().get_height().max(forced_height)
     } else {
         forced_height
     };
     let real_width = forced_width;
-
 
     let mut buf_w = real_width as f32;
 
@@ -206,11 +191,7 @@ pub fn show_terminal_area(
     if let Some(id) = options.id {
         scroll = scroll.with_id(id);
     }
-    let caret_pos = buffer_view
-        .lock()
-        .get_edit_state()
-        .get_caret()
-        .get_position();
+    let caret_pos = buffer_view.lock().get_edit_state().get_caret().get_position();
     let selected_rect = buffer_view.lock().get_edit_state().get_selection();
     let show_line_numbers = options.show_line_numbers;
     let (response, calc) = scroll.show(
@@ -219,12 +200,7 @@ pub fn show_terminal_area(
         |rect, options: &TerminalOptions| {
             let size = rect.size();
 
-            let font_width = font_dimensions.width as f32
-                + if buffer_view2.lock().get_buffer().use_letter_spacing() {
-                    1.0
-                } else {
-                    0.0
-                };
+            let font_width = font_dimensions.width as f32 + if buffer_view2.lock().get_buffer().use_letter_spacing() { 1.0 } else { 0.0 };
 
             let mut scale_x = size.x / font_width / buf_w;
             let mut scale_y = size.y / font_dimensions.height as f32 / buf_h;
@@ -254,10 +230,7 @@ pub fn show_terminal_area(
                 forced_width = (buf_w as i32).min(real_width);
             }
 
-            let char_size = Vec2::new(
-                font_width * scale_x,
-                font_dimensions.height as f32 * scale_y,
-            );
+            let char_size = Vec2::new(font_width * scale_x, font_dimensions.height as f32 * scale_y);
 
             let rect_w = buf_w * char_size.x;
             let rect_h = buf_h * char_size.y;
@@ -276,10 +249,7 @@ pub fn show_terminal_area(
                 buffer_char_width: buf_w,
                 buffer_char_height: buf_h,
                 scale: Vec2::new(scale_x, scale_y),
-                char_size: Vec2::new(
-                    font_width * scale_x,
-                    font_dimensions.height as f32 * scale_y,
-                ),
+                char_size: Vec2::new(font_width * scale_x, font_dimensions.height as f32 * scale_y),
                 font_width: font_dimensions.width as f32,
                 font_height: font_dimensions.height as f32,
                 first_column: 0.,
@@ -318,9 +288,7 @@ pub fn show_terminal_area(
             let callback = egui::PaintCallback {
                 rect: calc.terminal_rect,
                 callback: std::sync::Arc::new(egui_glow::CallbackFn::new(move |info, painter| {
-                    buffer_view
-                        .lock()
-                        .render_contents(painter.gl(), &info, &options);
+                    buffer_view.lock().render_contents(painter.gl(), &info, &options);
                 })),
             };
             ui.painter().add(callback);
@@ -340,20 +308,13 @@ pub fn show_terminal_area(
                         let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
                         let rect = Rect::from_min_size(
                             Pos2::new(
-                                calc.buffer_rect.left()
-                                    - galley.size().x
-                                    - 4.0
-                                    - (calc.char_scroll_position.x % calc.font_height)
-                                        * calc.scale.y,
-                                calc.buffer_rect.top() + y as f32 * calc.char_size.y
-                                    - (calc.char_scroll_position.y % calc.font_height)
-                                        * calc.scale.y,
+                                calc.buffer_rect.left() - galley.size().x - 4.0 - (calc.char_scroll_position.x % calc.font_height) * calc.scale.y,
+                                calc.buffer_rect.top() + y as f32 * calc.char_size.y - (calc.char_scroll_position.y % calc.font_height) * calc.scale.y,
                             ),
                             Vec2::new(galley.size().x, calc.char_height),
                         );
                         let is_selected = if let Some(sel) = selected_rect {
-                            sel.min().y <= y + calc.first_line as i32
-                                && y + (calc.first_line as i32) < sel.max().y
+                            sel.min().y <= y + calc.first_line as i32 && y + (calc.first_line as i32) < sel.max().y
                         } else {
                             caret_pos.y == y + calc.first_line as i32
                         };
@@ -363,33 +324,20 @@ pub fn show_terminal_area(
                             ui.visuals().text_color()
                         };
                         painter.galley_with_color(
-                            egui::Align2::RIGHT_TOP
-                                .align_size_within_rect(galley.size(), rect)
-                                .min,
+                            egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min,
                             galley.galley.clone(),
                             color,
                         );
 
                         let rect = Rect::from_min_size(
                             Pos2::new(
-                                calc.buffer_rect.left()
-                                    + calc.buffer_char_width * calc.char_size.x
-                                    + 4.0
-                                    - (calc.char_scroll_position.x % calc.font_width)
-                                        * calc.scale.x,
-                                calc.buffer_rect.top() + y as f32 * calc.char_size.y
-                                    - (calc.char_scroll_position.y % calc.font_height)
-                                        * calc.scale.y,
+                                calc.buffer_rect.left() + calc.buffer_char_width * calc.char_size.x + 4.0
+                                    - (calc.char_scroll_position.x % calc.font_width) * calc.scale.x,
+                                calc.buffer_rect.top() + y as f32 * calc.char_size.y - (calc.char_scroll_position.y % calc.font_height) * calc.scale.y,
                             ),
                             Vec2::new(galley.size().x, calc.char_height),
                         );
-                        painter.galley_with_color(
-                            egui::Align2::LEFT_TOP
-                                .align_size_within_rect(galley.size(), rect)
-                                .min,
-                            galley.galley,
-                            color,
-                        );
+                        painter.galley_with_color(egui::Align2::LEFT_TOP.align_size_within_rect(galley.size(), rect).min, galley.galley, color);
                     }
                 }
                 let buf_w = calc.buffer_char_width;
@@ -400,9 +348,7 @@ pub fn show_terminal_area(
                         let galley = text.into_galley(ui, Some(false), f32::INFINITY, font_id);
                         let rect = Rect::from_min_size(
                             Pos2::new(
-                                calc.buffer_rect.left() - galley.size().x - 4.0
-                                    + x as f32 * calc.char_size.x
-                                    + calc.char_size.x,
+                                calc.buffer_rect.left() - galley.size().x - 4.0 + x as f32 * calc.char_size.x + calc.char_size.x,
                                 calc.buffer_rect.top() - calc.char_size.y,
                             ),
                             Vec2::new(galley.size().x, calc.char_height),
@@ -418,29 +364,19 @@ pub fn show_terminal_area(
                             ui.visuals().text_color()
                         };
                         painter.galley_with_color(
-                            egui::Align2::RIGHT_TOP
-                                .align_size_within_rect(galley.size(), rect)
-                                .min,
+                            egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min,
                             galley.galley.clone(),
                             color,
                         );
                         let rect = Rect::from_min_size(
                             Pos2::new(
-                                calc.buffer_rect.left() - galley.size().x - 4.0
-                                    + x as f32 * calc.char_size.x
-                                    + calc.char_size.x,
+                                calc.buffer_rect.left() - galley.size().x - 4.0 + x as f32 * calc.char_size.x + calc.char_size.x,
                                 calc.buffer_rect.bottom() + 4.0,
                             ),
                             Vec2::new(galley.size().x, calc.char_height),
                         );
 
-                        painter.galley_with_color(
-                            egui::Align2::RIGHT_TOP
-                                .align_size_within_rect(galley.size(), rect)
-                                .min,
-                            galley.galley,
-                            color,
-                        );
+                        painter.galley_with_color(egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min, galley.galley, color);
                     }
                 }
             }
