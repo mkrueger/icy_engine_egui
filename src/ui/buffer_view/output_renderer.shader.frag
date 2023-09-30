@@ -19,6 +19,8 @@ uniform vec2      u_guide;
 uniform float     u_guide_alpha;
 uniform vec3      u_guide_color;
 
+uniform float     u_show_selection_rectangle;
+
 uniform vec4        u_layer_rectangle;
 uniform vec3        u_layer_rectangle_color;
 uniform vec4        u_preview_layer_rectangle;
@@ -475,30 +477,32 @@ void main() {
 		vec4 right_up = texture(u_render_data_texture, coord + vec2(f, -f) / div);
 		vec4 right_down = texture(u_render_data_texture, coord + vec2(f, f) / div);
 
-		// test outpupt - view selected area
-		// color = 0.8 * color + 0.2 * sel.rgb;
-		if (sel.r == 1.0) {
-			if (up.r == 0.0 || down.r == 0.0 || left.r == 0.0 || right.r == 0.0
-			|| left_up.r == 0.0 || left_down.r == 0.0 || right_up.r == 0.0 || right_down.r == 0.0) {
-				draw_dash();
-			} else {
-				color = 0.9 * color.xyz;
+		if (u_show_selection_rectangle > 0.0) {
+			// test outpupt - view selected area
+			// color = 0.8 * color + 0.2 * sel.rgb;
+			if (sel.r == 1.0) {
+				if (up.r == 0.0 || down.r == 0.0 || left.r == 0.0 || right.r == 0.0
+				|| left_up.r == 0.0 || left_down.r == 0.0 || right_up.r == 0.0 || right_down.r == 0.0) {
+					draw_dash();
+				} else {
+					color = 0.9 * color.xyz;
+				}
+			} else { 
+				// draw outer selection border
+				if (up.r == 1.0 || down.r == 1.0 || left.r == 1.0 || right.r == 1.0 
+					|| left_up.r == 1.0 || left_down.r == 1.0 || right_up.r == 1.0 || right_down.r == 1.0) {
+					selection_border();
+				} 
 			}
-		} else { 
-			// draw outer selection border
-			if (up.r == 1.0 || down.r == 1.0 || left.r == 1.0 || right.r == 1.0 
-				|| left_up.r == 1.0 || left_down.r == 1.0 || right_up.r == 1.0 || right_down.r == 1.0) {
-				selection_border();
-			} 
-		}
 
-		if (sel.g == 1.0) {
-			if (up.g == 0.0 || down.g == 0.0 || left.g == 0.0 || right.g == 0.0
-			|| left_up.g == 0.0 || left_down.g == 0.0 || right_up.g == 0.0 || right_down.g == 0.0) {
-				color = 0.2 * color.xyz + 0.8 * vec3(1.0, 1.0, 0.0);
+			if (sel.g == 1.0) {
+				if (up.g == 0.0 || down.g == 0.0 || left.g == 0.0 || right.g == 0.0
+				|| left_up.g == 0.0 || left_down.g == 0.0 || right_up.g == 0.0 || right_down.g == 0.0) {
+					color = 0.2 * color.xyz + 0.8 * vec3(1.0, 1.0, 0.0);
+				}
 			}
+			draw_layer_rectangle(true);
 		}
-		draw_layer_rectangle(true);
 
 		if (u_use_monochrome > 0.0) {
 			float mono = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
@@ -507,12 +511,14 @@ void main() {
 		}
 	} else {
 		draw_background();
-		// correct left & bottom margin for selection
-		// It's a hack, but it works.
-		from -= vec2(1.0)/ u_resolution;
-		draw_layer_rectangle(
-			from.x <= uv.x && uv.x < to.x && 
-			from.y <= uv.y && uv.y < to.y
-		);
+		if (u_show_selection_rectangle > 0.0) {
+			// correct left & bottom margin for selection
+			// It's a hack, but it works.
+			from -= vec2(1.0)/ u_resolution;
+			draw_layer_rectangle(
+				from.x <= uv.x && uv.x < to.x && 
+				from.y <= uv.y && uv.y < to.y
+			);
+		}
 	}
 }

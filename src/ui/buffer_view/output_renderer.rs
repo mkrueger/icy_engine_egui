@@ -266,6 +266,7 @@ impl OutputRenderer {
                         1.0,
                     );
                 } else {
+         
                     gl.uniform_4_f32(
                         gl.get_uniform_location(self.output_shader, "u_preview_layer_rectangle").as_ref(),
                         0.0,
@@ -316,6 +317,9 @@ impl OutputRenderer {
             gl.uniform_3_f32(gl.get_uniform_location(self.output_shader, "u_layer_rectangle_color").as_ref(), 0.0, 0.0, 0.0);
         }
 
+        gl.uniform_1_f32(gl.get_uniform_location(self.output_shader, "u_show_selection_rectangle").as_ref(), if buffer_view.get_buffer().is_terminal_buffer { 0.0 } else { 1.0 });
+
+        
         match buffer_view.get_selection() {
             Some(selection) => {
                 if selection.is_empty() || buffer_view.get_buffer().is_terminal_buffer {
