@@ -12,6 +12,7 @@ pub struct MonitorSettings {
     pub use_filter: bool,
 
     pub monitor_type: usize,
+    pub border_color: Color,
 
     pub gamma: f32,
     pub contrast: f32,
@@ -29,8 +30,6 @@ pub struct MonitorSettings {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MarkerSettings {
-    pub border_color: Color,
-
     pub reference_image_alpha: f32,
 
     pub raster_alpha: f32,
@@ -48,8 +47,6 @@ impl Default for MarkerSettings {
             raster_color: Color::new(0xAB, 0xAB, 0xAB),
             guide_alpha: 0.2,
             guide_color: Color::new(0xAB, 0xAB, 0xAB),
-
-            border_color: Color::new(64, 69, 74),
         }
     }
 }
@@ -79,6 +76,7 @@ impl Default for MonitorSettings {
             background_effect: BackgroundEffect::None,
             selection_fg: Color::new(0xAB, 0x00, 0xAB),
             selection_bg: Color::new(0xAB, 0xAB, 0xAB),
+            border_color: Color::new(64, 69, 74),
         }
     }
 }
@@ -99,6 +97,7 @@ impl MonitorSettings {
             background_effect: BackgroundEffect::None,
             selection_fg: Color::new(0xAB, 0x00, 0xAB),
             selection_bg: Color::new(0xAB, 0xAB, 0xAB),
+            border_color: Color::new(64, 69, 74),
         }
     }
 }

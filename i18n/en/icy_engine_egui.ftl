@@ -11,6 +11,7 @@ settings-monitor-gamma = Gamma
 settings-monitor-blur = Blur
 settings-monitor-curve = Curve
 settings-monitor-scanlines = Scanlines
+settings-background_color-label=Border color:
 
 settings-monitor-color = Color
 settings-monitor-grayscale = Grayscale

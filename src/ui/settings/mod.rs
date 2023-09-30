@@ -1,5 +1,6 @@
-use egui::RichText;
+use egui::{color_picker, Color32, RichText};
 use i18n_embed_fl::fl;
+use icy_engine::Color;
 use lazy_static::lazy_static;
 
 use crate::{ui::LANGUAGE_LOADER, MonitorSettings};
@@ -29,6 +30,14 @@ pub fn show_monitor_settings(ui: &mut egui::Ui, old_settings: &MonitorSettings) 
                 ui.selectable_value(&mut monitor_settings.monitor_type, i, label);
             });
         });
+
+    ui.horizontal(|ui| {
+        ui.label(fl!(LANGUAGE_LOADER, "settings-background_color-label"));
+        let (r, g, b) = monitor_settings.border_color.get_rgb();
+        let mut color = Color32::from_rgb(r, g, b);
+        color_picker::color_edit_button_srgba(ui, &mut color, color_picker::Alpha::Opaque);
+        monitor_settings.border_color = Color::new(color.r(), color.g(), color.b());
+    });
     let use_filter = monitor_settings.use_filter;
 
     ui.add_space(8.0);
@@ -39,6 +48,7 @@ pub fn show_monitor_settings(ui: &mut egui::Ui, old_settings: &MonitorSettings) 
         &mut monitor_settings.use_filter,
         fl!(LANGUAGE_LOADER, "settings-monitor-use-crt-filter-checkbox"),
     );
+
     ui.add_enabled_ui(use_filter, |ui| {
         // todo: that should take full with, but doesn't work - egui bug ?
         ui.vertical_centered_justified(|ui| {
