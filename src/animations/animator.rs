@@ -26,7 +26,7 @@ pub struct Animator {
     cur_frame: usize,
     is_loop: bool,
     is_playing: bool,
-    speed: u32,
+    delay: u32,
 
     #[cfg(feature = "ui")]
     instant: Instant,
@@ -45,7 +45,7 @@ impl Default for Animator {
             cur_frame: Default::default(),
             is_loop: Default::default(),
             is_playing: Default::default(),
-            speed: DEFAULT_SPEEED,
+            delay: DEFAULT_SPEEED,
             #[cfg(feature = "ui")]
             instant: Instant::now(),
             run_thread: None,
@@ -426,7 +426,7 @@ impl Animator {
         for f in buffer.font_iter() {
             frame.set_font(*f.0, f.1.clone());
         }
-        self.frames.push((frame, self.current_monitor_settings.clone(), self.speed));
+        self.frames.push((frame, self.current_monitor_settings.clone(), self.delay));
         Ok(())
     }
 
@@ -435,7 +435,6 @@ impl Animator {
         let animator_thread = animator.clone();
         let parent = parent.clone();
         let run_thread = thread::spawn(move || {
-            println!("start thread!");
             let lua: Lua = Lua::new();
             let globals = lua.globals();
 
@@ -525,10 +524,10 @@ impl Animator {
             let luaanimator = animator_thread.clone();
             globals
                 .set(
-                    "set_speed",
+                    "get_delay",
                     lua.create_function(move |_lua, ()| {
-                        let speed = luaanimator.lock().unwrap().get_speed();
-                        mlua::Result::Ok(speed)
+                        let delay = luaanimator.lock().unwrap().get_delay();
+                        mlua::Result::Ok(delay)
                     })
                     .unwrap(),
                 )
@@ -537,9 +536,9 @@ impl Animator {
             let luaanimator = animator_thread.clone();
             globals
                 .set(
-                    "set_speed",
-                    lua.create_function(move |_lua, speed: u32| {
-                        luaanimator.lock().unwrap().set_speed(speed);
+                    "set_delay",
+                    lua.create_function(move |_lua, delay: u32| {
+                        luaanimator.lock().unwrap().set_delay(delay);
                         mlua::Result::Ok(())
                     })
                     .unwrap(),
@@ -562,7 +561,6 @@ impl Animator {
             if let Err(err) = lua.load(txt).exec() {
                 animator_thread.lock().unwrap().error = format!("{err}");
             }
-            println!("end thread!");
         });
         animator.lock().unwrap().run_thread = Some(run_thread);
         animator
@@ -588,7 +586,7 @@ impl Animator {
     }
     pub fn set_cur_frame(&mut self, cur_frame: usize) {
         self.cur_frame = cur_frame;
-        self.speed = self.frames[self.cur_frame].2;
+        self.delay = self.frames[self.cur_frame].2;
     }
 
     pub fn get_is_loop(&self) -> bool {
@@ -598,16 +596,17 @@ impl Animator {
         self.is_loop = is_loop;
     }
 
-    pub fn get_speed(&self) -> u32 {
-        self.speed
+    pub fn get_delay(&self) -> u32 {
+        self.delay
     }
-    pub fn set_speed(&mut self, speed: u32) {
-        self.speed = speed;
+
+    pub fn set_delay(&mut self, delay: u32) {
+        self.delay = delay;
     }
 
     #[cfg(feature = "ui")]
     pub fn update_frame(&mut self, buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>) -> MonitorSettings {
-        if self.is_playing && self.instant.elapsed().as_millis() > self.speed as u128 {
+        if self.is_playing && self.instant.elapsed().as_millis() > self.delay as u128 {
             self.next_frame();
             self.instant = Instant::now();
             self.current_monitor_settings = self.display_frame(buffer_view);
@@ -658,7 +657,7 @@ impl Animator {
                 return false;
             }
             if self.is_loop {
-                self.speed = DEFAULT_SPEEED;
+                self.delay = DEFAULT_SPEEED;
                 self.cur_frame = 0;
             } else {
                 self.cur_frame -= 1;
@@ -666,7 +665,7 @@ impl Animator {
             }
             return true;
         }
-        self.speed = self.frames[self.cur_frame].2;
+        self.delay = self.frames[self.cur_frame].2;
         true
     }
 }
