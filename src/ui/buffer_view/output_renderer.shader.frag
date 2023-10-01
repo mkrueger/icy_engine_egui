@@ -443,8 +443,8 @@ void main() {
 			}
 
 			if (u_guide.x > 0.0 && u_guide.y != 0.0) {
-				if (floor(buffer_px.x) == floor(u_guide.x) && buffer_px.y > u_guide.y ||
-					floor(buffer_px.y) == floor(u_guide.y) && buffer_px.x < u_guide.x)  {
+				if (-buffer_px.x == u_guide.x && buffer_px.y < u_guide.y ||
+					 buffer_px.y == u_guide.y && -buffer_px.x < u_guide.x)  {
 					c = draw_guide_raster(c);
 				}
 			}

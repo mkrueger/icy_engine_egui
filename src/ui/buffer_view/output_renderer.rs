@@ -212,7 +212,7 @@ impl OutputRenderer {
             gl.uniform_2_f32(
                 gl.get_uniform_location(self.output_shader, "u_guide").as_ref(),
                 (guide.x * buffer_view.calc.char_size.x * info.pixels_per_point).floor(),
-                (-guide.y * buffer_view.calc.char_size.y * info.pixels_per_point).floor(),
+                (guide.y * buffer_view.calc.char_size.y * info.pixels_per_point).floor(),
             );
         } else {
             gl.uniform_2_f32(gl.get_uniform_location(self.output_shader, "u_guide").as_ref(), 0.0, 0.0);
