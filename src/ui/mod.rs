@@ -128,9 +128,9 @@ pub struct TerminalOptions {
 
     pub show_layer_borders: bool,
     pub show_line_numbers: bool,
+    pub force_focus: bool,
 
     pub hide_scrollbars: bool,
-
     pub terminal_size: Option<Vec2>,
     pub guide: Option<Vec2>,
     pub raster: Option<Vec2>,
@@ -150,6 +150,7 @@ impl Default for TerminalOptions {
             show_layer_borders: false,
             show_line_numbers: false,
             hide_scrollbars: false,
+            force_focus: false,
             scroll_offset_x: None,
             scroll_offset_y: None,
             id: None,

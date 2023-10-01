@@ -511,7 +511,7 @@ impl TerminalRenderer {
 
         let caret_y = caret_pos.y as f32 * fontdim.height as f32 + fontdim.height as f32 - caret_h - (top_pos.y / buffer_view.calc.char_size.y * font_height)
             + scroll_offset_y;
-        let caret_w = if self.caret_blink.is_on() && buffer_view.get_caret().is_visible() && has_focus {
+        let caret_w = if self.caret_blink.is_on() && buffer_view.get_caret().is_visible() && (has_focus || terminal_options.force_focus) {
             font_width
         } else {
             0.0
