@@ -186,25 +186,23 @@ impl OutputRenderer {
         );
         gl.uniform_4_f32(
             gl.get_uniform_location(self.output_shader, "u_buffer_rect").as_ref(),
-            buffer_rect.left() / terminal_rect.width(),
-            (info.screen_size_px[1] as f32 - buffer_rect.max.y * info.pixels_per_point) / (terminal_rect.height() * info.pixels_per_point),
-            buffer_rect.right() / terminal_rect.width(),
-            (info.screen_size_px[1] as f32 - buffer_rect.min.y * info.pixels_per_point) / (terminal_rect.height() * info.pixels_per_point),
+            buffer_rect.left(),
+            info.screen_size_px[1] as f32 - buffer_rect.max.y * info.pixels_per_point,
+            buffer_rect.right(),
+            info.screen_size_px[1] as f32 - buffer_rect.min.y * info.pixels_per_point,
         );
 
-        let y = buffer_view.calc.buffer_rect.top() - buffer_view.calc.char_scroll_position.y;
-        let y = info.screen_size_px[1] as f32 - y * info.pixels_per_point;
         gl.uniform_2_f32(
             gl.get_uniform_location(self.output_shader, "u_scroll_position").as_ref(),
-            (buffer_view.calc.buffer_rect.left() * info.pixels_per_point).floor() + 0.5,
-            (y).floor() + 0.5,
+            (buffer_view.calc.char_scroll_position.x * buffer_view.calc.scale.x * info.pixels_per_point).floor() + 0.5,
+            (buffer_view.calc.char_scroll_position.y * buffer_view.calc.scale.y * info.pixels_per_point).floor() + 0.5,
         );
 
         if let Some(raster) = &options.raster {
             gl.uniform_2_f32(
                 gl.get_uniform_location(self.output_shader, "u_raster").as_ref(), // HACK! some raster positions need correction no idea why
-                (raster.x * buffer_view.calc.char_size.x).floor() * info.pixels_per_point + if (raster.x as i32) % 3 == 0 { -0.5 } else { 0.5 },
-                (raster.y * buffer_view.calc.char_size.y).floor() * info.pixels_per_point,
+                (raster.x * buffer_view.calc.char_size.x * info.pixels_per_point).floor(),
+                (raster.y * buffer_view.calc.char_size.y * info.pixels_per_point).floor(),
             );
         } else {
             gl.uniform_2_f32(gl.get_uniform_location(self.output_shader, "u_raster").as_ref(), 0.0, 0.0);
@@ -213,8 +211,8 @@ impl OutputRenderer {
         if let Some(guide) = &options.guide {
             gl.uniform_2_f32(
                 gl.get_uniform_location(self.output_shader, "u_guide").as_ref(),
-                (guide.x * buffer_view.calc.char_size.x).floor() * info.pixels_per_point,
-                (-guide.y * buffer_view.calc.char_size.y).floor(),
+                (guide.x * buffer_view.calc.char_size.x * info.pixels_per_point).floor(),
+                (-guide.y * buffer_view.calc.char_size.y * info.pixels_per_point).floor(),
             );
         } else {
             gl.uniform_2_f32(gl.get_uniform_location(self.output_shader, "u_guide").as_ref(), 0.0, 0.0);

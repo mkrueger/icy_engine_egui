@@ -139,10 +139,7 @@ void draw_dash() {
 }
 
 vec4 draw_grid_raster(vec4 c) {
-	float checker_size = 1.0;
-    vec2 p = floor(gl_FragCoord.xy / checker_size);
-    float PatternMask = mod(p.x + mod(p.y, 2.0), 2.0);
-
+    float PatternMask = mod(gl_FragCoord.x + gl_FragCoord.y, 2.0);
 	if (PatternMask == 0.0) {
 		return u_raster_alpha * vec4(u_raster_color, 1.0) + (1.0 - u_raster_alpha) * c;
 	} else {
@@ -173,14 +170,11 @@ void draw_selection_rect(vec2 upper_left, vec2 bottom_right, bool in_buffer_rect
 	vec2 uv   = gl_FragCoord.xy + vec2(0.5);
 	vec2 from = u_buffer_rect.xy;
 	vec2 to   = u_buffer_rect.zw ;
-  
-  	vec2 bfrom = u_buffer_rect.xy;
-	vec2 bto   = u_buffer_rect.zw ;
 
 	float v = 1.0;
 
 	if (in_buffer_rect) {
-	    vec2 uv2   = gl_FragCoord.xy / u_resolution;
+	    vec2 uv2   = gl_FragCoord.xy;
 		vec2 coord = (uv2 - from) / (to - from);
 		vec4 sel = texture(u_render_data_texture, coord);
 		if (sel.r == 1.0) {
@@ -307,14 +301,10 @@ void draw_color_dash(vec3 rect_color) {
 	} 
 }
 
-
 void draw_layer_rect(vec2 upper_left, vec2 bottom_right, vec3 rect_color) {
 	vec2 uv   = gl_FragCoord.xy + vec2(0.5);
 	vec2 from = u_buffer_rect.xy;
 	vec2 to   = u_buffer_rect.zw ;
-  
-  	vec2 bfrom = u_buffer_rect.xy;
-	vec2 bto   = u_buffer_rect.zw ;
 
 	float v = 1.0;
     if (upper_left.y <= uv.y && uv.y <= bottom_right.y)  {
@@ -426,7 +416,7 @@ void draw_layer_rectangle(bool in_buffer_rect) {
 }
 
 void main() {
-	vec2 uv   = gl_FragCoord.xy / u_resolution;
+	vec2 uv   = gl_FragCoord.xy;
 	vec2 from = u_buffer_rect.xy;
 	vec2 to   = u_buffer_rect.zw;
 
@@ -434,6 +424,8 @@ void main() {
 
 	if (from.x <= uv.x && uv.x < to.x && 
 		from.y <= uv.y && uv.y < to.y) {
+		vec2 buffer_px = floor(vec2(from.x, to.y) - uv + u_scroll_position);
+
 		if (u_effect > 0.9 && u_effect < 1.1) { 
 			scanlines2(coord);
 		} else { 
@@ -445,15 +437,14 @@ void main() {
 				return;
 			}
 
-			vec2 sp = gl_FragCoord.xy - u_scroll_position;
-
-			if (u_raster.x > 0.0 && mod(sp.x, u_raster.x) == 0.0 ||
-			    u_raster.y > 0.0 && mod(sp.y, u_raster.y) == 0.0)  {
+			if (u_raster.x != 0.0 && mod(buffer_px.x, u_raster.x) == 0.0 ||
+			    u_raster.y != 0.0 && mod(buffer_px.y, u_raster.y) == 0.0)  {
 				c = draw_grid_raster(c);
 			}
+
 			if (u_guide.x > 0.0 && u_guide.y != 0.0) {
-				if (sp.x == u_guide.x && sp.y > u_guide.y ||
-					sp.y == u_guide.y && sp.x < u_guide.x)  {
+				if (floor(buffer_px.x) == floor(u_guide.x) && buffer_px.y > u_guide.y ||
+					floor(buffer_px.y) == floor(u_guide.y) && buffer_px.x < u_guide.x)  {
 					c = draw_guide_raster(c);
 				}
 			}
