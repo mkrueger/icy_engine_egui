@@ -341,6 +341,10 @@ impl BufferView {
     pub fn toggle_reference_image(&mut self) {
         self.terminal_renderer.show_reference_image = !self.terminal_renderer.show_reference_image;
     }
+
+    pub fn has_reference_image(&self) -> bool {
+        self.terminal_renderer.reference_image.is_some()
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]

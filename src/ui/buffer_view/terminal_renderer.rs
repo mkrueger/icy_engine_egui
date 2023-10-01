@@ -557,7 +557,7 @@ impl TerminalRenderer {
 
         gl.uniform_1_f32(
             gl.get_uniform_location(self.terminal_shader, "u_has_reference_image").as_ref(),
-            if self.show_reference_image { 1.0 } else { 0.0 },
+            if self.show_reference_image && self.reference_image.is_some() { 1.0 } else { 0.0 },
         );
         gl.uniform_1_f32(
             gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(),
