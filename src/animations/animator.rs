@@ -16,12 +16,18 @@ use crate::BufferView;
 
 use crate::MonitorSettings;
 
+pub struct LogEntry {
+    pub frame: usize,
+    pub text: String,
+}
+
 pub struct Animator {
     pub scene: Option<Buffer>,
     pub frames: Vec<(Buffer, MonitorSettings, u32)>,
     current_monitor_settings: MonitorSettings,
     pub buffers: Vec<Buffer>,
     pub error: String,
+    pub log: Vec<LogEntry>,
     // play controls:
     cur_frame: usize,
     is_loop: bool,
@@ -50,6 +56,7 @@ impl Default for Animator {
             instant: Instant::now(),
             run_thread: None,
             error: String::new(),
+            log: Vec::new(),
         }
     }
 }
@@ -273,6 +280,9 @@ impl UserData for LuaBuffer {
                 });
             }
             let mut ch = this.buffer.layers[this.cur_layer].get_char((x, y));
+            if !ch.is_visible() {
+                ch.attribute.attr = 0;
+            }
             ch.attribute.set_foreground(col);
             this.buffer.layers[this.cur_layer].set_char((x, y), ch);
             Ok(())
@@ -298,6 +308,9 @@ impl UserData for LuaBuffer {
                 });
             }
             let mut ch = this.buffer.layers[this.cur_layer].get_char((x, y));
+            if !ch.is_visible() {
+                ch.attribute.attr = 0;
+            }
             ch.attribute.set_background(col);
             this.buffer.layers[this.cur_layer].set_char((x, y), ch);
             Ok(())
@@ -553,6 +566,20 @@ impl Animator {
                     .unwrap(),
                 )
                 .unwrap();
+            let luaanimator = animator_thread.clone();
+            globals
+                .set(
+                    "log",
+                    lua.create_function(move |_lua, text: String| {
+                        if luaanimator.lock().unwrap().log.len() < 1000 {
+                            let frame = luaanimator.lock().unwrap().frames.len();
+                            luaanimator.lock().unwrap().log.push(LogEntry { frame, text });
+                        }
+                        mlua::Result::Ok(())
+                    })
+                    .unwrap(),
+                )
+                .unwrap();
 
             globals.set("cur_frame", 1).unwrap();
             {
@@ -593,9 +620,12 @@ impl Animator {
     pub fn get_cur_frame(&self) -> usize {
         self.cur_frame
     }
+
     pub fn set_cur_frame(&mut self, cur_frame: usize) {
-        self.cur_frame = cur_frame;
-        self.delay = self.frames[self.cur_frame].2;
+        if !self.frames.is_empty() {
+            self.cur_frame = cur_frame.clamp(0, self.frames.len() - 1);
+            self.delay = self.frames[self.cur_frame].2;
+        }
     }
 
     pub fn get_is_loop(&self) -> bool {
@@ -627,7 +657,6 @@ impl Animator {
     pub fn start_playback(&mut self, buffer_view: Arc<eframe::epaint::mutex::Mutex<BufferView>>) -> MonitorSettings {
         self.is_playing = true;
         self.instant = Instant::now();
-        self.cur_frame = 0;
         self.display_frame(buffer_view)
     }
 

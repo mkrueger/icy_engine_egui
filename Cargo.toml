@@ -16,10 +16,10 @@ icy_engine = { git ="https://github.com/mkrueger/icy_engine", features = ["minim
 serde = { version = "1", features = ["derive"] }
 mlua = { version = "0.9.1", features = ["lua54", "vendored"] }
 
-egui = { version = "0.22.0", optional = true }
-egui_glow =  { version = "0.22.0", optional = true }
+egui = { version = "0.23.0", optional = true }
+egui_glow =  { version = "0.23.0", optional = true }
 image = { version = "0.24", features = ["gif", "jpeg", "ico", "png", "pnm", "tga", "tiff", "webp", "bmp", "hdr", "dxt", "dds", "farbfeld", "jpeg_rayon", "openexr", "qoi"], optional = true }
-eframe = { version = "0.22.0", default-features = false, features = [
+eframe = { version = "0.23.0", default-features = false, features = [
     "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".

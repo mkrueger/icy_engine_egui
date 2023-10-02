@@ -1,4 +1,4 @@
-use egui::{Color32, Id, Pos2, Rect, Response, Sense, Ui, Vec2};
+use egui::{Color32, Id, Pos2, Rect, Response, Sense, Ui, Vec2, EventFilter};
 
 use crate::{TerminalCalc, TerminalOptions};
 
@@ -161,7 +161,7 @@ impl SmoothScroll {
             response = self.show_vertical_scrollbar(ui, response, &mut calc, has_horiz_scollbar);
         }
         if response.has_focus() {
-            ui.memory_mut(|mem| mem.lock_focus(self.id, self.lock_focus));
+            ui.memory_mut(|mem| mem.set_focus_lock_filter(self.id, EventFilter::default()));
             calc.has_focus = true;
         }
 
@@ -174,7 +174,7 @@ impl SmoothScroll {
             response = self.show_horizontal_scrollbar(ui, response, &mut calc, has_vert_scrollbar);
         }
         if response.has_focus() {
-            ui.memory_mut(|mem| mem.lock_focus(self.id, self.lock_focus));
+            ui.memory_mut(|mem| mem.set_focus_lock_filter(self.id, EventFilter::default()));
             calc.has_focus = true;
         }
 
