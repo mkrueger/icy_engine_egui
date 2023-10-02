@@ -283,7 +283,7 @@ impl TerminalRenderer {
                     ch.attribute.get_foreground()
                 };
 
-                let (r, g, b) = buf.palette.get_rgb(fg as usize);
+                let (r, g, b) = buf.palette.get_rgb(fg);
                 buffer_data.push(r);
                 buffer_data.push(g);
                 buffer_data.push(b);
@@ -391,7 +391,7 @@ impl TerminalRenderer {
                 if ch.attribute.is_double_height() {
                     is_double_height = true;
                 }
-                let (r, g, b) = buf.palette.get_rgb(ch.attribute.get_background() as usize);
+                let (r, g, b) = buf.palette.get_rgb(ch.attribute.get_background());
                 buffer_data.push(r);
                 buffer_data.push(g);
                 buffer_data.push(b);

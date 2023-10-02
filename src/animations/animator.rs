@@ -217,6 +217,15 @@ impl UserData for LuaBuffer {
             Ok(color)
         });
 
+        methods.add_method_mut("set_palette_color", |_, this, (color, r, g, b): (u32, u8, u8, u8)| {
+            this.buffer.palette.set_color_rgb(color, r, g, b);
+            Ok(())
+        });
+        methods.add_method_mut("get_palette_color", |_, this, color: u32| {
+            let (r, g, b) = this.buffer.palette.get_rgb(color);
+            Ok([r, g, b])
+        });
+
         methods.add_method_mut("set_char", |_, this, (x, y, ch): (i32, i32, String)| {
             if this.cur_layer >= this.buffer.layers.len() {
                 return Err(mlua::Error::SyntaxError {
