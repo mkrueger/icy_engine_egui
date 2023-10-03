@@ -145,5 +145,4 @@ void main (void) {
                       1.0 - color1.b,
                       1.0);
     } 
-   // color1= texture(u_fonts, vec3(view_coord, 0.0));
 }
