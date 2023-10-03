@@ -140,7 +140,10 @@ void main (void) {
         upper_left.y <= terminal_buffer_coordinates.y && 
         terminal_buffer_coordinates.x < bottom_right.x && 
         terminal_buffer_coordinates.y < bottom_right.y) {
-        color1 = fg;
+        color1 = vec4(1.0 - color1.r,
+                      1.0 - color1.g,
+                      1.0 - color1.b,
+                      1.0);
     } 
    // color1= texture(u_fonts, vec3(view_coord, 0.0));
 }
