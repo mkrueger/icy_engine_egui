@@ -16,7 +16,7 @@ pub use settings::*;
 
 use crate::{MarkerSettings, MonitorSettings};
 
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct TerminalCalc {
     /// The height of the buffer in chars
     pub char_height: f32,
@@ -81,6 +81,35 @@ impl Default for TerminalCalc {
 }
 
 impl TerminalCalc {
+    pub fn from_buffer(buf: &icy_engine::Buffer) -> Self {
+        let dims = buf.get_font_dimensions();
+        let buffer_rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(buf.get_width() as f32 * dims.width as f32, buf.get_height() as f32 * dims.height as f32));
+        Self {
+            char_height: buf.get_height() as f32,
+            char_width: buf.get_width() as f32,
+            buffer_char_height: buf.get_height() as f32,
+            buffer_char_width: buf.get_width() as f32,
+            scale: Vec2::new(1.0, 1.0),
+            char_size: Vec2::new(dims.width as f32, dims.height as f32),
+            font_width: dims.width as f32,
+            font_height: dims.height as f32,
+            first_column: 0.0,
+            first_line: 0.0,
+            terminal_rect: buffer_rect,
+            buffer_rect,
+            vert_scrollbar_rect: egui::Rect::NOTHING,
+            horiz_scrollbar_rect: egui::Rect::NOTHING,
+            char_scroll_position: Vec2::ZERO,
+            forced_width: buf.get_width(),
+            forced_height: buf.get_height(),
+            set_scroll_position_set_by_user: Default::default(),
+            has_focus: false,
+            real_width: buf.get_width(),
+            real_height: buf.get_height(),
+            screen_shot: None,
+        }
+    }
+
     /// Returns the char position of the cursor in the buffer
     pub fn calc_click_pos(&self, click_pos: Pos2) -> Vec2 {
         (click_pos.to_vec2() - self.buffer_rect.left_top().to_vec2()) / self.char_size + Vec2::new(self.first_column, self.first_line)
