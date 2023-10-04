@@ -161,7 +161,11 @@ impl SmoothScroll {
             response = self.show_vertical_scrollbar(ui, response, &mut calc, has_horiz_scollbar);
         }
         if response.has_focus() {
-            ui.memory_mut(|mem| mem.set_focus_lock_filter(self.id, EventFilter::default()));
+            ui.memory_mut(|mem| mem.set_focus_lock_filter(self.id, EventFilter {
+                tab: true,
+                arrows: true,
+                escape: true,
+            }));
             calc.has_focus = true;
         }
 
@@ -174,7 +178,11 @@ impl SmoothScroll {
             response = self.show_horizontal_scrollbar(ui, response, &mut calc, has_vert_scrollbar);
         }
         if response.has_focus() {
-            ui.memory_mut(|mem| mem.set_focus_lock_filter(self.id, EventFilter::default()));
+            ui.memory_mut(|mem| mem.set_focus_lock_filter(self.id, EventFilter {
+                tab: true,
+                arrows: true,
+                escape: true,
+            }));
             calc.has_focus = true;
         }
 
