@@ -202,9 +202,9 @@ impl OutputRenderer {
         );
         gl.uniform_4_f32(
             gl.get_uniform_location(self.output_shader, "u_buffer_rect").as_ref(),
-            buffer_rect.left(),
+            buffer_rect.left() * info.pixels_per_point,
             info.screen_size_px[1] as f32 - buffer_rect.max.y * info.pixels_per_point,
-            buffer_rect.right(),
+            buffer_rect.right() * info.pixels_per_point,
             info.screen_size_px[1] as f32 - buffer_rect.min.y * info.pixels_per_point,
         );
 
