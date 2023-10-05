@@ -208,6 +208,14 @@ impl BufferView {
             return;
         }
 
+        let mut clip_rect = self.calc.terminal_rect;
+        if let Some(rect) = options.clip_rect {
+            clip_rect = clip_rect.intersect(rect);
+            if clip_rect.width() <= 0.0 || clip_rect.height() <= 0.0 {
+                return;
+            }
+        }
+
         let has_focus = self.calc.has_focus;
         unsafe {
             gl.disable(glow::SCISSOR_TEST);

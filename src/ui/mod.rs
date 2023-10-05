@@ -16,7 +16,7 @@ pub use settings::*;
 
 use crate::{MarkerSettings, MonitorSettings};
 
-#[derive(Clone,Debug)]
+#[derive(Clone, Debug)]
 pub struct TerminalCalc {
     /// The height of the buffer in chars
     pub char_height: f32,
@@ -83,7 +83,10 @@ impl Default for TerminalCalc {
 impl TerminalCalc {
     pub fn from_buffer(buf: &icy_engine::Buffer) -> Self {
         let dims = buf.get_font_dimensions();
-        let buffer_rect = Rect::from_min_size(Pos2::ZERO, Vec2::new(buf.get_width() as f32 * dims.width as f32, buf.get_height() as f32 * dims.height as f32));
+        let buffer_rect = Rect::from_min_size(
+            Pos2::ZERO,
+            Vec2::new(buf.get_width() as f32 * dims.width as f32, buf.get_height() as f32 * dims.height as f32),
+        );
         Self {
             char_height: buf.get_height() as f32,
             char_width: buf.get_width() as f32,
@@ -163,6 +166,7 @@ pub struct TerminalOptions {
     pub terminal_size: Option<Vec2>,
     pub guide: Option<Vec2>,
     pub raster: Option<Vec2>,
+    pub clip_rect: Option<Rect>,
 }
 
 impl Default for TerminalOptions {
@@ -186,6 +190,7 @@ impl Default for TerminalOptions {
             guide: None,
             raster: None,
             terminal_size: None,
+            clip_rect: None,
         }
     }
 }

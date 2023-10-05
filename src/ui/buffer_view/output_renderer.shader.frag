@@ -3,6 +3,7 @@ precision highp float;
 uniform sampler2D u_render_texture;
 uniform sampler2D u_render_data_texture;
 
+uniform vec2      u_render_coordinates;
 uniform vec2      u_resolution;
 uniform float     u_effect;
 uniform vec4      u_buffer_rect;
@@ -117,7 +118,7 @@ void scanlines2(vec2 coord)
 
 void draw_checkers_background() {
 	float checker_size = 8.0;
-    vec2 p = floor(gl_FragCoord.xy / checker_size);
+    vec2 p = floor((gl_FragCoord.xy + u_render_coordinates) / checker_size);
     float PatternMask = mod(p.x + mod(p.y, 2.0), 2.0);
 	if (PatternMask < 1.0) {
 		color = vec3(0.4, 0.4, 0.4);
@@ -128,7 +129,7 @@ void draw_checkers_background() {
 
 void draw_dash() {
 	float checker_size = 2.0;
-    vec2 p = floor(gl_FragCoord.xy / checker_size);
+    vec2 p = floor((gl_FragCoord.xy + u_render_coordinates) / checker_size);
     float PatternMask = mod(p.x + mod(p.y, 4.0) + u_time, 4.0);
 	if (PatternMask < 2.0) {
 		color = vec3(1.0);
@@ -149,7 +150,7 @@ vec4 draw_grid_raster(vec4 c) {
 
 vec4 draw_guide_raster(vec4 c) {
 	float checker_size = 1.0;
-    vec2 p = floor(gl_FragCoord.xy / checker_size);
+    vec2 p = floor((gl_FragCoord.xy + u_render_coordinates) / checker_size);
     float PatternMask = mod(p.x + mod(p.y, 2.0), 2.0);
 	if (PatternMask == 0.0) {
 		return c;
@@ -292,7 +293,7 @@ void draw_color_dash(vec3 rect_color) {
 	}
 
 	float checker_size = 2.0;
-    vec2 p = floor(gl_FragCoord.xy / checker_size);
+    vec2 p = floor((gl_FragCoord.xy + u_render_coordinates) / checker_size);
     float PatternMask = mod(p.x + mod(p.y, 4.0), 4.0);
 	if (PatternMask < 2.0) {
 		color = rect_color;

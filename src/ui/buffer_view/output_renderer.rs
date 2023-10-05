@@ -5,6 +5,7 @@ use glow::Texture;
 use icy_engine::TextPane;
 use web_time::Instant;
 
+use crate::check_gl_error;
 use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
 use crate::BufferView;
@@ -91,6 +92,13 @@ impl OutputRenderer {
         let terminal_rect = buffer_view.calc.terminal_rect;
         let top_pos = buffer_view.calc.viewport_top().floor();
 
+        let mut clip_rect = terminal_rect;
+        if let Some(rect) = options.clip_rect {
+            clip_rect = clip_rect.intersect(rect);
+            if clip_rect.width() <= 0.0 || clip_rect.height() <= 0.0 {
+                return;
+            }
+        }
         gl.bind_framebuffer(glow::FRAMEBUFFER, None);
         gl.viewport(
             (terminal_rect.left() * info.pixels_per_point) as i32,
@@ -103,11 +111,13 @@ impl OutputRenderer {
         }
 
         gl.scissor(
-            (terminal_rect.left() * info.pixels_per_point) as i32,
-            (info.screen_size_px[1] as f32 - terminal_rect.max.y * info.pixels_per_point) as i32,
-            (terminal_rect.width() * info.pixels_per_point) as i32,
-            (terminal_rect.height() * info.pixels_per_point) as i32,
+            (clip_rect.left() * info.pixels_per_point) as i32,
+            (info.screen_size_px[1] as f32 - clip_rect.max.y * info.pixels_per_point) as i32,
+            (clip_rect.width() * info.pixels_per_point) as i32,
+            (clip_rect.height() * info.pixels_per_point) as i32,
         );
+
+        check_gl_error!(gl, "gl.scissor");
 
         gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
         gl.use_program(Some(self.output_shader));
@@ -183,6 +193,12 @@ impl OutputRenderer {
             gl.get_uniform_location(self.output_shader, "u_resolution").as_ref(),
             terminal_rect.width() * info.pixels_per_point,
             terminal_rect.height() * info.pixels_per_point,
+        );
+
+        gl.uniform_2_f32(
+            gl.get_uniform_location(self.output_shader, "u_render_coordinates").as_ref(),
+            -terminal_rect.left() * info.pixels_per_point,
+            terminal_rect.top() * info.pixels_per_point,
         );
         gl.uniform_4_f32(
             gl.get_uniform_location(self.output_shader, "u_buffer_rect").as_ref(),
@@ -368,6 +384,12 @@ impl OutputRenderer {
         gl.draw_arrays(glow::TRIANGLES, 0, 6);
         gl.delete_texture(input_texture);
         gl.delete_texture(input_data_texture);
+        /*  gl.scissor(
+            (terminal_rect.left() * info.pixels_per_point) as i32,
+            (info.screen_size_px[1] as f32 - terminal_rect.max.y * info.pixels_per_point) as i32,
+            (terminal_rect.width() * info.pixels_per_point) as i32,
+            (terminal_rect.height() * info.pixels_per_point) as i32,
+        );*/
     }
 }
 
