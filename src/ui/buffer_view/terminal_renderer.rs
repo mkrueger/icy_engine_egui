@@ -147,7 +147,12 @@ impl TerminalRenderer {
     }
 
     fn update_font_texture(&mut self, gl: &glow::Context, buf: &Buffer) {
-        let size = buf.get_font(0).unwrap().size;
+        let size = if let Some(font) = buf.get_font(0) {
+            font.size
+        } else {
+            log::error!("Error buffer doesn't have a font");
+            return;
+        };
         let w_ext = if buf.use_letter_spacing() { 1 } else { 0 };
         let w = size.width;
         let h = size.height;

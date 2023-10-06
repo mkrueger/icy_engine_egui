@@ -427,6 +427,9 @@ impl UserData for LuaBuffer {
         });
     }
 }
+lazy_static::lazy_static! {
+    static ref HEX_REGEX: Regex = Regex::new(r"#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
+}
 
 const MAX_FRAMES: usize = 4096;
 impl Animator {
@@ -460,9 +463,7 @@ impl Animator {
             let lua: Lua = Lua::new();
             let globals = lua.globals();
 
-            let re = Regex::new(r"#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})").unwrap();
-
-            let txt = re
+            let txt = HEX_REGEX
                 .replace_all(&in_txt, |caps: &regex::Captures<'_>| {
                     let r = u32::from_str_radix(caps.get(1).unwrap().as_str(), 16).unwrap();
                     let g = u32::from_str_radix(caps.get(2).unwrap().as_str(), 16).unwrap();
