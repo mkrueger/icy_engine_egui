@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use egui::{Response, Vec2};
 use glow::HasContext;
@@ -116,6 +116,14 @@ impl BufferView {
 
     pub fn set_parser(&mut self, parser: Box<dyn BufferParser>) {
         self.edit_state.set_parser(parser);
+    }
+
+    pub fn clear_igs_executor(&mut self) {
+        self.terminal_renderer.igs_executor = None;
+    }
+
+    pub fn set_igs_executor(&mut self, igs_executor: Arc<std::sync::Mutex<Box<dyn icy_engine::parsers::igs::CommandExecutor>>>) {
+        self.terminal_renderer.igs_executor = Some(igs_executor);
     }
 
     pub fn get_parser(&self) -> &dyn BufferParser {

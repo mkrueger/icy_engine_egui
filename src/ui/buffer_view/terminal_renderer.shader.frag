@@ -128,7 +128,9 @@ void main (void) {
         vec2 view_coord = (gl_FragCoord.xy - u_scroll_pos) / u_resolution;
         view_coord = vec2(view_coord.s, 1.0 - view_coord.t);
         vec4 img = texture(u_reference_image, view_coord);
-        color1 = u_reference_image_alpha * img + color1 * (1 - u_reference_image_alpha);
+        if (img.a > 0.0) {
+            color1 = u_reference_image_alpha * img + color1 * (1 - u_reference_image_alpha);
+        }
     }
 
     // paint caret

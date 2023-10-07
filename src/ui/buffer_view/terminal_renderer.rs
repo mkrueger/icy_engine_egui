@@ -1,5 +1,6 @@
 #![allow(clippy::float_cmp)]
 use std::cmp::max;
+use std::sync::Arc;
 
 use egui::epaint::ahash::HashMap;
 use egui::Vec2;
@@ -49,6 +50,7 @@ pub struct TerminalRenderer {
     pub reference_image: Option<RgbaImage>,
     pub load_reference_image: bool,
     pub show_reference_image: bool,
+    pub igs_executor: Option<Arc<std::sync::Mutex<Box<dyn icy_engine::parsers::igs::CommandExecutor>>>>,
 }
 
 impl TerminalRenderer {
@@ -81,6 +83,7 @@ impl TerminalRenderer {
                 last_scroll_position: Vec2::ZERO,
                 last_char_size: Vec2::ZERO,
                 last_buffer_rect_size: Vec2::ZERO,
+                igs_executor: None,
             }
         }
     }
@@ -137,6 +140,10 @@ impl TerminalRenderer {
                 self.update_reference_image_texture(gl, image);
             }
             self.load_reference_image = false;
+        }
+
+        if self.igs_executor.is_some() {
+            self.update_igs_texture(gl);
         }
     }
 
@@ -252,6 +259,28 @@ impl TerminalRenderer {
         }
     }
 
+    fn update_igs_texture(&self, gl: &glow::Context) {
+        let Some(igs) = &self.igs_executor else {
+            return;
+        };
+        unsafe {
+            gl.bind_texture(glow::TEXTURE_2D, Some(self.reference_image_texture));
+            let res = igs.lock().unwrap().get_resolution();
+            gl.tex_image_2d(
+                glow::TEXTURE_2D,
+                0,
+                glow::RGBA as i32,
+                res.width,
+                res.height,
+                0,
+                glow::RGBA,
+                glow::UNSIGNED_BYTE,
+                Some(igs.lock().unwrap().get_texture_data()),
+            );
+            crate::check_gl_error!(gl, "update_reference_image_texture");
+        }
+    }
+
     fn update_terminal_texture(&self, gl: &glow::Context, edit_state: &EditState, calc: &TerminalCalc, use_fg: bool, use_bg: bool) {
         let buf = edit_state.get_buffer();
         let first_column = (calc.viewport_top().x / calc.char_size.x) as i32;
@@ -260,7 +289,7 @@ impl TerminalRenderer {
         let buf_w = calc.forced_width;
         let buf_h = calc.forced_height;
 
-        let max_lines = max(0, real_height - buf_h) as i32;
+        let max_lines = max(0, real_height - buf_h);
         let scroll_back_line = max(0, max_lines - first_row);
         let first_line = 0.max(real_height.saturating_sub(calc.forced_height));
         let mut buffer_data = Vec::with_capacity((2 * (buf_w + 1) * 4 * buf_h) as usize);
@@ -548,29 +577,41 @@ impl TerminalRenderer {
             BUFFER_TEXTURE_SLOT as i32,
         );
 
+        gl.uniform_1_i32(
+            gl.get_uniform_location(self.terminal_shader, "u_reference_image").as_ref(),
+            REFERENCE_IMAGE_TEXTURE_SLOT as i32,
+        );
+
         if let Some(img) = &self.reference_image {
-            gl.uniform_1_i32(
-                gl.get_uniform_location(self.terminal_shader, "u_reference_image").as_ref(),
-                REFERENCE_IMAGE_TEXTURE_SLOT as i32,
-            );
             gl.uniform_2_f32(
                 gl.get_uniform_location(self.terminal_shader, "u_reference_image_size").as_ref(),
                 img.width() as f32,
                 img.height() as f32,
             );
+            gl.uniform_1_f32(
+                gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(),
+                terminal_options.marker_settings.reference_image_alpha,
+            );
+        }
+
+        if let Some(img) = &self.igs_executor {
+            let res = img.lock().unwrap().get_resolution();
+            gl.uniform_2_f32(
+                gl.get_uniform_location(self.terminal_shader, "u_reference_image_size").as_ref(),
+                res.width as f32,
+                res.height as f32,
+            );
+
+            gl.uniform_1_f32(gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(), 1.0);
         }
 
         gl.uniform_1_f32(
             gl.get_uniform_location(self.terminal_shader, "u_has_reference_image").as_ref(),
-            if self.show_reference_image && self.reference_image.is_some() {
+            if self.show_reference_image && self.reference_image.is_some() || self.igs_executor.is_some() {
                 1.0
             } else {
                 0.0
             },
-        );
-        gl.uniform_1_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(),
-            terminal_options.marker_settings.reference_image_alpha,
         );
         let (r, g, b) = terminal_options.monitor_settings.selection_fg.get_rgb_f32();
 
