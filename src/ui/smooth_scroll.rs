@@ -174,7 +174,7 @@ impl SmoothScroll {
             calc.has_focus = true;
         }
 
-        if response.clicked() {
+        if response.clicked() || options.request_focus { 
             response.request_focus();
         }
 
@@ -196,10 +196,9 @@ impl SmoothScroll {
             calc.has_focus = true;
         }
 
-        if response.clicked() {
+        if response.clicked() || options.request_focus {
             response.request_focus();
         }
-
         self.persist_data(ui);
         calc.set_scroll_position_set_by_user = self.set_scroll_position;
 

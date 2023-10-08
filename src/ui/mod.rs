@@ -161,6 +161,7 @@ pub struct TerminalOptions {
     pub show_layer_borders: bool,
     pub show_line_numbers: bool,
     pub force_focus: bool,
+    pub request_focus: bool,
 
     pub hide_scrollbars: bool,
     pub terminal_size: Option<Vec2>,
@@ -191,6 +192,7 @@ impl Default for TerminalOptions {
             raster: None,
             terminal_size: None,
             clip_rect: None,
+            request_focus:false
         }
     }
 }
