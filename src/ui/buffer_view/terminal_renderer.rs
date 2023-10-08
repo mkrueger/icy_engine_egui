@@ -264,19 +264,21 @@ impl TerminalRenderer {
             return;
         };
         unsafe {
-            gl.bind_texture(glow::TEXTURE_2D, Some(self.reference_image_texture));
-            let res = igs.lock().unwrap().get_resolution();
-            gl.tex_image_2d(
-                glow::TEXTURE_2D,
-                0,
-                glow::RGBA as i32,
-                res.width,
-                res.height,
-                0,
-                glow::RGBA,
-                glow::UNSIGNED_BYTE,
-                Some(igs.lock().unwrap().get_texture_data()),
-            );
+            if let Ok(igs) = igs.lock() {
+                gl.bind_texture(glow::TEXTURE_2D, Some(self.reference_image_texture));
+                let res = igs.get_resolution();
+                gl.tex_image_2d(
+                    glow::TEXTURE_2D,
+                    0,
+                    glow::RGBA as i32,
+                    res.width,
+                    res.height,
+                    0,
+                    glow::RGBA,
+                    glow::UNSIGNED_BYTE,
+                    Some(igs.get_texture_data()),
+                );
+            }
             crate::check_gl_error!(gl, "update_reference_image_texture");
         }
     }
@@ -582,6 +584,11 @@ impl TerminalRenderer {
             REFERENCE_IMAGE_TEXTURE_SLOT as i32,
         );
 
+        let mut has_ref_image = if self.show_reference_image && self.reference_image.is_some() || self.igs_executor.is_some() {
+            1.0
+        } else {
+            0.0
+        };
         if let Some(img) = &self.reference_image {
             gl.uniform_2_f32(
                 gl.get_uniform_location(self.terminal_shader, "u_reference_image_size").as_ref(),
@@ -595,23 +602,23 @@ impl TerminalRenderer {
         }
 
         if let Some(img) = &self.igs_executor {
-            let res = img.lock().unwrap().get_resolution();
-            gl.uniform_2_f32(
-                gl.get_uniform_location(self.terminal_shader, "u_reference_image_size").as_ref(),
-                res.width as f32,
-                res.height as f32,
-            );
+            if let Ok(img) = img.lock() {
+                let res = img.get_resolution();
+                gl.uniform_2_f32(
+                    gl.get_uniform_location(self.terminal_shader, "u_reference_image_size").as_ref(),
+                    res.width as f32,
+                    res.height as f32,
+                );
 
-            gl.uniform_1_f32(gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(), 1.0);
+                gl.uniform_1_f32(gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(), 1.0);
+            } else {
+                has_ref_image = 0.0;
+            }
         }
 
         gl.uniform_1_f32(
             gl.get_uniform_location(self.terminal_shader, "u_has_reference_image").as_ref(),
-            if self.show_reference_image && self.reference_image.is_some() || self.igs_executor.is_some() {
-                1.0
-            } else {
-                0.0
-            },
+            has_ref_image,
         );
         let (r, g, b) = terminal_options.monitor_settings.selection_fg.get_rgb_f32();
 
