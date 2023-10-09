@@ -4,7 +4,7 @@ use std::{
     thread,
 };
 
-use icy_engine::{AttributedChar, Buffer, BufferParser, Caret, Position, TextPane};
+use icy_engine::{attribute, AttributedChar, Buffer, BufferParser, Caret, Position, TextPane};
 use mlua::{Lua, UserData, Value};
 use regex::Regex;
 
@@ -268,7 +268,9 @@ impl UserData for LuaBuffer {
             }
 
             let ch = this.buffer.layers[this.cur_layer].get_char((x, y));
-            this.caret.set_attr(ch.attribute);
+            let mut attr = ch.attribute;
+            attr.attr &= !attribute::INVISIBLE;
+            this.caret.set_attr(attr);
             Ok(this.convert_to_unicode(ch))
         });
 
