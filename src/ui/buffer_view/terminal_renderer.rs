@@ -7,6 +7,7 @@ use egui::Vec2;
 use glow::HasContext as _;
 use icy_engine::editor::EditState;
 use icy_engine::Buffer;
+use icy_engine::TextAttribute;
 use icy_engine::TextPane;
 use image::EncodableLayout;
 use image::RgbaImage;
@@ -431,7 +432,14 @@ impl TerminalRenderer {
                 buffer_data.push(r);
                 buffer_data.push(g);
                 buffer_data.push(b);
-                buffer_data.push(255);
+                let color = if ch.attribute.get_foreground() == TextAttribute::TRANSPARENT_COLOR {
+                    0
+                } else if ch.attribute.get_background() == TextAttribute::TRANSPARENT_COLOR {
+                    8
+                } else {
+                    255
+                };
+                buffer_data.push(color);
             }
 
             if is_double_height {

@@ -70,6 +70,12 @@ void main (void) {
     vec4 fg = vec4(ch.gba, 1.0);
     vec4 bg = vec4(ch_bg.rgb, 1.0);
 
+    if (ch_bg.a == 0.0) {
+        fg = vec4(0.0);
+    } else if (ch_bg.a < 1.0) {
+        bg = vec4(0.0);
+    }
+
     int flag = int(ch_attr.b * 255);
     float r = 0.0;
     float g = 0.0;
