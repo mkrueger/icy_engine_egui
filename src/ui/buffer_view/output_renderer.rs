@@ -25,6 +25,8 @@ pub struct OutputRenderer {
     output_shader: glow::Program,
     pub framebuffer: glow::Framebuffer,
     pub vertex_array: glow::VertexArray,
+    pub show_raster: bool,
+    pub show_guide: bool,
     instant: Instant,
 }
 
@@ -38,6 +40,8 @@ impl OutputRenderer {
                 output_shader,
                 framebuffer,
                 vertex_array,
+                show_raster: true,
+                show_guide: true,
                 instant: Instant::now(),
             }
         }
@@ -214,26 +218,32 @@ impl OutputRenderer {
             (buffer_view.calc.char_scroll_position.y * buffer_view.calc.scale.y * info.pixels_per_point).floor() + 0.5,
         );
 
-        if let Some(raster) = &options.raster {
-            gl.uniform_2_f32(
-                gl.get_uniform_location(self.output_shader, "u_raster").as_ref(), // HACK! some raster positions need correction no idea why
-                (raster.x * buffer_view.calc.char_size.x * info.pixels_per_point).floor(),
-                (raster.y * buffer_view.calc.char_size.y * info.pixels_per_point).floor(),
-            );
+        if self.show_raster {
+            if let Some(raster) = &options.raster {
+                gl.uniform_2_f32(
+                    gl.get_uniform_location(self.output_shader, "u_raster").as_ref(), // HACK! some raster positions need correction no idea why
+                    (raster.x * buffer_view.calc.char_size.x * info.pixels_per_point).floor(),
+                    (raster.y * buffer_view.calc.char_size.y * info.pixels_per_point).floor(),
+                );
+            } else {
+                gl.uniform_2_f32(gl.get_uniform_location(self.output_shader, "u_raster").as_ref(), 0.0, 0.0);
+            }
         } else {
             gl.uniform_2_f32(gl.get_uniform_location(self.output_shader, "u_raster").as_ref(), 0.0, 0.0);
         }
-
-        if let Some(guide) = &options.guide {
-            gl.uniform_2_f32(
-                gl.get_uniform_location(self.output_shader, "u_guide").as_ref(),
-                (guide.x * buffer_view.calc.char_size.x * info.pixels_per_point).floor(),
-                (guide.y * buffer_view.calc.char_size.y * info.pixels_per_point).floor(),
-            );
+        if self.show_guide {
+            if let Some(guide) = &options.guide {
+                gl.uniform_2_f32(
+                    gl.get_uniform_location(self.output_shader, "u_guide").as_ref(),
+                    (guide.x * buffer_view.calc.char_size.x * info.pixels_per_point).floor(),
+                    (guide.y * buffer_view.calc.char_size.y * info.pixels_per_point).floor(),
+                );
+            } else {
+                gl.uniform_2_f32(gl.get_uniform_location(self.output_shader, "u_guide").as_ref(), 0.0, 0.0);
+            }
         } else {
             gl.uniform_2_f32(gl.get_uniform_location(self.output_shader, "u_guide").as_ref(), 0.0, 0.0);
         }
-
         gl.uniform_1_f32(
             gl.get_uniform_location(self.output_shader, "u_raster_alpha").as_ref(),
             options.marker_settings.raster_alpha,

@@ -616,10 +616,7 @@ impl TerminalRenderer {
             }
         }
 
-        gl.uniform_1_f32(
-            gl.get_uniform_location(self.terminal_shader, "u_has_reference_image").as_ref(),
-            has_ref_image,
-        );
+        gl.uniform_1_f32(gl.get_uniform_location(self.terminal_shader, "u_has_reference_image").as_ref(), has_ref_image);
         let (r, g, b) = terminal_options.monitor_settings.selection_fg.get_rgb_f32();
 
         gl.uniform_4_f32(gl.get_uniform_location(self.terminal_shader, "u_selection_fg").as_ref(), r, g, b, 1.0);

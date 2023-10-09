@@ -192,7 +192,7 @@ impl Default for TerminalOptions {
             raster: None,
             terminal_size: None,
             clip_rect: None,
-            request_focus:false
+            request_focus: false,
         }
     }
 }

@@ -361,6 +361,22 @@ impl BufferView {
     pub fn has_reference_image(&self) -> bool {
         self.terminal_renderer.reference_image.is_some()
     }
+
+    pub fn get_show_raster(&self) -> bool {
+        self.output_renderer.show_raster
+    }
+
+    pub fn set_show_raster(&mut self, show_raster: bool) {
+        self.output_renderer.show_raster = show_raster;
+    }
+
+    pub fn get_show_guide(&self) -> bool {
+        self.output_renderer.show_guide
+    }
+
+    pub fn set_show_guide(&mut self, show_guide: bool) {
+        self.output_renderer.show_guide = show_guide;
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
