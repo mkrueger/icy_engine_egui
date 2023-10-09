@@ -240,9 +240,34 @@ impl UserData for LuaBuffer {
                     incomplete_input: false,
                 });
             }
-            let attr = this.caret.get_attribute();
+            let mut attr = this.caret.get_attribute();
+            attr.attr &= !attribute::INVISIBLE;
             let ch = AttributedChar::new(this.convert_from_unicode(ch)?, attr);
+            this.buffer.layers[this.cur_layer].set_char((x, y), ch);
+            Ok(())
+        });
 
+        methods.add_method_mut("clear_char", |_, this, (x, y): (i32, i32)| {
+            if this.cur_layer >= this.buffer.layers.len() {
+                return Err(mlua::Error::SyntaxError {
+                    message: format!("Current layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
+                    incomplete_input: false,
+                });
+            }
+            this.buffer.layers[this.cur_layer].set_char((x, y), AttributedChar::invisible());
+            Ok(())
+        });
+
+        methods.add_method_mut("set_char", |_, this, (x, y, ch): (i32, i32, String)| {
+            if this.cur_layer >= this.buffer.layers.len() {
+                return Err(mlua::Error::SyntaxError {
+                    message: format!("Current layer {} out of range (0..<{})", this.cur_layer, this.buffer.layers.len()),
+                    incomplete_input: false,
+                });
+            }
+            let mut attr = this.caret.get_attribute();
+            attr.attr &= !attribute::INVISIBLE;
+            let ch = AttributedChar::new(this.convert_from_unicode(ch)?, attr);
             this.buffer.layers[this.cur_layer].set_char((x, y), ch);
             Ok(())
         });
@@ -333,7 +358,9 @@ impl UserData for LuaBuffer {
         methods.add_method_mut("print", |_, this, str: String| {
             for c in str.chars() {
                 let mut pos = this.caret.get_position();
-                let attribute = this.caret.get_attribute();
+                let mut attribute = this.caret.get_attribute();
+                attribute.attr &= !attribute::INVISIBLE;
+
                 let ch = AttributedChar::new(this.convert_from_unicode(c.to_string())?, attribute);
 
                 this.buffer.layers[this.cur_layer].set_char(pos, ch);
