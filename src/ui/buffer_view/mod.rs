@@ -175,7 +175,9 @@ impl BufferView {
     }
 
     pub fn clear(&mut self) {
-        let cur_layer = self.edit_state.get_current_layer();
+        let Ok(cur_layer) = self.edit_state.get_current_layer() else {
+            return;
+        };
         self.get_buffer_mut().reset_terminal();
         self.get_buffer_mut().layers[cur_layer].clear();
         self.get_buffer_mut().stop_sixel_threads();
