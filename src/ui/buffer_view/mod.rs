@@ -1,8 +1,8 @@
-use std::{path::PathBuf, sync::Arc};
+use std::path::PathBuf;
 
 use egui::{Response, Vec2};
 use glow::HasContext;
-use icy_engine::{editor::EditState, Buffer, BufferParser, CallbackAction, Caret, EngineResult, Position, Selection, TextPane};
+use icy_engine::{editor::EditState, AttributedChar, Buffer, CallbackAction, Caret, EngineResult, Position, Selection, Size, TextPane, UnicodeConverter};
 
 pub mod glerror;
 
@@ -114,20 +114,20 @@ impl BufferView {
         }
     }
 
-    pub fn set_parser(&mut self, parser: Box<dyn BufferParser>) {
-        self.edit_state.set_parser(parser);
+    pub fn set_unicode_converter(&mut self, parser: Box<dyn UnicodeConverter>) {
+        self.edit_state.set_unicode_converter(parser);
     }
 
     pub fn clear_igs_executor(&mut self) {
         self.terminal_renderer.igs_executor = None;
     }
 
-    pub fn set_igs_executor(&mut self, igs_executor: Arc<std::sync::Mutex<Box<dyn icy_engine::parsers::igs::CommandExecutor>>>) {
-        self.terminal_renderer.igs_executor = Some(igs_executor);
+    pub fn set_igs_executor(&mut self, size: Size, igs_executor: Vec<u8>) {
+        self.terminal_renderer.igs_executor = Some((size, igs_executor));
     }
 
-    pub fn get_parser(&self) -> &dyn BufferParser {
-        self.edit_state.get_parser()
+    pub fn get_unicode_converter(&self) -> &dyn UnicodeConverter {
+        self.edit_state.get_unicode_converter()
     }
 
     pub fn get_width(&self) -> i32 {
@@ -201,8 +201,9 @@ impl BufferView {
 
     pub fn print_char(&mut self, c: char) -> EngineResult<CallbackAction> {
         let edit_state = &mut self.edit_state;
-        let (buf, caret, parser) = edit_state.get_buffer_and_caret_mut();
-        parser.print_char(buf, 0, caret, c)
+        let (buf, caret, _) = edit_state.get_buffer_and_caret_mut();
+        buf.print_char(0, caret, AttributedChar::new(c, caret.get_attribute()));
+        Ok(CallbackAction::Update)
     }
 
     pub fn render_contents(&mut self, gl: &glow::Context, info: &egui::PaintCallbackInfo, options: &TerminalOptions) {

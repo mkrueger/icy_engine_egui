@@ -4,7 +4,7 @@ use std::{
     thread,
 };
 
-use icy_engine::{attribute, AttributedChar, Buffer, BufferParser, Caret, Position, TextPane};
+use icy_engine::{attribute, AttributedChar, Buffer, Caret, Position, TextPane, UnicodeConverter};
 use mlua::{Lua, UserData, Value};
 use regex::Regex;
 
@@ -78,10 +78,10 @@ impl LuaBuffer {
         let buffer_type = self.buffer.buffer_type;
         let ch = match buffer_type {
             icy_engine::BufferType::Unicode => ch,
-            icy_engine::BufferType::CP437 => icy_engine::ascii::Parser::default().convert_from_unicode(ch, self.caret.get_font_page()),
-            icy_engine::BufferType::Petscii => icy_engine::petscii::Parser::default().convert_from_unicode(ch, self.caret.get_font_page()),
-            icy_engine::BufferType::Atascii => icy_engine::atascii::Parser::default().convert_from_unicode(ch, self.caret.get_font_page()),
-            icy_engine::BufferType::Viewdata => icy_engine::viewdata::Parser::default().convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::CP437 => icy_engine::ascii::CP437Converter::default().convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::Petscii => icy_engine::ascii::CP437Converter::default().convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::Atascii => icy_engine::ascii::CP437Converter::default().convert_from_unicode(ch, self.caret.get_font_page()),
+            icy_engine::BufferType::Viewdata => icy_engine::ascii::CP437Converter::default().convert_from_unicode(ch, self.caret.get_font_page()),
         };
         Ok(ch)
     }
@@ -90,10 +90,10 @@ impl LuaBuffer {
         let buffer_type = self.buffer.buffer_type;
         let ch = match buffer_type {
             icy_engine::BufferType::Unicode => ch.ch,
-            icy_engine::BufferType::CP437 => icy_engine::ascii::Parser::default().convert_to_unicode(ch),
-            icy_engine::BufferType::Petscii => icy_engine::petscii::Parser::default().convert_to_unicode(ch),
-            icy_engine::BufferType::Atascii => icy_engine::atascii::Parser::default().convert_to_unicode(ch),
-            icy_engine::BufferType::Viewdata => icy_engine::viewdata::Parser::default().convert_to_unicode(ch),
+            icy_engine::BufferType::CP437 => icy_engine::ascii::CP437Converter::default().convert_to_unicode(ch),
+            icy_engine::BufferType::Petscii => icy_engine::ascii::CP437Converter::default().convert_to_unicode(ch),
+            icy_engine::BufferType::Atascii => icy_engine::ascii::CP437Converter::default().convert_to_unicode(ch),
+            icy_engine::BufferType::Viewdata => icy_engine::ascii::CP437Converter::default().convert_to_unicode(ch),
         };
         ch.to_string()
     }

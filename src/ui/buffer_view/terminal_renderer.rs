@@ -1,6 +1,5 @@
 #![allow(clippy::float_cmp)]
 use std::cmp::max;
-use std::sync::Arc;
 
 use egui::epaint::ahash::HashMap;
 use egui::Vec2;
@@ -51,7 +50,7 @@ pub struct TerminalRenderer {
     pub reference_image: Option<RgbaImage>,
     pub load_reference_image: bool,
     pub show_reference_image: bool,
-    pub igs_executor: Option<Arc<std::sync::Mutex<Box<dyn icy_engine::parsers::igs::CommandExecutor>>>>,
+    pub igs_executor: Option<(icy_engine::Size, Vec<u8>)>,
 }
 
 impl TerminalRenderer {
@@ -261,25 +260,22 @@ impl TerminalRenderer {
     }
 
     fn update_igs_texture(&self, gl: &glow::Context) {
-        let Some(igs) = &self.igs_executor else {
+        let Some((size, igs)) = &self.igs_executor else {
             return;
         };
         unsafe {
-            if let Ok(igs) = igs.lock() {
-                gl.bind_texture(glow::TEXTURE_2D, Some(self.reference_image_texture));
-                let res = igs.get_resolution();
-                gl.tex_image_2d(
-                    glow::TEXTURE_2D,
-                    0,
-                    glow::RGBA as i32,
-                    res.width,
-                    res.height,
-                    0,
-                    glow::RGBA,
-                    glow::UNSIGNED_BYTE,
-                    Some(igs.get_texture_data()),
-                );
-            }
+            gl.bind_texture(glow::TEXTURE_2D, Some(self.reference_image_texture));
+            gl.tex_image_2d(
+                glow::TEXTURE_2D,
+                0,
+                glow::RGBA as i32,
+                size.width,
+                size.height,
+                0,
+                glow::RGBA,
+                glow::UNSIGNED_BYTE,
+                Some(igs),
+            );
             crate::check_gl_error!(gl, "update_reference_image_texture");
         }
     }
@@ -592,7 +588,7 @@ impl TerminalRenderer {
             REFERENCE_IMAGE_TEXTURE_SLOT as i32,
         );
 
-        let mut has_ref_image = if self.show_reference_image && self.reference_image.is_some() || self.igs_executor.is_some() {
+        let has_ref_image = if self.show_reference_image && self.reference_image.is_some() || self.igs_executor.is_some() {
             1.0
         } else {
             0.0
@@ -609,19 +605,14 @@ impl TerminalRenderer {
             );
         }
 
-        if let Some(img) = &self.igs_executor {
-            if let Ok(img) = img.lock() {
-                let res = img.get_resolution();
-                gl.uniform_2_f32(
-                    gl.get_uniform_location(self.terminal_shader, "u_reference_image_size").as_ref(),
-                    res.width as f32,
-                    res.height as f32,
-                );
+        if let Some((size, _img)) = &self.igs_executor {
+            gl.uniform_2_f32(
+                gl.get_uniform_location(self.terminal_shader, "u_reference_image_size").as_ref(),
+                size.width as f32,
+                size.height as f32,
+            );
 
-                gl.uniform_1_f32(gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(), 1.0);
-            } else {
-                has_ref_image = 0.0;
-            }
+            gl.uniform_1_f32(gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(), 1.0);
         }
 
         gl.uniform_1_f32(gl.get_uniform_location(self.terminal_shader, "u_has_reference_image").as_ref(), has_ref_image);
