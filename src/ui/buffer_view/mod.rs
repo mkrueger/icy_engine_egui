@@ -122,8 +122,8 @@ impl BufferView {
         self.terminal_renderer.igs_executor = None;
     }
 
-    pub fn set_igs_executor(&mut self, size: Size, igs_executor: Vec<u8>) {
-        self.terminal_renderer.igs_executor = Some((size, igs_executor));
+    pub fn set_igs_executor(&mut self, igs: Option<(Size, Vec<u8>)>) {
+        self.terminal_renderer.igs_executor = igs;
     }
 
     pub fn get_unicode_converter(&self) -> &dyn UnicodeConverter {
