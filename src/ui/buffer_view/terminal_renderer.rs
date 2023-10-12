@@ -125,12 +125,12 @@ impl TerminalRenderer {
             || calc.char_scroll_position != self.last_scroll_position
             || calc.char_size != self.last_char_size
             || calc.buffer_rect.size() != self.last_buffer_rect_size
-            || edit_state.is_buffer_dirty
+            || edit_state.is_buffer_dirty()
         {
             self.last_scroll_position = calc.char_scroll_position;
             self.last_char_size = calc.char_size;
             self.last_buffer_rect_size = calc.buffer_rect.size();
-            edit_state.is_buffer_dirty = false;
+            edit_state.set_buffer_clean();
             self.redraw_view = false;
             self.update_terminal_texture(gl, edit_state, calc, use_fg, use_bg);
         }

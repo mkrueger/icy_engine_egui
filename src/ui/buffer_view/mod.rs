@@ -56,9 +56,11 @@ impl Blink {
     }
 }
 
+static mut BUFFER_VIEW_ID: usize = 0;
 pub struct BufferView {
     edit_state: EditState,
 
+    pub id: usize,
     pub scale: f32,
     pub buffer_input_mode: BufferInputMode,
 
@@ -95,6 +97,11 @@ impl BufferView {
         let sixel_renderer = sixel_renderer::SixelRenderer::new(gl);
         let output_renderer = output_renderer::OutputRenderer::new(gl);
         Self {
+            id: unsafe {
+                let id = BUFFER_VIEW_ID;
+                BUFFER_VIEW_ID += 1;
+                id
+            },
             edit_state: EditState::from_buffer(buf),
             scale: 1.0,
             buffer_input_mode: BufferInputMode::CP437,
