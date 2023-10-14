@@ -546,7 +546,11 @@ impl TerminalRenderer {
         let caret_h = if buffer_view.get_caret().insert_mode {
             fontdim.height as f32 / 2.0
         } else {
-            2.0
+            match terminal_options.caret_shape {
+                crate::CaretShape::Block => fontdim.height as f32,
+                crate::CaretShape::Underline => 2.0,
+            }
+            
         };
 
         let caret_y = caret_pos.y as f32 * fontdim.height as f32 + fontdim.height as f32 - caret_h - (top_pos.y / buffer_view.calc.char_size.y * font_height)

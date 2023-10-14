@@ -144,6 +144,13 @@ impl TerminalCalc {
     }
 }
 
+#[derive(Default, Clone, Copy)]
+pub enum CaretShape {
+    #[default]
+    Underline,
+    Block,
+}
+
 #[derive(Clone)]
 pub struct TerminalOptions {
     pub filter: i32,
@@ -168,6 +175,7 @@ pub struct TerminalOptions {
     pub guide: Option<Vec2>,
     pub raster: Option<Vec2>,
     pub clip_rect: Option<Rect>,
+    pub caret_shape: CaretShape
 }
 
 impl Default for TerminalOptions {
@@ -193,6 +201,7 @@ impl Default for TerminalOptions {
             terminal_size: None,
             clip_rect: None,
             request_focus: false,
+            caret_shape: CaretShape::Underline
         }
     }
 }

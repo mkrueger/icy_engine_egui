@@ -240,9 +240,9 @@ impl UserData for LuaBuffer {
                     incomplete_input: false,
                 });
             }
-            let mut attr = this.caret.get_attribute();
-            attr.attr &= !attribute::INVISIBLE;
-            let ch = AttributedChar::new(this.convert_from_unicode(ch)?, attr);
+                  let mut attr = this.caret.get_attribute();
+                  attr.attr &= !attribute::INVISIBLE;
+                  let ch = AttributedChar::new(this.convert_from_unicode(ch)?, attr);
             this.buffer.layers[this.cur_layer].set_char((x, y), ch);
             Ok(())
         });
