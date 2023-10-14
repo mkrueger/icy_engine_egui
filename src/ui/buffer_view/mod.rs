@@ -390,7 +390,7 @@ impl BufferView {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-const SHADER_VERSION: &str = "#version 330";
+const SHADER_VERSION: &str = "#version 440";
 
 #[cfg(target_arch = "wasm32")]
 const SHADER_VERSION: &str = "#version 300 es";
