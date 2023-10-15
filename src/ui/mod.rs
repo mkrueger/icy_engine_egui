@@ -175,7 +175,7 @@ pub struct TerminalOptions {
     pub guide: Option<Vec2>,
     pub raster: Option<Vec2>,
     pub clip_rect: Option<Rect>,
-    pub caret_shape: CaretShape
+    pub caret_shape: CaretShape,
 }
 
 impl Default for TerminalOptions {
@@ -201,7 +201,7 @@ impl Default for TerminalOptions {
             terminal_size: None,
             clip_rect: None,
             request_focus: false,
-            caret_shape: CaretShape::Underline
+            caret_shape: CaretShape::Underline,
         }
     }
 }

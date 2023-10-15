@@ -541,7 +541,7 @@ impl TerminalRenderer {
             caret_pos += layer.get_offset();
         }
 
-        let caret_x = caret_pos.x as f32 * font_width - (top_pos.x / buffer_view.calc.char_size.x * font_width);
+        let caret_x = caret_pos.x as f32 * font_width - (top_pos.x / buffer_view.calc.char_size.x * font_width) - scroll_offset_x;
 
         let caret_h = if buffer_view.get_caret().insert_mode {
             fontdim.height as f32 / 2.0
@@ -550,7 +550,6 @@ impl TerminalRenderer {
                 crate::CaretShape::Block => fontdim.height as f32,
                 crate::CaretShape::Underline => 2.0,
             }
-            
         };
 
         let caret_y = caret_pos.y as f32 * fontdim.height as f32 + fontdim.height as f32 - caret_h - (top_pos.y / buffer_view.calc.char_size.y * font_height)
