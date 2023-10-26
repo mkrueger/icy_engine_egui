@@ -176,6 +176,9 @@ impl TerminalRenderer {
             let fontpage_start = cur_font_num as i32 * (line_width * height);
             for ch in 0..256 {
                 let cur_font = font.1;
+                if ch >= cur_font.length {
+                    break;
+                }
                 let glyph = cur_font.get_glyph(unsafe { char::from_u32_unchecked(ch as u32) }).unwrap();
 
                 let x = ch % chars_in_line;
