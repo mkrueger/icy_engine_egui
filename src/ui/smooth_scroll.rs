@@ -139,13 +139,13 @@ impl SmoothScroll {
         }
         self.clamp_scroll_position(&mut calc);
 
-        let scrollbar_width = ui.style().spacing.scroll_bar_width;
+        let scrollbar_width = ui.style().spacing.scroll.bar_width;
         let x = rect.right() - scrollbar_width;
         let mut scrollbar_rect: Rect = rect;
         scrollbar_rect.set_left(x);
         calc.vert_scrollbar_rect = scrollbar_rect;
 
-        let scrollbar_height = ui.style().spacing.scroll_bar_width;
+        let scrollbar_height = ui.style().spacing.scroll.bar_width;
         let y = rect.bottom() - scrollbar_height;
         let mut scrollbar_rect: Rect = rect;
         scrollbar_rect.set_top(y);
@@ -215,7 +215,7 @@ impl SmoothScroll {
     }
 
     fn show_vertical_scrollbar(&mut self, ui: &Ui, response: Response, calc: &mut TerminalCalc, has_horiz_scrollbar: bool) -> Response {
-        let scrollbar_width = ui.style().spacing.scroll_bar_width;
+        let scrollbar_width = ui.style().spacing.scroll.bar_width;
         let x = calc.terminal_rect.right() - scrollbar_width;
         let mut bg_rect: Rect = calc.terminal_rect;
         bg_rect.set_left(x);
@@ -253,7 +253,7 @@ impl SmoothScroll {
     }
 
     fn show_horizontal_scrollbar(&mut self, ui: &Ui, response: Response, calc: &mut TerminalCalc, has_vert_scrollbar: bool) -> Response {
-        let scrollbar_height = ui.style().spacing.scroll_bar_width;
+        let scrollbar_height = ui.style().spacing.scroll.bar_width;
         let y = calc.terminal_rect.bottom() - scrollbar_height;
         let mut bg_rect: Rect = calc.terminal_rect;
         bg_rect.set_top(y);

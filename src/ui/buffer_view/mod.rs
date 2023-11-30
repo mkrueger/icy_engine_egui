@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, rc::Rc};
 
 use egui::{Response, Vec2};
 use glow::HasContext;
@@ -213,7 +213,7 @@ impl BufferView {
         Ok(CallbackAction::Update)
     }
 
-    pub fn render_contents(&mut self, gl: &Arc<glow::Context>, info: &egui::PaintCallbackInfo, options: &TerminalOptions) {
+    pub fn render_contents(&mut self, gl: &Rc<glow::Context>, info: &egui::PaintCallbackInfo, options: &TerminalOptions) {
         if self.destroyed {
             return;
         }
@@ -233,6 +233,7 @@ impl BufferView {
                 return;
             }
         }
+        let gl = gl.as_ref();
 
         let has_focus = self.calc.has_focus;
         unsafe {
