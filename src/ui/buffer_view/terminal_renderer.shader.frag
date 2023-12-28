@@ -76,7 +76,7 @@ void main (void) {
         bg = vec4(0.0);
     }
 
-    int flag = int(ch_attr.b * 255);
+    int flag = int(ch_attr.b * 255.0);
     float r = 0.0;
     float g = 0.0;
     float b = 0.0;
@@ -135,7 +135,7 @@ void main (void) {
         view_coord = vec2(view_coord.s, 1.0 - view_coord.t);
         vec4 img = texture(u_reference_image, view_coord);
         if (img.a > 0.0) {
-            color1 = u_reference_image_alpha * img + color1 * (1 - u_reference_image_alpha);
+            color1 = u_reference_image_alpha * img + color1 * (1.0 - u_reference_image_alpha);
         }
     }
 

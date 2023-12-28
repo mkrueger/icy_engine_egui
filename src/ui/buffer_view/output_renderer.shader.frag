@@ -244,11 +244,11 @@ void draw_selection_rect(vec2 upper_left, vec2 bottom_right, bool in_buffer_rect
 			}
 		} else {
 			// inner
-			if (upper_left.y == uv.y - 1.0 && upper_left.x + 1 < uv.x && uv.x < bottom_right.x - 1) {
+			if (upper_left.y == uv.y - 1.0 && upper_left.x + 1.0 < uv.x && uv.x < bottom_right.x - 1.0) {
 				selection_border();
 			}
 			// outer
-			if (upper_left.y == uv.y + 1.0 ) {
+			if (upper_left.y == uv.y + 1.0) {
 				selection_border();
 			}
 		}
@@ -262,11 +262,11 @@ void draw_selection_rect(vec2 upper_left, vec2 bottom_right, bool in_buffer_rect
 			}
 		}  else {
 			// inner
-			if (bottom_right.y == uv.y + 1.0 && upper_left.x + 1 < uv.x && uv.x < bottom_right.x - 1) {
+			if (bottom_right.y == uv.y + 1.0 && upper_left.x + 1.0 < uv.x && uv.x < bottom_right.x - 1.0) {
 				selection_border();
 			}
 			// outer
-			if (bottom_right.y == uv.y - 1.0 ) {
+			if (bottom_right.y == uv.y - 1.0) {
 				selection_border();
 			}
 		}
@@ -381,11 +381,11 @@ void draw_preview_rect(vec2 upper_left, vec2 bottom_right, vec3 rect_color) {
 			color = rect_color;
 		} else {
 			// inner
-			if (upper_left.y == uv.y - 1.0 && upper_left.x + 1 < uv.x && uv.x < bottom_right.x - 1) {
+			if (upper_left.y == uv.y - 1.0 && upper_left.x + 1.0 < uv.x && uv.x < bottom_right.x - 1.0) {
 				selection_border();
 			}
 			// outer
-			if (upper_left.y == uv.y + 1.0 ) {
+			if (upper_left.y == uv.y + 1.0) {
 				selection_border();
 			}
 		}
@@ -395,11 +395,11 @@ void draw_preview_rect(vec2 upper_left, vec2 bottom_right, vec3 rect_color) {
 			color = rect_color;
 		}  else {
 			// inner
-			if (bottom_right.y == uv.y + 1.0 && upper_left.x + 1 < uv.x && uv.x < bottom_right.x - 1) {
+			if (bottom_right.y == uv.y + 1.0 && upper_left.x + 1.0 < uv.x && uv.x < bottom_right.x - 1.0) {
 				selection_border();
 			}
 			// outer
-			if (bottom_right.y == uv.y - 1.0 ) {
+			if (bottom_right.y == uv.y - 1.0) {
 				selection_border();
 			}
 		}
