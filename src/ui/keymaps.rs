@@ -72,9 +72,9 @@ pub static ANSI_KEY_MAP: &[(u32, &[u8])] = &[
     (Key::Num5 as u32 | CTRL_MOD, &[0x1D]),
     (Key::Num6 as u32 | CTRL_MOD, &[0x1E]),
     (Key::Num7 as u32 | CTRL_MOD, &[0x1F]),
-    //    (Key::Backslash as u32 | CTRL_MOD, &[0x1C]),
-    //    (Key::OpenBacket as u32 | CTRL_MOD, &[0x1B]),
-    //    (Key::CloseBacket as u32 | CTRL_MOD, &[0x1D]),
+    (Key::Backslash as u32 | CTRL_MOD, &[0x1C]),
+    (Key::OpenBracket as u32 | CTRL_MOD, &[0x1B]),
+    (Key::CloseBracket as u32 | CTRL_MOD, &[0x1D]),
     (Key::Minus as u32 | CTRL_MOD, &[0x1F]),
 ];
 
