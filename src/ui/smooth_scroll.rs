@@ -166,7 +166,8 @@ impl SmoothScroll {
                     self.id,
                     EventFilter {
                         tab: true,
-                        arrows: true,
+                        horizontal_arrows: true,
+                        vertical_arrows: true,
                         escape: true,
                     },
                 )
@@ -188,7 +189,8 @@ impl SmoothScroll {
                     self.id,
                     EventFilter {
                         tab: true,
-                        arrows: true,
+                        horizontal_arrows: true,
+                        vertical_arrows: true,
                         escape: true,
                     },
                 )

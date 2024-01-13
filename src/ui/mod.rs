@@ -369,9 +369,9 @@ pub fn show_terminal_area(ui: &mut egui::Ui, buffer_view: Arc<eframe::epaint::mu
                         } else {
                             ui.visuals().text_color()
                         };
-                        painter.galley_with_color(
+                        painter.galley_with_override_text_color(
                             egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min,
-                            galley.galley.clone(),
+                            galley.clone(),
                             color,
                         );
 
@@ -383,7 +383,7 @@ pub fn show_terminal_area(ui: &mut egui::Ui, buffer_view: Arc<eframe::epaint::mu
                             ),
                             Vec2::new(galley.size().x, calc.char_height),
                         );
-                        painter.galley_with_color(egui::Align2::LEFT_TOP.align_size_within_rect(galley.size(), rect).min, galley.galley, color);
+                        painter.galley_with_override_text_color(egui::Align2::LEFT_TOP.align_size_within_rect(galley.size(), rect).min, galley, color);
                     }
                 }
                 let buf_w = calc.buffer_char_width;
@@ -409,9 +409,9 @@ pub fn show_terminal_area(ui: &mut egui::Ui, buffer_view: Arc<eframe::epaint::mu
                         } else {
                             ui.visuals().text_color()
                         };
-                        painter.galley_with_color(
+                        painter.galley_with_override_text_color(
                             egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min,
-                            galley.galley.clone(),
+                            galley.clone(),
                             color,
                         );
                         let rect = Rect::from_min_size(
@@ -422,7 +422,7 @@ pub fn show_terminal_area(ui: &mut egui::Ui, buffer_view: Arc<eframe::epaint::mu
                             Vec2::new(galley.size().x, calc.char_height),
                         );
 
-                        painter.galley_with_color(egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min, galley.galley, color);
+                        painter.galley_with_override_text_color(egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min, galley, color);
                     }
                 }
             }
