@@ -12,7 +12,6 @@ use image::EncodableLayout;
 use image::RgbaImage;
 use web_time::Instant;
 
-use crate::prepare_shader;
 use crate::TerminalCalc;
 use crate::TerminalOptions;
 
@@ -648,8 +647,8 @@ unsafe fn compile_shader(gl: &glow::Context) -> glow::Program {
     let program = gl.create_program().expect("Cannot create program");
 
     let (vertex_shader_source, fragment_shader_source) = (
-        prepare_shader!(crate::ui::buffer_view::SHADER_SOURCE),
-        prepare_shader!(include_str!("terminal_renderer.shader.frag")),
+        crate::ui::buffer_view::SHADER_SOURCE,
+        include_str!("terminal_renderer.shader.frag"),
     );
     let shader_sources = [(glow::VERTEX_SHADER, vertex_shader_source), (glow::FRAGMENT_SHADER, fragment_shader_source)];
 
@@ -657,7 +656,12 @@ unsafe fn compile_shader(gl: &glow::Context) -> glow::Program {
         .iter()
         .map(|(shader_type, shader_source)| {
             let shader = gl.create_shader(*shader_type).expect("Cannot create shader");
-            gl.shader_source(shader, shader_source /*&format!("{}\n{}", shader_version, shader_source)*/);
+            let shader_version = egui_glow::ShaderVersion::get(gl);
+            gl.shader_source(shader, &format!(
+                "{}\n{}",
+                shader_version.version_declaration(),
+                shader_source
+            ));
             gl.compile_shader(shader);
             assert!(gl.get_shader_compile_status(shader), "{}", gl.get_shader_info_log(shader));
             gl.attach_shader(program, shader);

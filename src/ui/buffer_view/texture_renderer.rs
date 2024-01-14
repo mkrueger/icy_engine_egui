@@ -1,7 +1,6 @@
 use egui::Vec2;
 use glow::HasContext;
 
-use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
 use crate::TerminalOptions;
 
@@ -172,14 +171,19 @@ impl TextureRenderer {
 
 unsafe fn compile_output_shader(gl: &glow::Context) -> glow::Program {
     let draw_program = gl.create_program().expect("Cannot create program");
-    let (vertex_shader_source, fragment_shader_source) = (prepare_shader!(SHADER_SOURCE), prepare_shader!(include_str!("texture_renderer.shader.frag")));
+    let (vertex_shader_source, fragment_shader_source) = (SHADER_SOURCE, include_str!("texture_renderer.shader.frag"));
     let shader_sources = [(glow::VERTEX_SHADER, vertex_shader_source), (glow::FRAGMENT_SHADER, fragment_shader_source)];
 
     let shaders: Vec<_> = shader_sources
         .iter()
         .map(|(shader_type, shader_source)| {
             let shader = gl.create_shader(*shader_type).expect("Cannot create shader");
-            gl.shader_source(shader, shader_source /*&format!("{}\n{}", shader_version, shader_source)*/);
+            let shader_version = egui_glow::ShaderVersion::get(gl);
+            gl.shader_source(shader, &format!(
+                "{}\n{}",
+                shader_version.version_declaration(),
+                shader_source
+            ));
             gl.compile_shader(shader);
             assert!(gl.get_shader_compile_status(shader), "{}", gl.get_shader_info_log(shader));
             gl.attach_shader(draw_program, shader);

@@ -92,10 +92,20 @@ impl BufferView {
     }
 
     pub fn from_buffer(gl: &glow::Context, buf: Buffer) -> Self {
+        let shader_version = egui_glow::ShaderVersion::get(gl);
+        if !shader_version.is_new_shader_interface() {
+            log::warn!(
+                "Custom 3D painting hasn't been ported to {:?}",
+                shader_version
+            );
+        }
+
         let terminal_renderer = terminal_renderer::TerminalRenderer::new(gl);
         let calc = TerminalCalc::default();
         let sixel_renderer = sixel_renderer::SixelRenderer::new(gl);
         let output_renderer = output_renderer::OutputRenderer::new(gl);
+
+
         Self {
             id: unsafe {
                 let id = BUFFER_VIEW_ID;
@@ -388,19 +398,6 @@ impl BufferView {
     pub fn set_show_guide(&mut self, show_guide: bool) {
         self.output_renderer.show_guide = show_guide;
     }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-const SHADER_VERSION: &str = "#version 330";
-
-#[cfg(target_arch = "wasm32")]
-const SHADER_VERSION: &str = "#version 300 es";
-
-#[macro_export]
-macro_rules! prepare_shader {
-    ($shader: expr) => {{
-        format!("{}\n{}", $crate::ui::buffer_view::SHADER_VERSION, $shader)
-    }};
 }
 
 const SHADER_SOURCE: &str = r#"precision highp float;

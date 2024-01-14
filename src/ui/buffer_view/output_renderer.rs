@@ -6,7 +6,6 @@ use icy_engine::TextPane;
 use web_time::Instant;
 
 use crate::check_gl_error;
-use crate::prepare_shader;
 use crate::ui::buffer_view::SHADER_SOURCE;
 use crate::BufferView;
 use crate::TerminalOptions;
@@ -120,10 +119,7 @@ impl OutputRenderer {
             (clip_rect.width() * info.pixels_per_point) as i32,
             (clip_rect.height() * info.pixels_per_point) as i32,
         );
-
         check_gl_error!(gl, "gl.scissor");
-
-        gl.clear(glow::COLOR_BUFFER_BIT | glow::DEPTH_BUFFER_BIT);
         gl.use_program(Some(self.output_shader));
         gl.active_texture(glow::TEXTURE0 + INPUT_TEXTURE_SLOT);
         gl.bind_texture(glow::TEXTURE_2D, Some(input_texture));
@@ -405,14 +401,19 @@ impl OutputRenderer {
 
 unsafe fn compile_output_shader(gl: &glow::Context) -> glow::Program {
     let draw_program = gl.create_program().expect("Cannot create program");
-    let (vertex_shader_source, fragment_shader_source) = (prepare_shader!(SHADER_SOURCE), prepare_shader!(include_str!("output_renderer.shader.frag")));
+    let (vertex_shader_source, fragment_shader_source) = (SHADER_SOURCE, include_str!("output_renderer.shader.frag"));
     let shader_sources = [(glow::VERTEX_SHADER, vertex_shader_source), (glow::FRAGMENT_SHADER, fragment_shader_source)];
 
     let shaders: Vec<_> = shader_sources
         .iter()
         .map(|(shader_type, shader_source)| {
             let shader = gl.create_shader(*shader_type).expect("Cannot create shader");
-            gl.shader_source(shader, shader_source /*&format!("{}\n{}", shader_version, shader_source)*/);
+            let shader_version = egui_glow::ShaderVersion::get(gl);
+            gl.shader_source(shader, &format!(
+                "{}\n{}",
+                shader_version.version_declaration(),
+                shader_source
+            ));
             gl.compile_shader(shader);
             assert!(gl.get_shader_compile_status(shader), "{}", gl.get_shader_info_log(shader));
             gl.attach_shader(draw_program, shader);
