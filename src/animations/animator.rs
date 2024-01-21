@@ -428,7 +428,7 @@ impl UserData for LuaBuffer {
         methods.add_method_mut("set_layer_visible", |_, this, (layer, is_visible): (i32, bool)| {
             let layer = layer as usize;
             if layer < this.buffer.layers.len() {
-                this.buffer.layers[layer].is_visible = is_visible;
+                this.buffer.layers[layer].set_is_visible(is_visible);
                 Ok(())
             } else {
                 Err(mlua::Error::SyntaxError {
@@ -440,7 +440,7 @@ impl UserData for LuaBuffer {
 
         methods.add_method_mut("get_layer_visible", |_, this, layer: usize| {
             if layer < this.buffer.layers.len() {
-                Ok(this.buffer.layers[layer].is_visible)
+                Ok(this.buffer.layers[layer].get_is_visible())
             } else {
                 Err(mlua::Error::SyntaxError {
                     message: format!("Layer {} out of range (0..<{})", layer, this.buffer.layers.len()),
