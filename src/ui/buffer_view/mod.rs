@@ -430,3 +430,15 @@ void main() {
     gl_Position = vec4(vert, 0.3, 1.0);
 }
 "#;
+ 
+// MAC version
+#[cfg(not(target_os = "macos"))]
+pub fn get_shader_version(gl: &glow::Context) -> &str {
+    let shader_version = egui_glow::ShaderVersion::get(gl);
+    shader_version.version_declaration()
+}
+
+#[cfg(target_os = "macos")]
+pub fn get_shader_version(_gl: &glow::Context) -> &str {
+    "#version 330"
+}

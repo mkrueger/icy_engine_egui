@@ -656,10 +656,16 @@ unsafe fn compile_shader(gl: &glow::Context) -> glow::Program {
         .iter()
         .map(|(shader_type, shader_source)| {
             let shader = gl.create_shader(*shader_type).expect("Cannot create shader");
-            let shader_version = egui_glow::ShaderVersion::get(gl);
+
+            #[cfg(not(target_os = "macos"))]
+            let shader_source = shader_source.replace("%LAYOUT0%", "").replace("%LAYOUT1%", "");
+            
+            #[cfg(target_os = "macos")]
+            let shader_source = shader_source.replace("%LAYOUT0%", "layout(location = 0)").replace("%LAYOUT1%", "layout(location = 1)");
+
             gl.shader_source(shader, &format!(
                 "{}\n{}",
-                shader_version.version_declaration(),
+                crate::get_shader_version(gl),
                 shader_source
             ));
             gl.compile_shader(shader);

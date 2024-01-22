@@ -6,6 +6,7 @@ use icy_engine::TextPane;
 use web_time::Instant;
 
 use crate::check_gl_error;
+use crate::get_shader_version;
 use crate::ui::buffer_view::SHADER_SOURCE;
 use crate::BufferView;
 use crate::TerminalOptions;
@@ -399,19 +400,18 @@ impl OutputRenderer {
     }
 }
 
+
 unsafe fn compile_output_shader(gl: &glow::Context) -> glow::Program {
     let draw_program = gl.create_program().expect("Cannot create program");
     let (vertex_shader_source, fragment_shader_source) = (SHADER_SOURCE, include_str!("output_renderer.shader.frag"));
     let shader_sources = [(glow::VERTEX_SHADER, vertex_shader_source), (glow::FRAGMENT_SHADER, fragment_shader_source)];
-
     let shaders: Vec<_> = shader_sources
         .iter()
         .map(|(shader_type, shader_source)| {
             let shader = gl.create_shader(*shader_type).expect("Cannot create shader");
-            let shader_version = egui_glow::ShaderVersion::get(gl);
             gl.shader_source(shader, &format!(
                 "{}\n{}",
-                shader_version.version_declaration(),
+                get_shader_version(gl),
                 shader_source
             ));
             gl.compile_shader(shader);

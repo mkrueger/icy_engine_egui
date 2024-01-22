@@ -178,10 +178,9 @@ unsafe fn compile_output_shader(gl: &glow::Context) -> glow::Program {
         .iter()
         .map(|(shader_type, shader_source)| {
             let shader = gl.create_shader(*shader_type).expect("Cannot create shader");
-            let shader_version = egui_glow::ShaderVersion::get(gl);
             gl.shader_source(shader, &format!(
                 "{}\n{}",
-                shader_version.version_declaration(),
+                crate::get_shader_version(gl),
                 shader_source
             ));
             gl.compile_shader(shader);

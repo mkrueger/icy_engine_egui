@@ -24,8 +24,8 @@ uniform float       u_reference_image_alpha;
 uniform float       u_has_reference_image;
 uniform vec2        u_reference_image_size;
 
-out vec4 color1;
-out vec4 color2;
+%LAYOUT0% out vec4 color1;
+%LAYOUT1% out vec4 color2;
 
 vec4 get_char(vec2 p, float c, float page) {
     if (p.x < 0.|| p.x > 1. || p.y < 0.|| p.y > 1.) {
