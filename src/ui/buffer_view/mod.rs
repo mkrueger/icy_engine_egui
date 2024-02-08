@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use egui::{Response, Vec2};
+use egui::{ColorImage, Response, Vec2};
 use glow::HasContext;
 use icy_engine::{editor::EditState, AttributedChar, Buffer, CallbackAction, Caret, EngineResult, Position, Selection, Size, TextPane, UnicodeConverter};
 
@@ -94,17 +94,13 @@ impl BufferView {
     pub fn from_buffer(gl: &glow::Context, buf: Buffer) -> Self {
         let shader_version = egui_glow::ShaderVersion::get(gl);
         if !shader_version.is_new_shader_interface() {
-            log::warn!(
-                "Custom 3D painting hasn't been ported to {:?}",
-                shader_version
-            );
+            log::warn!("Custom 3D painting hasn't been ported to {:?}", shader_version);
         }
 
         let terminal_renderer = terminal_renderer::TerminalRenderer::new(gl);
         let calc = TerminalCalc::default();
         let sixel_renderer = sixel_renderer::SixelRenderer::new(gl);
         let output_renderer = output_renderer::OutputRenderer::new(gl);
-
 
         Self {
             id: unsafe {
@@ -370,6 +366,14 @@ impl BufferView {
         }
     }
 
+    pub fn set_reference_image(&mut self, color_image: Option<(Size, Vec<u8>)>) {
+        if self.destroyed {
+            return;
+        }
+        self.terminal_renderer.color_image = color_image;
+        self.terminal_renderer.color_image_upated = true;
+    }
+
     pub fn clear_reference_image(&mut self) {
         self.terminal_renderer.reference_image = None;
         self.terminal_renderer.show_reference_image = false;
@@ -430,12 +434,12 @@ void main() {
     gl_Position = vec4(vert, 0.3, 1.0);
 }
 "#;
- 
+
 #[cfg(not(target_os = "macos"))]
-pub fn get_shader_version(gl: &glow::Context) -> &str {
+pub fn get_shader_version(_gl: &glow::Context) -> &str {
     "#version 330"
-//    let shader_version = egui_glow::ShaderVersion::get(gl);
-//    shader_version.version_declaration()
+    //    let shader_version = egui_glow::ShaderVersion::get(gl);
+    //    shader_version.version_declaration()
 }
 
 #[cfg(target_os = "macos")]

@@ -369,11 +369,7 @@ pub fn show_terminal_area(ui: &mut egui::Ui, buffer_view: Arc<eframe::epaint::mu
                         } else {
                             ui.visuals().text_color()
                         };
-                        painter.galley_with_override_text_color(
-                            egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min,
-                            galley.clone(),
-                            color,
-                        );
+                        painter.galley_with_override_text_color(egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min, galley.clone(), color);
 
                         let rect = Rect::from_min_size(
                             Pos2::new(
@@ -409,11 +405,7 @@ pub fn show_terminal_area(ui: &mut egui::Ui, buffer_view: Arc<eframe::epaint::mu
                         } else {
                             ui.visuals().text_color()
                         };
-                        painter.galley_with_override_text_color(
-                            egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min,
-                            galley.clone(),
-                            color,
-                        );
+                        painter.galley_with_override_text_color(egui::Align2::RIGHT_TOP.align_size_within_rect(galley.size(), rect).min, galley.clone(), color);
                         let rect = Rect::from_min_size(
                             Pos2::new(
                                 calc.buffer_rect.left() - galley.size().x - 4.0 + x as f32 * calc.char_size.x + calc.char_size.x,

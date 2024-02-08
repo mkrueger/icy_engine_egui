@@ -2,10 +2,12 @@
 use std::cmp::max;
 
 use egui::epaint::ahash::HashMap;
+use egui::ColorImage;
 use egui::Vec2;
 use glow::HasContext as _;
 use icy_engine::editor::EditState;
 use icy_engine::Buffer;
+use icy_engine::Size;
 use icy_engine::TextAttribute;
 use icy_engine::TextPane;
 use image::EncodableLayout;
@@ -50,6 +52,8 @@ pub struct TerminalRenderer {
     pub load_reference_image: bool,
     pub show_reference_image: bool,
     pub igs_executor: Option<(icy_engine::Size, Vec<u8>)>,
+    pub color_image: Option<(Size, Vec<u8>)>,
+    pub color_image_upated: bool,
 }
 
 impl TerminalRenderer {
@@ -83,6 +87,8 @@ impl TerminalRenderer {
                 last_char_size: Vec2::ZERO,
                 last_buffer_rect_size: Vec2::ZERO,
                 igs_executor: None,
+                color_image: None,
+                color_image_upated: false,
             }
         }
     }
@@ -143,6 +149,12 @@ impl TerminalRenderer {
 
         if self.igs_executor.is_some() {
             self.update_igs_texture(gl);
+        }
+
+        if self.color_image_upated {
+            if let Some((a, b)) = &self.color_image {
+                self.update_color_image_texture(gl, *a, b);
+            }
         }
     }
 
@@ -261,6 +273,29 @@ impl TerminalRenderer {
         }
     }
 
+    fn update_color_image_texture(&self, gl: &glow::Context, size: Size, pixels: &[u8]) {
+        unsafe {
+            if pixels.len() != (size.width * size.height * 4) as usize {
+                log::error!("Error in update_color_image_texture, wrong si0ze");
+                return;
+            }
+            gl.bind_texture(glow::TEXTURE_2D, Some(self.reference_image_texture));
+
+            gl.tex_image_2d(
+                glow::TEXTURE_2D,
+                0,
+                glow::RGBA as i32,
+                size.width,
+                size.height,
+                0,
+                glow::RGBA,
+                glow::UNSIGNED_BYTE,
+                Some(pixels),
+            );
+            crate::check_gl_error!(gl, "update_reference_image_texture");
+        }
+    }
+
     fn update_igs_texture(&self, gl: &glow::Context) {
         let Some((size, igs)) = &self.igs_executor else {
             return;
@@ -295,11 +330,16 @@ impl TerminalRenderer {
         let first_line = 0.max(real_height.saturating_sub(calc.forced_height));
         let mut buffer_data = Vec::with_capacity((2 * (buf_w + 1) * 4 * buf_h) as usize);
         let mut y: i32 = 0;
+
         while y <= buf_h {
             let mut is_double_height = false;
             let cur_idx = buffer_data.len();
             for x in 0..=buf_w {
-                let mut ch = buf.get_char((first_column + x, first_line - scroll_back_line + y));
+                let mut ch = if let Some(window) = &buf.terminal_state.text_window {
+                    buf.get_char((first_column + x - window.left(), first_line - scroll_back_line + y - window.top()))
+                } else {
+                    buf.get_char((first_column + x, first_line - scroll_back_line + y))
+                };
                 if ch.attribute.is_double_height() {
                     is_double_height = true;
                 }
@@ -593,7 +633,7 @@ impl TerminalRenderer {
             REFERENCE_IMAGE_TEXTURE_SLOT as i32,
         );
 
-        let has_ref_image = if self.show_reference_image && self.reference_image.is_some() || self.igs_executor.is_some() {
+        let has_ref_image = if self.show_reference_image && self.reference_image.is_some() || self.igs_executor.is_some() || self.color_image.is_some() {
             1.0
         } else {
             0.0
@@ -615,6 +655,16 @@ impl TerminalRenderer {
                 gl.get_uniform_location(self.terminal_shader, "u_reference_image_size").as_ref(),
                 size.width as f32,
                 size.height as f32,
+            );
+
+            gl.uniform_1_f32(gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(), 1.0);
+        }
+
+        if let Some((size, _img)) = &self.color_image {
+            gl.uniform_2_f32(
+                gl.get_uniform_location(self.terminal_shader, "u_reference_image_size").as_ref(),
+                size.width as f32,
+                320 as f32,
             );
 
             gl.uniform_1_f32(gl.get_uniform_location(self.terminal_shader, "u_reference_image_alpha").as_ref(), 1.0);
@@ -646,10 +696,7 @@ impl TerminalRenderer {
 unsafe fn compile_shader(gl: &glow::Context) -> glow::Program {
     let program = gl.create_program().expect("Cannot create program");
 
-    let (vertex_shader_source, fragment_shader_source) = (
-        crate::ui::buffer_view::SHADER_SOURCE,
-        include_str!("terminal_renderer.shader.frag"),
-    );
+    let (vertex_shader_source, fragment_shader_source) = (crate::ui::buffer_view::SHADER_SOURCE, include_str!("terminal_renderer.shader.frag"));
     let shader_sources = [(glow::VERTEX_SHADER, vertex_shader_source), (glow::FRAGMENT_SHADER, fragment_shader_source)];
 
     let shaders: Vec<_> = shader_sources
@@ -659,15 +706,13 @@ unsafe fn compile_shader(gl: &glow::Context) -> glow::Program {
 
             #[cfg(not(target_os = "macos"))]
             let shader_source = shader_source.replace("%LAYOUT0%", "").replace("%LAYOUT1%", "");
-            
-            #[cfg(target_os = "macos")]
-            let shader_source = shader_source.replace("%LAYOUT0%", "layout(location = 0)").replace("%LAYOUT1%", "layout(location = 1)");
 
-            gl.shader_source(shader, &format!(
-                "{}\n{}",
-                crate::get_shader_version(gl),
-                shader_source
-            ));
+            #[cfg(target_os = "macos")]
+            let shader_source = shader_source
+                .replace("%LAYOUT0%", "layout(location = 0)")
+                .replace("%LAYOUT1%", "layout(location = 1)");
+
+            gl.shader_source(shader, &format!("{}\n{}", crate::get_shader_version(gl), shader_source));
             gl.compile_shader(shader);
             assert!(gl.get_shader_compile_status(shader), "{}", gl.get_shader_info_log(shader));
             gl.attach_shader(program, shader);
