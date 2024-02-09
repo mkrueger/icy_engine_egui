@@ -375,8 +375,10 @@ impl BufferView {
     }
 
     pub fn clear_reference_image(&mut self) {
+        self.terminal_renderer.color_image = None;
         self.terminal_renderer.reference_image = None;
         self.terminal_renderer.show_reference_image = false;
+        self.terminal_renderer.color_image_upated = true;
     }
 
     pub fn toggle_reference_image(&mut self) {
