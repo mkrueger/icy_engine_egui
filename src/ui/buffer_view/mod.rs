@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use egui::{ColorImage, Response, Vec2};
+use egui::{Response, Vec2};
 use glow::HasContext;
 use icy_engine::{editor::EditState, AttributedChar, Buffer, CallbackAction, Caret, EngineResult, Position, Selection, Size, TextPane, UnicodeConverter};
 

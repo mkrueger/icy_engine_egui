@@ -2,7 +2,6 @@
 use std::cmp::max;
 
 use egui::epaint::ahash::HashMap;
-use egui::ColorImage;
 use egui::Vec2;
 use glow::HasContext as _;
 use icy_engine::editor::EditState;
