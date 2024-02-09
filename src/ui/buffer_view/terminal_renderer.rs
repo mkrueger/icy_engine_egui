@@ -707,10 +707,6 @@ unsafe fn compile_shader(gl: &glow::Context) -> glow::Program {
         .map(|(shader_type, shader_source)| {
             let shader = gl.create_shader(*shader_type).expect("Cannot create shader");
 
-            #[cfg(not(target_os = "macos"))]
-            let shader_source = shader_source.replace("%LAYOUT0%", "").replace("%LAYOUT1%", "");
-
-            #[cfg(target_os = "macos")]
             let shader_source = shader_source
                 .replace("%LAYOUT0%", "layout(location = 0)")
                 .replace("%LAYOUT1%", "layout(location = 1)");
