@@ -583,6 +583,10 @@ impl TerminalRenderer {
             caret_pos += layer.get_offset();
         }
 
+        if let Some(window) = &buffer_view.get_buffer().terminal_state.text_window {
+            caret_pos += window.top_left();
+        }
+
         let caret_x = caret_pos.x as f32 * font_width - (top_pos.x / buffer_view.calc.char_size.x * font_width) - scroll_offset_x;
 
         let caret_h = if buffer_view.get_caret().insert_mode {
